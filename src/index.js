@@ -11,14 +11,61 @@ const app = express();
 require("dotenv").config();
 
 // MongoDB connection helper
+let dbConnection = null;
+let isDbConnected = false;
+
 async function getDbConnection() {
   if (!process.env.MONGO_URI) return null;
   try {
     const { getDb } = require("./lib/mongo");
-    return await getDb();
+    dbConnection = await getDb();
+    isDbConnected = true;
+    return dbConnection;
   } catch (err) {
     console.error("DB connection failed:", err.message);
+    isDbConnected = false;
     return null;
+  }
+}
+
+// Initialize DB on startup
+getDbConnection().then(db => {
+  if (db) {
+    console.log('✅ MongoDB connected successfully');
+  } else {
+    console.error('❌ MongoDB connection failed - check MONGO_URI');
+  }
+});
+
+// Helper function to get current DB connection
+function getDb() {
+  if (!dbConnection) {
+    throw new Error('Database not connected');
+  }
+  return dbConnection;
+}
+
+// Error monitoring system
+async function logSystemError(errorType, errorMessage, errorStack, endpoint, userId = null) {
+  try {
+    if (!isDbConnected) return;
+    
+    const db = getDb();
+    const errorsCollection = db.collection('system_errors');
+    
+    await errorsCollection.insertOne({
+      type: errorType,
+      message: errorMessage,
+      stack: errorStack,
+      endpoint: endpoint,
+      userId: userId,
+      timestamp: new Date(),
+      resolved: false
+    });
+    
+    console.error(`🚨 SYSTEM ERROR LOGGED: ${errorType} - ${errorMessage}`);
+  } catch (err) {
+    console.error('Failed to log error to database:', err.message);
   }
 }
 
@@ -78,6 +125,7 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     // Check MongoDB connection
     if (!isDbConnected) {
+      await logSystemError('DB_CONNECTION_FAILED', 'Database not connected during login attempt', 'MongoDB unavailable', '/api/auth/login');
       console.error('❌ Database not connected during login attempt');
       return res.status(503).json({ error: "Database connection unavailable" });
     }
@@ -112,6 +160,7 @@ app.post("/api/auth/login", async (req, res) => {
     
     return res.json({ success: true, token, user: userData });
   } catch (err) {
+    await logSystemError('LOGIN_ERROR', err.message, err.stack, '/api/auth/login', username);
     console.error('Login error:', err);
     return res.status(500).json({ error: "Login failed" });
   }
@@ -127,6 +176,7 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
 app.get("/api/seed-users", async (req, res) => {
   try {
     if (!isDbConnected) {
+      await logSystemError('DB_CONNECTION_FAILED', 'Database not connected during seed attempt', 'MongoDB unavailable', '/api/seed-users');
       return res.status(503).json({ 
         success: false, 
         error: "Database not connected" 
@@ -180,11 +230,87 @@ app.get("/api/seed-users", async (req, res) => {
     });
     
   } catch (err) {
+    await logSystemError('SEED_ERROR', err.message, err.stack, '/api/seed-users');
     console.error('Seed error:', err);
     res.status(500).json({ 
       success: false, 
       error: err.message 
     });
+  }
+});
+
+// --- ERROR MONITORING ENDPOINTS ---
+
+// Get system errors (Admin only)
+app.get("/api/admin/system-errors", requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const { resolved } = req.query;
+    
+    const filter = resolved !== undefined ? { resolved: resolved === 'true' } : {};
+    
+    const errors = await db.collection('system_errors')
+      .find(filter)
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .toArray();
+    
+    res.json({ success: true, errors, count: errors.length });
+  } catch (err) {
+    console.error('Error fetching system errors:', err);
+    res.status(500).json({ error: "Failed to fetch system errors" });
+  }
+});
+
+// Mark error as resolved (Admin only)
+app.patch("/api/admin/system-errors/:id/resolve", requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const { ObjectId } = require('mongodb');
+    
+    await db.collection('system_errors').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { resolved: true, resolvedAt: new Date() } }
+    );
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error resolving system error:', err);
+    res.status(500).json({ error: "Failed to resolve error" });
+  }
+});
+
+// Get unresolved error count (for notifications)
+app.get("/api/admin/system-errors/count", requireAuth, async (req, res) => {
+  try {
+    if (!isDbConnected) {
+      return res.json({ count: 0 });
+    }
+    
+    const db = getDb();
+    const count = await db.collection('system_errors')
+      .countDocuments({ resolved: false });
+    
+    res.json({ count });
+  } catch (err) {
+    console.error('Error counting system errors:', err);
+    res.json({ count: 0 });
   }
 });
 
