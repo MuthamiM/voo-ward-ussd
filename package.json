@@ -4,9 +4,15 @@
   "description": "Voo Kyamatu Ward USSD backend (production)",
   "main": "src/index.js",
   "type": "commonjs",
+  "engines": {
+    "node": ">=18 <=20"
+  },
   "scripts": {
     "start": "node src/index.js",
-    "admin": "node src/admin-dashboard.js"
+    "admin": "node src/admin-dashboard.js",
+    "smoke:db": "node -e \"(async()=>{try{const {getDb,close}=require('./src/lib/mongo');const db=await getDb();await db.command({ping:1});console.log('✅ Mongo OK');await close();}catch(e){console.error('❌ Mongo FAIL:',e.message);process.exit(2)}})()\"",
+    "seed": "node scripts/seed.js",
+    "seed:users": "node scripts/seed-users.js"
   },
   "dependencies": {
     "body-parser": "^2.2.0",

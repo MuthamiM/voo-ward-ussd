@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
+const crypto = require("crypto");
 
 // Load environment variables
 require("dotenv").config();
@@ -18,6 +19,44 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
+
+// Simple session storage (in production, use Redis or proper session management)
+const sessions = new Map();
+
+// Helper: Hash password
+function hashPassword(password) {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+// Helper: Generate session token
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// Middleware: Verify authentication
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  
+  if (!token) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  const session = sessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "Invalid or expired session" });
+  }
+  
+  req.user = session.user;
+  next();
+}
+
+// Middleware: Verify MCA role
+function requireMCA(req, res, next) {
+  if (req.user.role !== "MCA") {
+    return res.status(403).json({ error: "Access denied. MCA role required." });
+  }
+  next();
+}
 
 // MongoDB connection
 const { ServerApiVersion } = require("mongodb");
@@ -72,11 +111,234 @@ app.get("/health", (req, res) => {
 });
 
 // ============================================
+// AUTHENTICATION ROUTES
+// ============================================
+
+// Login
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password required" });
+    }
+    
+    const database = await connectDB();
+    
+    // FALLBACK: Allow demo login when database is not connected (local testing only)
+    if (!database) {
+      console.log("⚠️  Database not connected - using demo login mode");
+      
+      // Demo credentials: admin/admin123 or pa/pa123
+      if (username.toLowerCase() === "admin" && password === "admin123") {
+        const token = generateSessionToken();
+        sessions.set(token, {
+          user: {
+            id: "demo-mca-id",
+            username: "admin",
+            fullName: "MCA Administrator (Demo)",
+            role: "MCA"
+          },
+          createdAt: new Date()
+        });
+        
+        return res.json({
+          success: true,
+          token,
+          user: {
+            id: "demo-mca-id",
+            username: "admin",
+            fullName: "MCA Administrator (Demo)",
+            role: "MCA"
+          }
+        });
+      } else if (username.toLowerCase() === "pa" && password === "pa123") {
+        const token = generateSessionToken();
+        sessions.set(token, {
+          user: {
+            id: "demo-pa-id",
+            username: "pa",
+            fullName: "Personal Assistant (Demo)",
+            role: "PA"
+          },
+          createdAt: new Date()
+        });
+        
+        return res.json({
+          success: true,
+          token,
+          user: {
+            id: "demo-pa-id",
+            username: "pa",
+            fullName: "Personal Assistant (Demo)",
+            role: "PA"
+          }
+        });
+      } else {
+        return res.status(401).json({ error: "Invalid credentials. Use admin/admin123 or pa/pa123 in demo mode" });
+      }
+    }
+    
+    // PRODUCTION: Use database authentication
+    // Find user
+    const user = await database.collection("admin_users").findOne({ 
+      username: username.toLowerCase() 
+    });
+    
+    if (!user || user.password !== hashPassword(password)) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+    
+    // Create session
+    const token = generateSessionToken();
+    sessions.set(token, {
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role
+      },
+      createdAt: new Date()
+    });
+    
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id.toString(),
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Logout
+app.post("/api/auth/logout", requireAuth, (req, res) => {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  sessions.delete(token);
+  res.json({ success: true, message: "Logged out successfully" });
+});
+
+// Get current user
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Create user (MCA only)
+app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { username, password, fullName, role } = req.body;
+    
+    if (!username || !password || !fullName || !role) {
+      return res.status(400).json({ error: "All fields required" });
+    }
+    
+    if (role !== "PA" && role !== "MCA") {
+      return res.status(400).json({ error: "Role must be PA or MCA" });
+    }
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    // Check if username exists
+    const existing = await database.collection("admin_users").findOne({ 
+      username: username.toLowerCase() 
+    });
+    
+    if (existing) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+    
+    // Create user
+    const newUser = {
+      username: username.toLowerCase(),
+      password: hashPassword(password),
+      full_name: fullName,
+      role: role,
+      created_at: new Date(),
+      created_by: req.user.id
+    };
+    
+    const result = await database.collection("admin_users").insertOne(newUser);
+    
+    res.status(201).json({
+      success: true,
+      user: {
+        id: result.insertedId.toString(),
+        username: newUser.username,
+        fullName: newUser.full_name,
+        role: newUser.role
+      }
+    });
+  } catch (err) {
+    console.error("Create user error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all users (MCA only)
+app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const users = await database.collection("admin_users")
+      .find({}, { projection: { password: 0 } })
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    res.json(users);
+  } catch (err) {
+    console.error("Get users error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete user (MCA only)
+app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent deleting yourself
+    if (id === req.user.id) {
+      return res.status(400).json({ error: "Cannot delete your own account" });
+    }
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const result = await database.collection("admin_users").deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json({ success: true, message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Delete user error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
 // ADMIN API ROUTES
 // ============================================
 
-// Get all reported issues
-app.get("/api/admin/issues", async (req, res) => {
+// Get all reported issues (PA and MCA can access)
+app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -95,8 +357,8 @@ app.get("/api/admin/issues", async (req, res) => {
   }
 });
 
-// Get all bursary applications
-app.get("/api/admin/bursaries", async (req, res) => {
+// Get all bursary applications (MCA only)
+app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -115,8 +377,8 @@ app.get("/api/admin/bursaries", async (req, res) => {
   }
 });
 
-// Get all constituents
-app.get("/api/admin/constituents", async (req, res) => {
+// Get all constituents (MCA only)
+app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -135,8 +397,8 @@ app.get("/api/admin/constituents", async (req, res) => {
   }
 });
 
-// Get all announcements
-app.get("/api/admin/announcements", async (req, res) => {
+// Get all announcements (PA and MCA can access)
+app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -155,8 +417,8 @@ app.get("/api/admin/announcements", async (req, res) => {
   }
 });
 
-// Update issue status
-app.patch("/api/admin/issues/:id", async (req, res) => {
+// Update issue status (PA and MCA can access)
+app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -182,8 +444,8 @@ app.patch("/api/admin/issues/:id", async (req, res) => {
   }
 });
 
-// Update bursary status
-app.patch("/api/admin/bursaries/:id", async (req, res) => {
+// Update bursary status (MCA only)
+app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -219,8 +481,8 @@ app.patch("/api/admin/bursaries/:id", async (req, res) => {
   }
 });
 
-// Create announcement
-app.post("/api/admin/announcements", async (req, res) => {
+// Create announcement (PA and MCA can access)
+app.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
     
@@ -322,8 +584,8 @@ app.get("/api/admin/stats", async (req, res) => {
   }
 });
 
-// Export issues as CSV
-app.get("/api/admin/export/issues", async (req, res) => {
+// Export issues as CSV (PA and MCA can access)
+app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -349,8 +611,8 @@ app.get("/api/admin/export/issues", async (req, res) => {
   }
 });
 
-// Export bursaries as CSV
-app.get("/api/admin/export/bursaries", async (req, res) => {
+// Export bursaries as CSV (MCA only)
+app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -376,8 +638,8 @@ app.get("/api/admin/export/bursaries", async (req, res) => {
   }
 });
 
-// Export constituents as CSV
-app.get("/api/admin/export/constituents", async (req, res) => {
+// Export constituents as CSV (MCA only)
+app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -403,8 +665,51 @@ app.get("/api/admin/export/constituents", async (req, res) => {
   }
 });
 
-// Serve admin dashboard HTML (simple frontend)
+// Serve admin dashboard HTML
+app.use(express.static(path.join(__dirname, "../public")));
+
 app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
+});
+
+// Initialize default MCA admin user on startup
+async function initializeAdmin() {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      console.log("⚠️  Cannot initialize admin user - database not connected");
+      return;
+    }
+    
+    const existingAdmin = await database.collection("admin_users").findOne({ role: "MCA" });
+    
+    if (!existingAdmin) {
+      console.log("🔧 Creating default MCA admin user...");
+      
+      const defaultAdmin = {
+        username: "admin",
+        password: hashPassword("admin123"),
+        full_name: "MCA Administrator",
+        role: "MCA",
+        created_at: new Date()
+      };
+      
+      await database.collection("admin_users").insertOne(defaultAdmin);
+      
+      console.log("✅ Default MCA admin created:");
+      console.log("   Username: admin");
+      console.log("   Password: admin123");
+      console.log("   IMPORTANT: Change password after first login!");
+    } else {
+      console.log("✅ MCA admin user exists");
+    }
+  } catch (err) {
+    console.error("❌ Error initializing admin user:", err.message);
+  }
+}
+
+// OLD HTML CODE REMOVED - Now served from file
+app.get("/old", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
@@ -542,7 +847,7 @@ app.get("/", (req, res) => {
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏛️ VOO Kyamatu Ward Admin Dashboard</h1>
+            <h1> VOO Kyamatu Ward Admin Dashboard</h1>
             <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
         </div>
         
@@ -827,17 +1132,21 @@ app.get("/", (req, res) => {
 // Start server
 const PORT = process.env.ADMIN_PORT || 5000;
 app.listen(PORT, async () => {
-  console.log(`\n🏛️  VOO WARD ADMIN DASHBOARD`);
-  console.log(`📊 Dashboard: http://localhost:${PORT}`);
-  console.log(`❤️  Health: http://localhost:${PORT}/health`);
+  console.log(`\n  VOO WARD ADMIN DASHBOARD`);
+  console.log(` Dashboard: http://localhost:${PORT}`);
+  console.log(`  Health: http://localhost:${PORT}/health`);
   
   // Test MongoDB connection
   const database = await connectDB();
   if (database) {
-    console.log(`✅ MongoDB Connected: Ready to view data`);
+    console.log(` MongoDB Connected: Ready to view data`);
+    
+    // Initialize admin user
+    await initializeAdmin();
   } else {
-    console.log(`⚠️  MongoDB NOT Connected - Check MONGO_URI in .env`);
+    console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
   
-  console.log(`\n✅ Ready to view issues, bursaries & constituents!\n`);
+  console.log(`\n Ready to view issues, bursaries & constituents!\n`);
+  console.log(` Login with: admin / admin123 (Change after first login!)\n`);
 });
