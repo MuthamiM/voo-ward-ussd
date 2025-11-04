@@ -1,30 +1,22 @@
+// backend/src/lib/mongo.js
 const { MongoClient, ServerApiVersion } = require("mongodb");
+const MONGO_URI = process.env.MONGO_URI;
 
-const MONGO_URI = process.env.MONGO_URI || "";
-let client;
-let db;
-
+let client, db;
 async function getDb() {
-  if (!MONGO_URI) {
-    throw new Error("MONGO_URI not set");
-  }
-  if (!client) {
-    client = new MongoClient(MONGO_URI, {
-      serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-      tls: true,                             // explicit TLS for Atlas
-      retryWrites: true,
-      connectTimeoutMS: 10000,
-      serverSelectionTimeoutMS: 8000,
-    });
-  }
-  if (!db) {
-    await client.connect();
-    // if URI has db at the end, use it; else default to 'voo_ward'
-    const url = new URL(MONGO_URI);
-    const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
-    db = client.db(pathDb);
-  }
+  if (!MONGO_URI) throw new Error("MONGO_URI not set");
+  if (db) return db;
+  client = new MongoClient(MONGO_URI, {
+    serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+    tls: true,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000,
+    maxPoolSize: 20,
+    serverSelectionTimeoutMS: 8000
+  });
+  await client.connect();
+  db = client.db(); // derives from URI path (e.g., /voo_ward)
   return db;
 }
-
-module.exports = { getDb };
+async function closeDb(){ if (client) await client.close(); client = null; db = null; }
+module.exports = { getDb, closeDb };
