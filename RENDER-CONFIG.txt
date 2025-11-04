@@ -1,0 +1,66 @@
+# RENDER CONFIGURATION - COPY & PASTE
+
+## ✅ Already Correct
+- Source: MusaMuthami1/voo-ward-ussd
+- Branch: main
+- Language: Node
+- Region: Oregon (US West)
+
+## 🔧 CHANGE THESE
+
+### Name
+```
+voo-kyamatu-ussd
+```
+
+### Root Directory
+```
+(leave empty)
+```
+
+### Build Command
+```
+npm ci
+```
+
+### Start Command
+```
+npm start
+```
+
+### Instance Type
+```
+Free ($0/month)
+```
+
+## 🔐 ENVIRONMENT VARIABLES
+
+Click "Add Environment Variable" 3 times and add:
+
+### Variable 1
+```
+Key:   MONGO_URI
+Value: mongodb+srv://VOOAPP:NeverBroke031@cluster0.lc9fktg.mongodb.net/voo_ward?retryWrites=true&w=majority&appName=Cluster0
+```
+
+### Variable 2
+```
+Key:   PORT
+Value: 4000
+```
+
+### Variable 3
+```
+Key:   NODE_ENV
+Value: production
+```
+
+## ⚡ FINAL STEP
+Click **"Create Web Service"** button at the bottom
+
+## 🎯 YOUR FINAL URL
+```
+https://voo-kyamatu-ussd.onrender.com/ussd
+```
+
+Give this to Safaricom!
