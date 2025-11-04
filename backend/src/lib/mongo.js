@@ -1,6 +1,21 @@
 // backend/src/lib/mongo.js
+const dns = require("dns");
+dns.setDefaultResultOrder?.("ipv4first");
+
 const { MongoClient, ServerApiVersion } = require("mongodb");
+
+// Load dotenv if not already loaded
+if (!process.env.MONGO_URI) {
+  try {
+    require("dotenv").config();
+  } catch {}
+}
+
 const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI && process.env.NODE_ENV === "production") {
+  console.warn("[WARN] MONGO_URI is not set in production environment.");
+}
 
 let client, db;
 async function getDb() {
@@ -9,8 +24,6 @@ async function getDb() {
   client = new MongoClient(MONGO_URI, {
     serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
     tls: true,
-    keepAlive: true,
-    keepAliveInitialDelay: 300000,
     maxPoolSize: 20,
     serverSelectionTimeoutMS: 8000
   });
@@ -18,5 +31,10 @@ async function getDb() {
   db = client.db(); // derives from URI path (e.g., /voo_ward)
   return db;
 }
-async function closeDb(){ if (client) await client.close(); client = null; db = null; }
-module.exports = { getDb, closeDb };
+async function close() {
+  try { await client?.close(); } catch {}
+  client = undefined; 
+  db = undefined;
+}
+
+module.exports = { getDb, close, closeDb: close };

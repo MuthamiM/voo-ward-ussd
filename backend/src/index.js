@@ -54,7 +54,11 @@ function requireMCA(req, res, next) {
 
 // --- HEALTH FIRST (no DB/middleware) ---
 app.get("/health", (req, res) => {
-  res.json({ ok: true, service: "voo-ward-ussd", ts: new Date().toISOString() });
+  res.json({ 
+    ok: true, 
+    service: "voo-ward-ussd", 
+    env: process.env.NODE_ENV || "development" 
+  });
 });
 
 // --- Basic middleware ---
@@ -316,7 +320,7 @@ app.use((err, req, res, _next) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`[PRODUCTION] VOO Kyamatu Ward USSD API listening on :${PORT}`);
   console.log(`Health: http://localhost:${PORT}/health`);
   console.log(`USSD: http://localhost:${PORT}/ussd`);
