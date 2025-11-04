@@ -20,18 +20,43 @@ app.use((req, res, next) => {
 });
 
 // MongoDB connection
+const { ServerApiVersion } = require("mongodb");
+let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 async function connectDB() {
   if (db) return db;
+  
+  if (!MONGO_URI) {
+    console.error("❌ MONGO_URI not set in .env file");
+    return null;
+  }
+  
   try {
-    const client = await MongoClient.connect(MONGO_URI);
-    db = client.db();
-    console.log("✅ Connected to MongoDB");
+    if (!client) {
+      client = new MongoClient(MONGO_URI, {
+        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+        tls: true,
+        retryWrites: true,
+        connectTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 8000,
+      });
+    }
+    
+    if (!db) {
+      await client.connect();
+      // Extract database name from URI
+      const url = new URL(MONGO_URI);
+      const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
+      db = client.db(pathDb);
+    }
+    
+    console.log("✅ Connected to MongoDB Atlas");
     return db;
   } catch (err) {
     console.error("❌ MongoDB connection failed:", err.message);
+    console.log("💡 Tip: Check if MONGO_URI is correct in .env file");
     return null;
   }
 }
@@ -800,10 +825,19 @@ app.get("/", (req, res) => {
 });
 
 // Start server
-const PORT = process.env.ADMIN_PORT || process.env.PORT || 5000;
-app.listen(PORT, () => {
+const PORT = process.env.ADMIN_PORT || 5000;
+app.listen(PORT, async () => {
   console.log(`\n🏛️  VOO WARD ADMIN DASHBOARD`);
   console.log(`📊 Dashboard: http://localhost:${PORT}`);
   console.log(`❤️  Health: http://localhost:${PORT}/health`);
+  
+  // Test MongoDB connection
+  const database = await connectDB();
+  if (database) {
+    console.log(`✅ MongoDB Connected: Ready to view data`);
+  } else {
+    console.log(`⚠️  MongoDB NOT Connected - Check MONGO_URI in .env`);
+  }
+  
   console.log(`\n✅ Ready to view issues, bursaries & constituents!\n`);
 });
