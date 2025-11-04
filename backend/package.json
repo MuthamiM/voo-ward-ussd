@@ -1,36 +1,18 @@
 {
   "name": "voo-ward-backend",
   "version": "1.0.0",
-  "description": "Voo Kyamatu Ward USSD+SMS+Admin backend (production)",
+  "description": "Voo Kyamatu Ward USSD backend (production)",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "watch": "nodemon --watch src --watch db src/index.js",
-    "migrate:cloud": "node bin/migrate-cloud",
-    "migrate:edge": "node bin/migrate-edge"
+    "admin": "node src/admin-dashboard.js"
   },
   "dependencies": {
-    "@fastify/cors": "^11.1.0",
-    "@fastify/formbody": "^7.4.0",
-    "@fastify/jwt": "^7.2.4",
-    "@fastify/websocket": "^11.2.0",
-    "bcryptjs": "^2.4.3",
-    "better-sqlite3": "^9.2.0",
     "body-parser": "^2.2.0",
     "dotenv": "^16.3.1",
     "express": "^5.1.0",
-    "fastify": "^4.25.0",
     "mongodb": "^6.20.0",
-    "morgan": "^1.10.1",
-    "nanoid": "^4.0.2",
-    "pg": "^8.11.0",
-    "pino": "^8.16.0",
-    "pino-pretty": "^10.2.0",
-    "zod": "^3.22.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.10"
+    "morgan": "^1.10.1"
   }
 }
