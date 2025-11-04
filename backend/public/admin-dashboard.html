@@ -553,6 +553,22 @@
             overflow: hidden;
         }
 
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .stat-card:hover::after {
+            opacity: 1;
+        }
+
         .stat-card::before {
             content: '';
             position: absolute;
@@ -739,6 +755,31 @@
             align-items: center;
             gap: 8px;
             letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-sm::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-sm:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-sm span {
+            position: relative;
+            z-index: 1;
         }
 
         .btn-success {
@@ -819,12 +860,30 @@
 
         tbody tr {
             border-bottom: 1px solid #e5e7eb;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        tbody tr::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
         }
 
         tbody tr:hover {
-            background: #f8fafc;
+            background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
             transform: scale(1.002);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        tbody tr:hover::before {
+            transform: scaleY(1);
         }
 
         td {
@@ -847,6 +906,13 @@
             display: inline-block;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
 
         .badge.open {

@@ -66,9 +66,15 @@ router.post("/ussd", async (req, res) => {
 
     // --- Option 1: Register constituent ---
     if (parts[1] === "1") {
-      if (step === 2) return res.send("CON Enter your full name:");
-      if (step === 3) return res.send("CON Enter your Ward/Village:");
-      if (step === 4) return res.send("CON Enter your National ID (optional). Press 0 to skip:");
+      if (step === 2) return res.send("CON Enter your full name:\n\n0. Back to Main Menu");
+      if (step === 3) {
+        if (parts[2] === "0") return res.send(mainMenu());
+        return res.send("CON Enter your Ward/Village:\n\n0. Back to Main Menu");
+      }
+      if (step === 4) {
+        if (parts[3] === "0") return res.send(mainMenu());
+        return res.send("CON Enter your National ID (optional).\n\n0. Skip and Complete");
+      }
       if (step === 5) {
         if (!db) return res.send("END Service temporarily unavailable (DB).");
         await db.collection("constituents").insertOne({
@@ -84,10 +90,19 @@ router.post("/ussd", async (req, res) => {
 
     // --- Option 2: Report issue ---
     if (parts[1] === "2") {
-      if (step === 2) return res.send("CON Enter your name:");
-      if (step === 3) return res.send("CON Enter issue title:");
-      if (step === 4) return res.send("CON Describe your issue briefly:");
-      if (step === 5) return res.send("CON Nearest location/landmark (optional). Press 0 to skip:");
+      if (step === 2) return res.send("CON Enter your name:\n\n0. Back to Main Menu");
+      if (step === 3) {
+        if (parts[2] === "0") return res.send(mainMenu());
+        return res.send("CON Enter issue title:\n\n0. Back to Main Menu");
+      }
+      if (step === 4) {
+        if (parts[3] === "0") return res.send(mainMenu());
+        return res.send("CON Describe your issue briefly:\n\n0. Back to Main Menu");
+      }
+      if (step === 5) {
+        if (parts[4] === "0") return res.send(mainMenu());
+        return res.send("CON Nearest location/landmark (optional).\n\n0. Skip and Submit");
+      }
       if (step === 6) {
         if (!db) return res.send("END Service temporarily unavailable (DB).");
         
