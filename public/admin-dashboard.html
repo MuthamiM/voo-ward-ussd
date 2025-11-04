@@ -40,7 +40,7 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', system-ui, sans-serif;
             background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6d28d9 100%);
             background-attachment: fixed;
             min-height: 100vh;
@@ -949,13 +949,14 @@
         td {
             padding: 20px;
             color: #475569;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.6;
         }
 
         td strong {
             color: var(--dark);
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .badge {
@@ -1555,9 +1556,10 @@
                     <button class="tab" onclick="showTab('users')">User Management</button>
                 `;
             } else {
-                // PA sees limited tabs
+                // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
                 tabsNav.innerHTML = `
                     <button class="tab active" onclick="showTab('issues')">Issues</button>
+                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
                     <button class="tab" onclick="showTab('announcements')">Announcements</button>
                 `;
             }
@@ -1623,6 +1625,7 @@
                         </div>
                     `;
                 } else {
+                    // PA sees: Issues, Bursaries, Announcements stats
                     statsGrid.innerHTML = `
                         <div class="stat-card">
                             <div class="stat-card-header">
@@ -1630,6 +1633,13 @@
                             </div>
                             <div class="stat-card-value">${data.issues.total}</div>
                             <div class="stat-card-label">Reported Issues</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span class="stat-card-icon">B</span>
+                            </div>
+                            <div class="stat-card-value">${data.bursaries.total}</div>
+                            <div class="stat-card-label">Bursary Applications</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
@@ -1796,14 +1806,42 @@
                     return;
                 }
                 
-                tbody.innerHTML = announcements.map(a => `
-                    <tr>
-                        <td><strong>${a.title}</strong></td>
-                        <td>${a.body}</td>
-                        <td>${a.created_by || 'Unknown'} (${a.created_by_role || 'N/A'})</td>
-                        <td>${new Date(a.created_at).toLocaleString()}</td>
+                tbody.innerHTML = announcements.map(a => {
+                    const date = new Date(a.created_at);
+                    const formattedDate = date.toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    return `
+                    <tr style="border-left: 4px solid #8b5cf6;">
+                        <td>
+                            <div style="font-size: 16px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; font-family: 'Segoe UI', system-ui, sans-serif;">
+                                ${a.title}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 15px; line-height: 1.6; color: #1f2937; font-family: 'Segoe UI', system-ui, sans-serif; padding: 8px 0; max-width: 600px;">
+                                ${a.body}
+                            </div>
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                ${a.created_by_role || 'Admin'}
+                            </span>
+                            <div style="margin-top: 4px; font-size: 13px; color: #6b7280;">
+                                ${a.created_by || 'Unknown'}
+                            </div>
+                        </td>
+                        <td style="color: #6b7280; font-size: 14px; white-space: nowrap;">
+                            ${formattedDate}
+                        </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }

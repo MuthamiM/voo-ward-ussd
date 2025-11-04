@@ -230,6 +230,15 @@ app.delete("/api/auth/users/:id", requireAuth, async (req, res) => {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
     
+    // Prevent deleting main admin account
+    const userToDelete = await db.collection('users').findOne({ 
+      _id: new ObjectId(id) 
+    });
+    
+    if (userToDelete && userToDelete.username === 'admin') {
+      return res.status(403).json({ error: "Cannot delete main admin account" });
+    }
+    
     const result = await db.collection('users').deleteOne({ 
       _id: new ObjectId(id) 
     });
