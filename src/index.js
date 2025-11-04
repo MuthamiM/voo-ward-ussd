@@ -123,6 +123,71 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+// PUBLIC SEED ENDPOINT - Seeds initial users (no auth required, runs once)
+app.get("/api/seed-users", async (req, res) => {
+  try {
+    if (!isDbConnected) {
+      return res.status(503).json({ 
+        success: false, 
+        error: "Database not connected" 
+      });
+    }
+    
+    const db = getDb();
+    const usersCollection = db.collection('users');
+    
+    // Check if users already exist
+    const existingUsers = await usersCollection.countDocuments();
+    
+    if (existingUsers > 0) {
+      const users = await usersCollection.find({}).project({ password: 0 }).toArray();
+      return res.json({
+        success: true,
+        message: "Users already exist",
+        users: users.map(u => ({ username: u.username, role: u.role, fullName: u.fullName }))
+      });
+    }
+    
+    // Create admin user
+    const adminUser = {
+      username: 'admin',
+      password: 'admin123',
+      fullName: 'MCA Administrator',
+      role: 'MCA',
+      createdAt: new Date()
+    };
+    
+    const adminResult = await usersCollection.insertOne(adminUser);
+    
+    // Create PA user
+    const paUser = {
+      username: 'pa',
+      password: 'pa123',
+      fullName: 'Personal Assistant',
+      role: 'PA',
+      createdAt: new Date()
+    };
+    
+    const paResult = await usersCollection.insertOne(paUser);
+    
+    res.json({
+      success: true,
+      message: "Users created successfully!",
+      users: [
+        { username: 'admin', password: 'admin123', role: 'MCA', id: adminResult.insertedId },
+        { username: 'pa', password: 'pa123', role: 'PA', id: paResult.insertedId }
+      ]
+    });
+    
+  } catch (err) {
+    console.error('Seed error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
 // Get all users (MCA only)
 app.get("/api/auth/users", requireAuth, async (req, res) => {
   try {
