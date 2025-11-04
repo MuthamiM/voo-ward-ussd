@@ -291,4 +291,23 @@ router.post("/ussd", async (req, res) => {
   }
 });
 
+// GET handler - informational only (USSD uses POST)
+router.get("/ussd", (req, res) => {
+  res.json({
+    service: "VOO Kyamatu Ward USSD API",
+    status: "active",
+    method: "POST only",
+    callback_url: "https://voo-ward-ussd.onrender.com/ussd",
+    note: "This endpoint accepts POST requests from Safaricom USSD gateway. GET requests are for monitoring only.",
+    features: [
+      "Register constituent",
+      "Report issue (with ticket generation)",
+      "View announcements",
+      "View projects",
+      "Bursary application (Apply/Check Status/Requirements)"
+    ],
+    access: "Limited to authorized ward MSISDNs"
+  });
+});
+
 module.exports = { router };
