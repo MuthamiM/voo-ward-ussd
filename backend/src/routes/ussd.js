@@ -84,19 +84,27 @@ router.post("/ussd", async (req, res) => {
 
     // --- Option 2: Report issue ---
     if (parts[1] === "2") {
-      if (step === 2) return res.send("CON Enter issue title:");
-      if (step === 3) return res.send("CON Describe your issue briefly:");
-      if (step === 4) return res.send("CON Nearest location/landmark (optional). Press 0 to skip:");
-      if (step === 5) {
+      if (step === 2) return res.send("CON Enter your name:");
+      if (step === 3) return res.send("CON Enter issue title:");
+      if (step === 4) return res.send("CON Describe your issue briefly:");
+      if (step === 5) return res.send("CON Nearest location/landmark (optional). Press 0 to skip:");
+      if (step === 6) {
         if (!db) return res.send("END Service temporarily unavailable (DB).");
+        
+        // Generate ticket number
+        const ticketNo = "TKT-" + Date.now().toString(36).toUpperCase().slice(-6);
+        
         await db.collection("issues").insertOne({
+          ticketNo: ticketNo,
           phone: phoneNumber,
-          title: parts[2],
-          description: parts[3],
-          location: parts[4] === "0" ? null : parts[4],
+          reporterName: parts[2],
+          title: parts[3],
+          description: parts[4],
+          location: parts[5] === "0" ? null : parts[5],
+          status: "open",
           createdAt: new Date()
         });
-        return res.send("END Issue submitted. We'll follow up.");
+        return res.send(`END Issue submitted. Ticket: ${ticketNo}. We'll follow up.`);
       }
     }
 

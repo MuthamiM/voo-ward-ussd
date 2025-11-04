@@ -158,11 +158,13 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
     
     // Format data for admin display
     const formatted = issues.map((issue, index) => ({
-      ticket: `ISS-${String(index + 1).padStart(3, '0')}`,
+      ticket: issue.ticketNo || `ISS-${String(index + 1).padStart(3, '0')}`,
       category: 'General',
       message: `${issue.title}: ${issue.description}`,
       phone_number: issue.phone,
-      status: 'open',
+      reporter_name: issue.reporterName || 'Unknown',
+      location: issue.location || 'Not specified',
+      status: issue.status || 'open',
       created_at: issue.createdAt
     }));
     
