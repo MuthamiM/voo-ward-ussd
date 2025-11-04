@@ -1,0 +1,116 @@
+═══════════════════════════════════════════════════════════════
+  AFRICA'S TALKING CONFIGURATION - EMERGENCY FIX
+═══════════════════════════════════════════════════════════════
+
+YOUR WEBHOOK IS WORKING! ✅
+The problem is in Africa's Talking dashboard configuration.
+
+═══════════════════════════════════════════════════════════════
+EXACT STEPS TO FIX:
+═══════════════════════════════════════════════════════════════
+
+1. Open browser: https://account.africastalking.com
+
+2. Login to your account
+
+3. Click "USSD" in the left sidebar menu
+
+4. You should see your code: *384*8481#
+
+5. Click "EDIT" or "Configure" next to it
+
+6. In the form, fill EXACTLY:
+
+   ┌─────────────────────────────────────────────────────────┐
+   │ Service Code: *384*8481#                                │
+   │                                                          │
+   │ Callback URL:                                           │
+   │ https://prime-runner-circulation-spring.trycloudflare.com/ussd │
+   │                                                          │
+   │ Events URL:                                             │
+   │ https://prime-runner-circulation-spring.trycloudflare.com/ussd │
+   │                                                          │
+   │ HTTP Method: POST                                       │
+   └─────────────────────────────────────────────────────────┘
+
+7. ⚠️  CRITICAL: Click the SAVE or UPDATE button!
+
+8. Wait 30-60 seconds for Africa's Talking to apply changes
+
+9. Dial *384*8481# from your phone
+
+═══════════════════════════════════════════════════════════════
+WHAT YOU SHOULD SEE:
+═══════════════════════════════════════════════════════════════
+
+On your phone:
+  KYAMATU WARD - FREE SERVICE
+  *340*75#
+  
+  Select Language:
+  1. English
+  2. Swahili
+  3. Kamba
+
+In your backend terminal window:
+  {"level":30,"msg":"📞 USSD request from 254XXXXXXXXX"}
+  (New log lines should appear each time you dial)
+
+═══════════════════════════════════════════════════════════════
+COMMON PROBLEMS & SOLUTIONS:
+═══════════════════════════════════════════════════════════════
+
+Problem: Still seeing "AfricasTalking USSD services..."
+Solution: You didn't save properly OR waited less than 30 seconds
+
+Problem: Channel shows "Inactive" or "Paused"
+Solution: Look for a toggle switch and turn it to "Active"
+
+Problem: Can't find *384*8481# in dashboard
+Solution: You might be in wrong account or wrong sandbox
+
+Problem: "Invalid callback URL" error
+Solution: Make sure URL starts with https:// (with S!)
+          Make sure URL ends with /ussd
+          No spaces before or after URL
+
+═══════════════════════════════════════════════════════════════
+TEST YOUR CONFIGURATION:
+═══════════════════════════════════════════════════════════════
+
+After saving in Africa's Talking, run this in PowerShell:
+
+Invoke-RestMethod -Uri "https://prime-runner-circulation-spring.trycloudflare.com/ussd" -Method Post -Body '{"sessionId":"test","serviceCode":"*384*8481#","phoneNumber":"254712345678","text":""}' -ContentType "application/json"
+
+You should see:
+  CON KYAMATU WARD - FREE SERVICE
+  *340*75#
+  
+  Select Language:
+  1. English
+  2. Swahili
+  3. Kamba
+
+If you see this ↑, your backend works!
+If Africa's Talking still shows default message, the problem is:
+  - You didn't save in their dashboard
+  - You're using wrong URL
+  - Your channel is paused/inactive
+
+═══════════════════════════════════════════════════════════════
+CONTACT SUPPORT IF STUCK:
+═══════════════════════════════════════════════════════════════
+
+If after following all steps above, it STILL doesn't work:
+
+1. Take screenshot of your Africa's Talking USSD config page
+2. Contact Africa's Talking support: help@africastalking.com
+3. Say: "My webhook URL works but USSD shows default message"
+4. Provide them:
+   - Your service code: *384*8481#
+   - Your callback URL: https://prime-runner-circulation-spring.trycloudflare.com/ussd
+   - Say it's a sandbox code for testing
+
+They usually respond within 1 hour.
+
+═══════════════════════════════════════════════════════════════

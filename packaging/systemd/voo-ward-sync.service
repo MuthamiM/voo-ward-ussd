@@ -1,0 +1,12 @@
+﻿[Unit]
+Description=Voo Ward Edge-to-Cloud Sync
+After=network.target voo-ward.service
+Wants=voo-ward.service
+
+[Service]
+Type=oneshot
+User=voo-ward
+WorkingDirectory=/opt/voo-ward/backend
+ExecStart=/usr/bin/node bin/sync-edge-to-cloud
+StandardOutput=journal
+StandardError=journal

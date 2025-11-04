@@ -1,0 +1,19 @@
+﻿[Unit]
+Description=Voo Kyamatu Ward Backend (USSD + Admin)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=voo-ward
+WorkingDirectory=/opt/voo-ward/backend
+Environment="NODE_ENV=production"
+Environment="PORT=4000"
+ExecStart=/usr/bin/node src/index.js
+Restart=always
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
