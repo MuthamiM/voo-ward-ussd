@@ -1111,10 +1111,10 @@
                     <!-- Issues Tab -->
                     <div id="issues-content" class="tab-content">
                         <div class="content-header">
-                            <h2 class="content-title">📋 Reported Issues</h2>
+                            <h2 class="content-title">Reported Issues</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
-                                    📥 Export CSV
+                                    Export CSV
                                 </button>
                             </div>
                         </div>
@@ -1138,10 +1138,10 @@
                     <!-- Bursaries Tab -->
                     <div id="bursaries-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">🎓 Bursary Applications</h2>
+                            <h2 class="content-title">Bursary Applications</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-success" onclick="exportData('bursaries')">
-                                    📥 Export CSV
+                                    Export CSV
                                 </button>
                             </div>
                         </div>
@@ -1166,10 +1166,10 @@
                     <!-- Constituents Tab -->
                     <div id="constituents-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">👥 Registered Constituents</h2>
+                            <h2 class="content-title">Registered Constituents</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-success" onclick="exportData('constituents')">
-                                    📥 Export CSV
+                                    Export CSV
                                 </button>
                             </div>
                         </div>
@@ -1193,10 +1193,10 @@
                     <!-- Announcements Tab -->
                     <div id="announcements-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">📢 Announcements</h2>
+                            <h2 class="content-title">Announcements</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-info" onclick="showCreateAnnouncementModal()">
-                                    ➕ New Announcement
+                                    New Announcement
                                 </button>
                             </div>
                         </div>
@@ -1218,10 +1218,10 @@
                     <!-- User Management Tab (MCA only) -->
                     <div id="users-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">👤 User Management</h2>
+                            <h2 class="content-title">User Management</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-info" onclick="showAddUserModal()">
-                                    ➕ Add PA User
+                                    Add PA User
                                 </button>
                             </div>
                         </div>
@@ -1392,17 +1392,17 @@
             if (currentUser.role === 'MCA') {
                 // MCA sees everything
                 tabsNav.innerHTML = `
-                    <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
-                    <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
-                    <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
-                    <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
-                    <button class="tab" onclick="showTab('users')">👤 User Management</button>
+                    <button class="tab active" onclick="showTab('issues')">Issues</button>
+                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
+                    <button class="tab" onclick="showTab('constituents')">Constituents</button>
+                    <button class="tab" onclick="showTab('announcements')">Announcements</button>
+                    <button class="tab" onclick="showTab('users')">User Management</button>
                 `;
             } else {
                 // PA sees limited tabs
                 tabsNav.innerHTML = `
-                    <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
-                    <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
+                    <button class="tab active" onclick="showTab('issues')">Issues</button>
+                    <button class="tab" onclick="showTab('announcements')">Announcements</button>
                 `;
             }
         }
@@ -1439,28 +1439,28 @@
                     statsGrid.innerHTML = `
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">👥</span>
+                                <span class="stat-card-icon">C</span>
                             </div>
                             <div class="stat-card-value">${data.constituents.total}</div>
                             <div class="stat-card-label">Total Constituents</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">📋</span>
+                                <span class="stat-card-icon">I</span>
                             </div>
                             <div class="stat-card-value">${data.issues.total}</div>
                             <div class="stat-card-label">Reported Issues</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">🎓</span>
+                                <span class="stat-card-icon">B</span>
                             </div>
                             <div class="stat-card-value">${data.bursaries.total}</div>
                             <div class="stat-card-label">Bursary Applications</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">📢</span>
+                                <span class="stat-card-icon">A</span>
                             </div>
                             <div class="stat-card-value">${data.announcements.total}</div>
                             <div class="stat-card-label">Active Announcements</div>
@@ -1470,14 +1470,14 @@
                     statsGrid.innerHTML = `
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">📋</span>
+                                <span class="stat-card-icon">I</span>
                             </div>
                             <div class="stat-card-value">${data.issues.total}</div>
                             <div class="stat-card-label">Reported Issues</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
-                                <span class="stat-card-icon">📢</span>
+                                <span class="stat-card-icon">A</span>
                             </div>
                             <div class="stat-card-value">${data.announcements.total}</div>
                             <div class="stat-card-label">Active Announcements</div>
@@ -1501,7 +1501,7 @@
                 const issues = await res.json();
                 
                 if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">No issues reported yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
                     return;
                 }
                 
@@ -1532,7 +1532,7 @@
                 const bursaries = await res.json();
                 
                 if (bursaries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-icon">🎓</div><div class="empty-state-text">No bursary applications yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-text">No bursary applications yet</div></td></tr>';
                     return;
                 }
                 
@@ -1564,7 +1564,7 @@
                 const constituents = await res.json();
                 
                 if (constituents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No constituents registered yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-text">No constituents registered yet</div></td></tr>';
                     return;
                 }
                 
@@ -1595,7 +1595,7 @@
                 const announcements = await res.json();
                 
                 if (announcements.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><div class="empty-state-icon">📢</div><div class="empty-state-text">No announcements yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><div class="empty-state-text">No announcements yet</div></td></tr>';
                     return;
                 }
                 
@@ -1669,7 +1669,7 @@
                 const users = await res.json();
                 
                 if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-text">No users yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-state-text">No users yet</div></td></tr>';
                     return;
                 }
                 
@@ -1680,7 +1680,7 @@
                         <td><span class="badge ${u.role === 'MCA' ? 'approved' : 'pending'}">${u.role}</span></td>
                         <td>${new Date(u.created_at).toLocaleString()}</td>
                         <td>
-                            ${u._id !== currentUser.id ? `<button class="btn-sm btn-danger" onclick="deleteUser('${u._id}')">🗑️ Delete</button>` : '<span style="color: #9ca3af;">Current User</span>'}
+                            ${u._id !== currentUser.id ? `<button class="btn-sm btn-danger" onclick="deleteUser('${u._id}')">Delete</button>` : '<span style="color: #9ca3af;">Current User</span>'}
                         </td>
                     </tr>
                 `).join('');
