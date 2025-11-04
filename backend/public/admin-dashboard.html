@@ -243,10 +243,21 @@
         }
 
         .login-logo-icon {
-            font-size: 64px;
-            margin-bottom: 15px;
-            display: inline-block;
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%);
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: -1px;
             animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         }
 
         @keyframes pulse {
@@ -425,7 +436,17 @@
         }
 
         .navbar-brand-icon {
-            font-size: 32px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.9) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: #667eea;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
         .navbar-brand-text h1 {
@@ -956,7 +977,7 @@
         
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-logo-icon"></div>
+                <div class="login-logo-icon">VK</div>
                 <h1>VOO Kyamatu Ward</h1>
                 <p>Admin Dashboard Login</p>
             </div>
@@ -985,7 +1006,7 @@
         <nav class="navbar">
             <div class="navbar-content">
                 <div class="navbar-brand">
-                    <span class="navbar-brand-icon"></span>
+                    <span class="navbar-brand-icon">VK</span>
                     <div class="navbar-brand-text">
                         <h1>VOO Kyamatu Ward</h1>
                         <p>Admin Dashboard</p>
@@ -997,7 +1018,7 @@
                         <span class="user-info-name" id="userFullName">Loading...</span>
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
-                    <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
                 </div>
             </div>
         </nav>
