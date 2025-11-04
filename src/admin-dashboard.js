@@ -1,0 +1,809 @@
+const express = require("express");
+const path = require("path");
+const { MongoClient } = require("mongodb");
+
+// Load environment variables
+require("dotenv").config();
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// CORS - allow frontend to connect
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
+// MongoDB connection
+let db;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+async function connectDB() {
+  if (db) return db;
+  try {
+    const client = await MongoClient.connect(MONGO_URI);
+    db = client.db();
+    console.log("✅ Connected to MongoDB");
+    return db;
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err.message);
+    return null;
+  }
+}
+
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ 
+    ok: true, 
+    service: "voo-admin-dashboard", 
+    ts: new Date().toISOString(),
+    db: db ? "connected" : "disconnected"
+  });
+});
+
+// ============================================
+// ADMIN API ROUTES
+// ============================================
+
+// Get all reported issues
+app.get("/api/admin/issues", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const issues = await database.collection("issues")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    res.json(issues);
+  } catch (err) {
+    console.error("Error fetching issues:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all bursary applications
+app.get("/api/admin/bursaries", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const bursaries = await database.collection("bursary_applications")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    res.json(bursaries);
+  } catch (err) {
+    console.error("Error fetching bursaries:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all constituents
+app.get("/api/admin/constituents", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const constituents = await database.collection("constituents")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    res.json(constituents);
+  } catch (err) {
+    console.error("Error fetching constituents:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all announcements
+app.get("/api/admin/announcements", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const announcements = await database.collection("announcements")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    res.json(announcements);
+  } catch (err) {
+    console.error("Error fetching announcements:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update issue status
+app.patch("/api/admin/issues/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const result = await database.collection("issues").updateOne(
+      { ticket: id },
+      { $set: { status, updated_at: new Date() } }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
+    
+    res.json({ success: true, message: `Issue ${id} updated to ${status}` });
+  } catch (err) {
+    console.error("Error updating issue:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update bursary status
+app.patch("/api/admin/bursaries/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_notes } = req.body;
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const updateData = { 
+      status, 
+      updated_at: new Date(),
+      reviewed_at: new Date()
+    };
+    
+    if (admin_notes) {
+      updateData.admin_notes = admin_notes;
+    }
+    
+    const result = await database.collection("bursary_applications").updateOne(
+      { ref_code: id },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Bursary application not found" });
+    }
+    
+    res.json({ success: true, message: `Bursary ${id} updated to ${status}` });
+  } catch (err) {
+    console.error("Error updating bursary:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create announcement
+app.post("/api/admin/announcements", async (req, res) => {
+  try {
+    const { title, body } = req.body;
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const announcement = {
+      title,
+      body,
+      created_at: new Date()
+    };
+    
+    const result = await database.collection("announcements").insertOne(announcement);
+    
+    res.status(201).json({ 
+      success: true, 
+      id: result.insertedId,
+      announcement 
+    });
+  } catch (err) {
+    console.error("Error creating announcement:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete announcement
+app.delete("/api/admin/announcements/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const { ObjectId } = require("mongodb");
+    const result = await database.collection("announcements").deleteOne({
+      _id: new ObjectId(id)
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+    
+    res.json({ success: true, message: "Announcement deleted" });
+  } catch (err) {
+    console.error("Error deleting announcement:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Dashboard statistics
+app.get("/api/admin/stats", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const [
+      totalConstituents,
+      totalIssues,
+      openIssues,
+      totalBursaries,
+      pendingBursaries,
+      totalAnnouncements
+    ] = await Promise.all([
+      database.collection("constituents").countDocuments(),
+      database.collection("issues").countDocuments(),
+      database.collection("issues").countDocuments({ status: "open" }),
+      database.collection("bursary_applications").countDocuments(),
+      database.collection("bursary_applications").countDocuments({ status: "Pending" }),
+      database.collection("announcements").countDocuments()
+    ]);
+    
+    res.json({
+      constituents: {
+        total: totalConstituents
+      },
+      issues: {
+        total: totalIssues,
+        open: openIssues,
+        inProgress: totalIssues - openIssues
+      },
+      bursaries: {
+        total: totalBursaries,
+        pending: pendingBursaries,
+        processed: totalBursaries - pendingBursaries
+      },
+      announcements: {
+        total: totalAnnouncements
+      }
+    });
+  } catch (err) {
+    console.error("Error fetching stats:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export issues as CSV
+app.get("/api/admin/export/issues", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const issues = await database.collection("issues")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    let csv = "Ticket,Category,Message,Phone,Status,Created At\n";
+    issues.forEach(issue => {
+      csv += `"${issue.ticket}","${issue.category}","${issue.message}","${issue.phone_number}","${issue.status}","${issue.created_at}"\n`;
+    });
+    
+    res.header("Content-Type", "text/csv");
+    res.header("Content-Disposition", "attachment; filename=issues.csv");
+    res.send(csv);
+  } catch (err) {
+    console.error("Error exporting issues:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export bursaries as CSV
+app.get("/api/admin/export/bursaries", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const bursaries = await database.collection("bursary_applications")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    let csv = "Ref Code,Student Name,School,Amount,Status,Phone,Created At\n";
+    bursaries.forEach(b => {
+      csv += `"${b.ref_code}","${b.student_name}","${b.institution}","${b.amount_requested}","${b.status}","${b.phone_number}","${b.created_at}"\n`;
+    });
+    
+    res.header("Content-Type", "text/csv");
+    res.header("Content-Disposition", "attachment; filename=bursaries.csv");
+    res.send(csv);
+  } catch (err) {
+    console.error("Error exporting bursaries:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export constituents as CSV
+app.get("/api/admin/export/constituents", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const constituents = await database.collection("constituents")
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+    
+    let csv = "Phone,National ID,Full Name,Location,Village,Created At\n";
+    constituents.forEach(c => {
+      csv += `"${c.phone_number}","${c.national_id}","${c.full_name}","${c.location}","${c.village}","${c.created_at}"\n`;
+    });
+    
+    res.header("Content-Type", "text/csv");
+    res.header("Content-Disposition", "attachment; filename=constituents.csv");
+    res.send(csv);
+  } catch (err) {
+    console.error("Error exporting constituents:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Serve admin dashboard HTML (simple frontend)
+app.get("/", (req, res) => {
+  res.send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOO Ward Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { font-size: 2em; margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-card h3 { color: #667eea; font-size: 2.5em; margin-bottom: 5px; }
+        .stat-card p { color: #666; font-size: 0.9em; }
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0 30px;
+        }
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        .tab:hover { color: #667eea; }
+        .content { padding: 30px; }
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th {
+            background: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+        tr:hover { background: #f8f9fa; }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .badge.open { background: #ffc107; color: #000; }
+        .badge.in_progress { background: #17a2b8; color: white; }
+        .badge.resolved { background: #28a745; color: white; }
+        .badge.pending { background: #ffc107; color: #000; }
+        .badge.approved { background: #28a745; color: white; }
+        .badge.rejected { background: #dc3545; color: white; }
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        .export-btn:hover { background: #218838; }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.2em;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ VOO Kyamatu Ward Admin Dashboard</h1>
+            <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <h3 id="stat-constituents">-</h3>
+                <p>Total Constituents</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-issues">-</h3>
+                <p>Reported Issues</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-bursaries">-</h3>
+                <p>Bursary Applications</p>
+            </div>
+            <div class="stat-card">
+                <h3 id="stat-announcements">-</h3>
+                <p>Active Announcements</p>
+            </div>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
+            <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
+            <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
+            <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
+        </div>
+        
+        <div class="content">
+            <div id="issues-content">
+                <button class="export-btn" onclick="exportData('issues')">📥 Export Issues CSV</button>
+                <div class="table-container">
+                    <table id="issues-table">
+                        <thead>
+                            <tr>
+                                <th>Ticket</th>
+                                <th>Category</th>
+                                <th>Message</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issues-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="bursaries-content" style="display:none;">
+                <button class="export-btn" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
+                <div class="table-container">
+                    <table id="bursaries-table">
+                        <thead>
+                            <tr>
+                                <th>Ref Code</th>
+                                <th>Student Name</th>
+                                <th>School/Institution</th>
+                                <th>Amount Requested</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bursaries-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="constituents-content" style="display:none;">
+                <button class="export-btn" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
+                <div class="table-container">
+                    <table id="constituents-table">
+                        <thead>
+                            <tr>
+                                <th>Phone Number</th>
+                                <th>National ID</th>
+                                <th>Full Name</th>
+                                <th>Location</th>
+                                <th>Village</th>
+                                <th>Registered At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="constituents-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="announcements-content" style="display:none;">
+                <div class="table-container">
+                    <table id="announcements-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Body</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody id="announcements-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const res = await fetch(API_BASE + '/api/admin/stats');
+                const data = await res.json();
+                document.getElementById('stat-constituents').textContent = data.constituents.total;
+                document.getElementById('stat-issues').textContent = data.issues.total;
+                document.getElementById('stat-bursaries').textContent = data.bursaries.total;
+                document.getElementById('stat-announcements').textContent = data.announcements.total;
+            } catch (err) {
+                console.error('Error loading stats:', err);
+            }
+        }
+        
+        // Load issues
+        async function loadIssues() {
+            const tbody = document.getElementById('issues-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/admin/issues');
+                const issues = await res.json();
+                
+                if (issues.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No issues reported yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = issues.map(issue => \`
+                    <tr>
+                        <td><strong>\${issue.ticket}</strong></td>
+                        <td>\${issue.category}</td>
+                        <td>\${issue.message}</td>
+                        <td>\${issue.phone_number}</td>
+                        <td><span class="badge \${issue.status}">\${issue.status}</span></td>
+                        <td>\${new Date(issue.created_at).toLocaleString()}</td>
+                    </tr>
+                \`).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading issues: ' + err.message + '</td></tr>';
+            }
+        }
+        
+        // Load bursaries
+        async function loadBursaries() {
+            const tbody = document.getElementById('bursaries-tbody');
+            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/admin/bursaries');
+                const bursaries = await res.json();
+                
+                if (bursaries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty">No bursary applications yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = bursaries.map(b => \`
+                    <tr>
+                        <td><strong>\${b.ref_code}</strong></td>
+                        <td>\${b.student_name}</td>
+                        <td>\${b.institution}</td>
+                        <td>KES \${b.amount_requested.toLocaleString()}</td>
+                        <td>\${b.phone_number}</td>
+                        <td><span class="badge \${b.status.toLowerCase()}">\${b.status}</span></td>
+                        <td>\${new Date(b.created_at).toLocaleString()}</td>
+                    </tr>
+                \`).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading bursaries: ' + err.message + '</td></tr>';
+            }
+        }
+        
+        // Load constituents
+        async function loadConstituents() {
+            const tbody = document.getElementById('constituents-tbody');
+            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/admin/constituents');
+                const constituents = await res.json();
+                
+                if (constituents.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No constituents registered yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = constituents.map(c => \`
+                    <tr>
+                        <td>\${c.phone_number}</td>
+                        <td>\${c.national_id}</td>
+                        <td><strong>\${c.full_name}</strong></td>
+                        <td>\${c.location}</td>
+                        <td>\${c.village}</td>
+                        <td>\${new Date(c.created_at).toLocaleString()}</td>
+                    </tr>
+                \`).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading constituents: ' + err.message + '</td></tr>';
+            }
+        }
+        
+        // Load announcements
+        async function loadAnnouncements() {
+            const tbody = document.getElementById('announcements-tbody');
+            tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
+            
+            try {
+                const res = await fetch(API_BASE + '/api/admin/announcements');
+                const announcements = await res.json();
+                
+                if (announcements.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No announcements yet</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = announcements.map(a => \`
+                    <tr>
+                        <td><strong>\${a.title}</strong></td>
+                        <td>\${a.body}</td>
+                        <td>\${new Date(a.created_at).toLocaleString()}</td>
+                    </tr>
+                \`).join('');
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="3" class="error">Error loading announcements: ' + err.message + '</td></tr>';
+            }
+        }
+        
+        // Show tab
+        function showTab(tab) {
+            // Hide all content
+            document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
+            
+            // Remove active class from tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected content
+            document.getElementById(tab + '-content').style.display = 'block';
+            
+            // Add active class to tab
+            event.target.classList.add('active');
+            
+            // Load data for selected tab
+            if (tab === 'issues') loadIssues();
+            else if (tab === 'bursaries') loadBursaries();
+            else if (tab === 'constituents') loadConstituents();
+            else if (tab === 'announcements') loadAnnouncements();
+        }
+        
+        // Export data
+        function exportData(type) {
+            window.location.href = API_BASE + '/api/admin/export/' + type;
+        }
+        
+        // Initialize
+        loadStats();
+        loadIssues();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            loadStats();
+            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
+            if (activeTab.includes('issues')) loadIssues();
+            else if (activeTab.includes('bursaries')) loadBursaries();
+            else if (activeTab.includes('constituents')) loadConstituents();
+            else if (activeTab.includes('announcements')) loadAnnouncements();
+        }, 30000);
+    </script>
+</body>
+</html>
+  `);
+});
+
+// Start server
+const PORT = process.env.ADMIN_PORT || process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`\n🏛️  VOO WARD ADMIN DASHBOARD`);
+  console.log(`📊 Dashboard: http://localhost:${PORT}`);
+  console.log(`❤️  Health: http://localhost:${PORT}/health`);
+  console.log(`\n✅ Ready to view issues, bursaries & constituents!\n`);
+});
