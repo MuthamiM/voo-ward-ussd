@@ -657,26 +657,48 @@ app.get("/api/auth/users", requireAuth, requireMCA, (req, res) => {
 // Create announcement
 app.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
-    const { title, body } = req.body;
+    const { title, body, status } = req.body;
     if (!title || !body) {
       return res.status(400).json({ error: "Title and body required" });
     }
-    
     const db = await getDbConnection();
     if (!db) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
     const announcement = {
       title,
       body,
+      status: status || 'active',
       created_by: req.user.fullName,
       created_by_role: req.user.role,
       createdAt: new Date()
     };
-    
     await db.collection("announcements").insertOne(announcement);
     res.json({ success: true, message: "Announcement created" });
+// Update announcement status
+app.patch("/api/admin/announcements/:id/status", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!['active', 'archived', 'hidden'].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+    const db = await getDbConnection();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+    const { ObjectId } = require("mongodb");
+    const result = await db.collection("announcements").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status: status, updatedAt: new Date() } }
+    );
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Announcement not found" });
+    }
+    res.json({ success: true, status: status });
+  } catch (err) {
+    console.error("Update announcement status error:", err);
+    res.status(500).json({ error: "Failed to update status" });
+  }
+});
   } catch (err) {
     console.error("Create announcement error:", err);
     res.status(500).json({ error: err.message });
