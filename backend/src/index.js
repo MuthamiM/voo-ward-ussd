@@ -70,7 +70,8 @@ async function logSystemError(errorType, errorMessage, errorStack, endpoint, use
 }
 
 // Simple session storage
-const sessions = new Map();
+// Persistent session storage in MongoDB
+const SESSION_TTL_DAYS = 7;
 
 // Helper functions
 function hashPassword(password) {
@@ -84,11 +85,19 @@ function generateSessionToken() {
 // Middleware: Verify authentication
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  if (!token || !sessions.has(token)) {
+  if (!token) {
     return res.status(401).json({ error: "Authentication required" });
   }
-  req.user = sessions.get(token).user;
-  next();
+  getDbConnection().then(db => {
+    if (!db) return res.status(503).json({ error: "Database unavailable" });
+    db.collection('sessions').findOne({ token }).then(session => {
+      if (!session || !session.user || new Date() > new Date(session.expiresAt)) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
+      req.user = session.user;
+      next();
+    }).catch(() => res.status(500).json({ error: "Session check failed" }));
+  });
 }
 
 // Middleware: Verify MCA role
@@ -184,9 +193,14 @@ app.post("/api/auth/login", async (req, res) => {
       fullName: user.fullName,
       role: user.role
     };
-
-    sessions.set(token, { user: userData, createdAt: new Date() });
-
+    const db = getDb();
+    const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+    await db.collection('sessions').insertOne({
+      token,
+      user: userData,
+      createdAt: new Date(),
+      expiresAt
+    });
     return res.json({ success: true, token, user: userData });
   } catch (err) {
     await logSystemError('LOGIN_ERROR', err.message, err.stack, '/api/auth/login', username);
@@ -197,8 +211,12 @@ app.post("/api/auth/login", async (req, res) => {
 
 app.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  sessions.delete(token);
-  res.json({ success: true });
+  getDbConnection().then(db => {
+    if (!db) return res.status(503).json({ error: "Database unavailable" });
+    db.collection('sessions').deleteOne({ token }).then(() => {
+      res.json({ success: true });
+    }).catch(() => res.status(500).json({ error: "Logout failed" }));
+  });
 });
 
 // PUBLIC SEED ENDPOINT - Seeds initial users (no auth required, runs once)
