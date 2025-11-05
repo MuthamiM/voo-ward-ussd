@@ -1750,6 +1750,20 @@
                                 </button>
                             </div>
                         </div>
+                        <div class="announcements-filters" style="margin-bottom:18px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                            <input id="announcementFilterTitle" class="form-input" style="max-width:180px;" placeholder="Search title..." oninput="loadAnnouncements()">
+                            <select id="announcementFilterStatus" class="form-input" style="max-width:140px;" onchange="loadAnnouncements()">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="archived">Archived</option>
+                                <option value="hidden">Hidden</option>
+                            </select>
+                            <label style="font-size:13px;color:#bdb7e5;">From:</label>
+                            <input id="announcementFilterFrom" type="date" class="form-input" style="max-width:140px;" onchange="loadAnnouncements()">
+                            <label style="font-size:13px;color:#bdb7e5;">To:</label>
+                            <input id="announcementFilterTo" type="date" class="form-input" style="max-width:140px;" onchange="loadAnnouncements()">
+                            <button class="btn-sm btn-secondary" onclick="clearAnnouncementFilters()" type="button">Clear</button>
+                        </div>
                         <div class="announcements-list" id="announcements-list"></div>
                     </div>
 
@@ -2181,14 +2195,27 @@
         // ========================================
         // ANNOUNCEMENTS
         // ========================================
+
         async function loadAnnouncements() {
             const list = document.getElementById('announcements-list');
             list.innerHTML = '<div class="loading-state"><div class="spinner"></div><div>Loading announcements...</div></div>';
+            // Get filter values
+            const title = document.getElementById('announcementFilterTitle')?.value || '';
+            const status = document.getElementById('announcementFilterStatus')?.value || '';
+            const dateFrom = document.getElementById('announcementFilterFrom')?.value || '';
+            const dateTo = document.getElementById('announcementFilterTo')?.value || '';
+            // Build query string
+            const params = [];
+            if (title) params.push('title=' + encodeURIComponent(title));
+            if (status) params.push('status=' + encodeURIComponent(status));
+            if (dateFrom) params.push('dateFrom=' + encodeURIComponent(dateFrom));
+            if (dateTo) params.push('dateTo=' + encodeURIComponent(dateTo));
+            const query = params.length ? ('?' + params.join('&')) : '';
             try {
-                const res = await apiRequest('/api/admin/announcements');
+                const res = await apiRequest('/api/admin/announcements' + query);
                 const announcements = await res.json();
                 if (announcements.length === 0) {
-                    list.innerHTML = '<div class="empty-state"><div class="empty-state-text">No announcements yet</div></div>';
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-text">No announcements found</div></div>';
                     return;
                 }
                 list.innerHTML = announcements.map((a, i) => {
@@ -2243,24 +2270,17 @@
                         });
                     });
                 }, 100);
-        async function updateAnnouncementStatus(announcementId, newStatus) {
-            try {
-                const res = await apiRequest(`/api/admin/announcements/${announcementId}/status`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ status: newStatus })
-                });
-                if (!res.ok) {
-                    throw new Error('Failed to update status');
-                }
-                loadAnnouncements();
-                loadStats && loadStats();
-            } catch (err) {
-                alert('Error updating announcement status: ' + err.message);
-            }
-        }
             } catch (err) {
                 list.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></div>`;
             }
+        }
+
+        function clearAnnouncementFilters() {
+            document.getElementById('announcementFilterTitle').value = '';
+            document.getElementById('announcementFilterStatus').value = '';
+            document.getElementById('announcementFilterFrom').value = '';
+            document.getElementById('announcementFilterTo').value = '';
+            loadAnnouncements();
         }
 
         function showCreateAnnouncementModal() {

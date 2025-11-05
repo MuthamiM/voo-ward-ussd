@@ -4,6 +4,7 @@ const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const crypto = require("crypto");
+const bcrypt = require("bcrypt");
 
 const app = express();
 
@@ -49,10 +50,8 @@ function getDb() {
 async function logSystemError(errorType, errorMessage, errorStack, endpoint, userId = null) {
   try {
     if (!isDbConnected) return;
-    
     const db = getDb();
     const errorsCollection = db.collection('system_errors');
-    
     await errorsCollection.insertOne({
       type: errorType,
       message: errorMessage,
@@ -62,10 +61,25 @@ async function logSystemError(errorType, errorMessage, errorStack, endpoint, use
       timestamp: new Date(),
       resolved: false
     });
-    
     console.error(`🚨 SYSTEM ERROR LOGGED: ${errorType} - ${errorMessage}`);
   } catch (err) {
     console.error('Failed to log error to database:', err.message);
+  }
+}
+
+// Audit logging system
+async function logAudit(action, user, details = {}) {
+  try {
+    if (!isDbConnected) return;
+    const db = getDb();
+    await db.collection('audit_logs').insertOne({
+      action,
+      user: user ? { id: user.id, username: user.username, role: user.role } : null,
+      details,
+      timestamp: new Date()
+    });
+  } catch (err) {
+    console.error('Failed to log audit event:', err.message);
   }
 }
 
@@ -75,6 +89,7 @@ const SESSION_TTL_DAYS = 7;
 
 // Helper functions
 function hashPassword(password) {
+  // Deprecated: use bcrypt instead
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
@@ -85,6 +100,8 @@ function generateSessionToken() {
 // Middleware: Verify authentication
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
+  const userAgent = req.headers['user-agent'] || '';
+  const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
   if (!token) {
     return res.status(401).json({ error: "Authentication required" });
   }
@@ -93,6 +110,10 @@ function requireAuth(req, res, next) {
     db.collection('sessions').findOne({ token }).then(session => {
       if (!session || !session.user || new Date() > new Date(session.expiresAt)) {
         return res.status(401).json({ error: "Authentication required" });
+      }
+      // Check user agent and IP for hijack prevention
+      if (session.userAgent !== userAgent || session.ip !== ip) {
+        return res.status(401).json({ error: "Session hijack detected" });
       }
       req.user = session.user;
       next();
@@ -130,11 +151,9 @@ const LOGIN_BAN_DURATION_HOURS = 24;
 
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
-
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password required" });
   }
-
   try {
     // Check MongoDB connection
     if (!isDbConnected) {
@@ -142,11 +161,9 @@ app.post("/api/auth/login", async (req, res) => {
       console.error('❌ Database not connected during login attempt');
       return res.status(503).json({ error: "Database connection unavailable" });
     }
-
     const db = getDb();
     const usersCollection = db.collection('users');
     const bansCollection = db.collection('login_bans');
-
     // Check for active ban
     const banDoc = await bansCollection.findOne({ _id: 'global' });
     const now = new Date();
@@ -154,12 +171,21 @@ app.post("/api/auth/login", async (req, res) => {
       const banEnd = new Date(banDoc.banUntil).toLocaleString();
       return res.status(429).json({ error: `Login temporarily disabled due to repeated failed attempts. Try again after ${banEnd}` });
     }
-
     // Find user in MongoDB
     const user = await usersCollection.findOne({ username: username.toLowerCase() });
-
-    // Check password
-    if (!user || user.password !== password) {
+    let valid = false;
+    if (user) {
+      if (user.password && user.password.startsWith('$2b$')) {
+        // bcrypt hash
+        valid = await bcrypt.compare(password, user.password);
+      } else if (user.password === password) {
+        // Plain text (legacy) - migrate to bcrypt
+        const hash = await bcrypt.hash(password, 10);
+        await usersCollection.updateOne({ _id: user._id }, { $set: { password: hash } });
+        valid = true;
+      }
+    }
+    if (!user || !valid) {
       // Increment failed attempts
       const update = await bansCollection.findOneAndUpdate(
         { _id: 'global' },
@@ -178,13 +204,11 @@ app.post("/api/auth/login", async (req, res) => {
       }
       return res.status(401).json({ error: "Invalid username or password" });
     }
-
     // On successful login, reset failed attempts and ban
     await bansCollection.updateOne(
       { _id: 'global' },
       { $set: { failedAttempts: 0 }, $unset: { banUntil: "" } }
     );
-
     // Generate token
     const token = generateSessionToken();
     const userData = {
@@ -193,14 +217,20 @@ app.post("/api/auth/login", async (req, res) => {
       fullName: user.fullName,
       role: user.role
     };
-    const db = getDb();
+    const db2 = getDb();
     const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
-    await db.collection('sessions').insertOne({
+    const userAgent = req.headers['user-agent'] || '';
+    const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || '';
+    await db2.collection('sessions').insertOne({
       token,
       user: userData,
       createdAt: new Date(),
-      expiresAt
+      expiresAt,
+      userAgent,
+      ip
     });
+    // Audit log: login
+    await logAudit('login', userData, { ip, userAgent });
     return res.json({ success: true, token, user: userData });
   } catch (err) {
     await logSystemError('LOGIN_ERROR', err.message, err.stack, '/api/auth/login', username);
@@ -209,14 +239,18 @@ app.post("/api/auth/login", async (req, res) => {
   }
 });
 
-app.post("/api/auth/logout", requireAuth, (req, res) => {
+app.post("/api/auth/logout", requireAuth, async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  getDbConnection().then(db => {
+  try {
+    const db = await getDbConnection();
     if (!db) return res.status(503).json({ error: "Database unavailable" });
-    db.collection('sessions').deleteOne({ token }).then(() => {
-      res.json({ success: true });
-    }).catch(() => res.status(500).json({ error: "Logout failed" }));
-  });
+    await db.collection('sessions').deleteOne({ token });
+    // Audit log: logout
+    await logAudit('logout', req.user, { token });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Logout failed" });
+  }
 });
 
 // PUBLIC SEED ENDPOINT - Seeds initial users (no auth required, runs once)
@@ -393,43 +427,38 @@ app.post("/api/auth/users", requireAuth, async (req, res) => {
     if (req.user.role !== 'MCA') {
       return res.status(403).json({ error: "Access denied. MCA only." });
     }
-    
     const { username, password, fullName, role } = req.body;
-    
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ error: "All fields required" });
     }
-    
     if (role !== 'PA' && role !== 'MCA') {
       return res.status(400).json({ error: "Role must be PA or MCA" });
     }
-    
     if (!isDbConnected) {
       return res.status(503).json({ error: "Database connection unavailable" });
     }
-    
-    const db = getDb();
-    
+    const dbUsers = getDb();
     // Check if username exists
-    const existing = await db.collection('users').findOne({ 
+    const existing = await dbUsers.collection('users').findOne({ 
       username: username.toLowerCase() 
     });
-    
     if (existing) {
       return res.status(400).json({ error: "Username already exists" });
     }
-    
     // Create user
+    const hash = await bcrypt.hash(password, 10);
     const newUser = {
       username: username.toLowerCase(),
-      password, // Plain text for now
+      password: hash,
       fullName,
       role,
       createdAt: new Date()
     };
-    
-    const result = await db.collection('users').insertOne(newUser);
-    
+    const result = await dbUsers.collection('users').insertOne(newUser);
+    // Invalidate all sessions for this user (should be none, but for safety)
+    await dbUsers.collection('sessions').deleteMany({ 'user.username': newUser.username });
+    // Audit log: create user
+    await logAudit('create_user', req.user, { createdUser: newUser.username, role });
     res.json({ 
       success: true, 
       user: { 
@@ -440,6 +469,28 @@ app.post("/api/auth/users", requireAuth, async (req, res) => {
         createdAt: newUser.createdAt
       } 
     });
+// Change password (invalidate all sessions for user)
+app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: "Password too short" });
+    }
+    const dbPw = getDb();
+    const hash = await bcrypt.hash(newPassword, 10);
+    await dbPw.collection('users').updateOne(
+      { username: req.user.username },
+      { $set: { password: hash } }
+    );
+    // Invalidate all sessions for this user
+    await dbPw.collection('sessions').deleteMany({ 'user.username': req.user.username });
+    // Audit log: change password
+    await logAudit('change_password', req.user, {});
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to change password" });
+  }
+});
   } catch (err) {
     console.error('Error creating user:', err);
     res.status(500).json({ error: "Failed to create user" });
@@ -644,17 +695,33 @@ app.get("/api/admin/constituents", requireAuth, async (req, res) => {
   }
 });
 
+// Announcements with filtering & search
 app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const db = await getDbConnection();
     if (!db) return res.json([]);
-    
+    const { title, status, dateFrom, dateTo } = req.query;
+    const filter = {};
+    if (title) {
+      filter.title = { $regex: title, $options: 'i' };
+    }
+    if (status) {
+      filter.status = status;
+    }
+    if (dateFrom || dateTo) {
+      filter.createdAt = {};
+      if (dateFrom) {
+        filter.createdAt.$gte = new Date(dateFrom);
+      }
+      if (dateTo) {
+        filter.createdAt.$lte = new Date(dateTo);
+      }
+    }
     const announcements = await db.collection("announcements")
-      .find({})
+      .find(filter)
       .sort({ createdAt: -1 })
       .limit(100)
       .toArray();
-    
     res.json(announcements);
   } catch (err) {
     console.error("Announcements error:", err);
@@ -692,6 +759,8 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
       createdAt: new Date()
     };
     await db.collection("announcements").insertOne(announcement);
+    // Audit log: create announcement
+    await logAudit('create_announcement', req.user, { title });
     res.json({ success: true, message: "Announcement created" });
 // Update announcement status
 app.patch("/api/admin/announcements/:id/status", requireAuth, async (req, res) => {
@@ -724,10 +793,68 @@ app.patch("/api/admin/announcements/:id/status", requireAuth, async (req, res) =
 });
 
 // Export endpoints
-app.get("/api/admin/export/:type", requireAuth, (req, res) => {
+// Real CSV export for issues, announcements, bursaries
+app.get("/api/admin/export/:type", requireAuth, async (req, res) => {
+  const { type } = req.params;
+  const db = await getDbConnection();
+  if (!db) {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}.csv"`);
+    return res.send('No data available\n');
+  }
+  let data = [];
+  let fields = [];
+  if (type === 'issues') {
+    data = await db.collection('issues').find({}).sort({ createdAt: -1 }).limit(1000).toArray();
+    fields = [
+      { key: 'ticketNo', label: 'Ticket' },
+      { key: 'title', label: 'Title' },
+      { key: 'description', label: 'Description' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'reporterName', label: 'Reporter' },
+      { key: 'location', label: 'Location' },
+      { key: 'status', label: 'Status' },
+      { key: 'createdAt', label: 'Created At' }
+    ];
+  } else if (type === 'announcements') {
+    data = await db.collection('announcements').find({}).sort({ createdAt: -1 }).limit(1000).toArray();
+    fields = [
+      { key: 'title', label: 'Title' },
+      { key: 'body', label: 'Body' },
+      { key: 'status', label: 'Status' },
+      { key: 'created_by', label: 'Created By' },
+      { key: 'created_by_role', label: 'Role' },
+      { key: 'createdAt', label: 'Created At' }
+    ];
+  } else if (type === 'bursaries') {
+    data = await db.collection('bursary_applications').find({}).sort({ createdAt: -1 }).limit(1000).toArray();
+    fields = [
+      { key: 'ref', label: 'Ref Code' },
+      { key: 'fullName', label: 'Student Name' },
+      { key: 'institution', label: 'Institution' },
+      { key: 'feeBalance', label: 'Amount Requested' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'status', label: 'Status' },
+      { key: 'createdAt', label: 'Created At' }
+    ];
+  } else {
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${type}.csv"`);
+    return res.send('No data available\n');
+  }
+  // Format as CSV
+  function escapeCsv(val) {
+    if (val == null) return '';
+    const s = String(val).replace(/"/g, '""');
+    if (s.search(/[",\n]/) >= 0) return `"${s}"`;
+    return s;
+  }
+  const header = fields.map(f => f.label).join(',') + '\n';
+  const rows = data.map(row => fields.map(f => escapeCsv(row[f.key] instanceof Date ? row[f.key].toISOString() : row[f.key])).join(',')).join('\n');
+  const csv = header + rows + '\n';
   res.setHeader('Content-Type', 'text/csv');
-  res.setHeader('Content-Disposition', `attachment; filename="${req.params.type}.csv"`);
-  res.send('No data available\n');
+  res.setHeader('Content-Disposition', `attachment; filename="${type}.csv"`);
+  res.send(csv);
 });
 
 // --- Serve admin dashboard on root path ---
