@@ -495,16 +495,7 @@
             display: block;
         }
 
-        .user-info-role {
-            font-size: 12px;
-            color: var(--gray-600);
-            display: inline-block;
-            padding: 3px 10px;
-            background: var(--gray-100);
-            border-radius: 6px;
-            margin-top: 4px;
-            font-weight: 500;
-        }
+
 
         .btn-logout {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
@@ -523,6 +514,15 @@
             background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+            animation: logoutWobble 0.5s;
+        }
+        @keyframes logoutWobble {
+            0% { transform: scale(1) rotate(0deg); }
+            20% { transform: scale(1.1) rotate(-5deg); }
+            40% { transform: scale(0.95) rotate(5deg); }
+            60% { transform: scale(1.05) rotate(-3deg); }
+            80% { transform: scale(0.98) rotate(2deg); }
+            100% { transform: scale(1) rotate(0deg); }
         }
 
         .btn-logout:active {
@@ -1401,7 +1401,6 @@
                 <div class="navbar-user">
                     <div class="user-info">
                         <span class="user-info-name" id="userFullName">Loading...</span>
-                        <span class="user-info-role" id="userRole">...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()">Logout</button>
                 </div>
@@ -1610,7 +1609,14 @@
                 <form id="addAnnouncementForm">
                     <div class="form-group">
                         <label for="announcementTitle">Title</label>
-                        <input type="text" id="announcementTitle" class="form-input" required style="color: #1f2937;">
+                        <select id="announcementTitle" class="form-input" required style="color: #1f2937;">
+                            <option value="">Select Announcement Type</option>
+                            <option value="Lack of Water">Lack of Water</option>
+                            <option value="Damaged Road">Damaged Road</option>
+                            <option value="Lack of Textbooks">Lack of Textbooks</option>
+                            <option value="Power Outage">Power Outage</option>
+                            <option value="Other">Other</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="announcementBody">Message</label>

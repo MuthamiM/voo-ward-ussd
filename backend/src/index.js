@@ -115,13 +115,17 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // --- Admin Dashboard Authentication Routes ---
+// Collective login attempt ban logic
+const LOGIN_BAN_THRESHOLD = 5; // Number of failed attempts before ban
+const LOGIN_BAN_DURATION_HOURS = 24;
+
 app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
-  
+
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password required" });
   }
-  
+
   try {
     // Check MongoDB connection
     if (!isDbConnected) {
@@ -129,24 +133,49 @@ app.post("/api/auth/login", async (req, res) => {
       console.error('❌ Database not connected during login attempt');
       return res.status(503).json({ error: "Database connection unavailable" });
     }
-    
-    // Find user in MongoDB
+
     const db = getDb();
     const usersCollection = db.collection('users');
-    
-    const user = await usersCollection.findOne({ 
-      username: username.toLowerCase() 
-    });
-    
-    if (!user) {
+    const bansCollection = db.collection('login_bans');
+
+    // Check for active ban
+    const banDoc = await bansCollection.findOne({ _id: 'global' });
+    const now = new Date();
+    if (banDoc && banDoc.banUntil && now < new Date(banDoc.banUntil)) {
+      const banEnd = new Date(banDoc.banUntil).toLocaleString();
+      return res.status(429).json({ error: `Login temporarily disabled due to repeated failed attempts. Try again after ${banEnd}` });
+    }
+
+    // Find user in MongoDB
+    const user = await usersCollection.findOne({ username: username.toLowerCase() });
+
+    // Check password
+    if (!user || user.password !== password) {
+      // Increment failed attempts
+      const update = await bansCollection.findOneAndUpdate(
+        { _id: 'global' },
+        { $inc: { failedAttempts: 1 }, $setOnInsert: { createdAt: now } },
+        { upsert: true, returnDocument: 'after' }
+      );
+      const failedAttempts = update.value?.failedAttempts || 1;
+      // If threshold reached, set ban
+      if (failedAttempts >= LOGIN_BAN_THRESHOLD) {
+        const banUntil = new Date(now.getTime() + LOGIN_BAN_DURATION_HOURS * 60 * 60 * 1000);
+        await bansCollection.updateOne(
+          { _id: 'global' },
+          { $set: { banUntil: banUntil }, $setOnInsert: { createdAt: now } }
+        );
+        return res.status(429).json({ error: `Login disabled for ${LOGIN_BAN_DURATION_HOURS} hours due to repeated failed attempts. Try again after ${banUntil.toLocaleString()}` });
+      }
       return res.status(401).json({ error: "Invalid username or password" });
     }
-    
-    // Compare password (plain text for now - will add bcrypt later)
-    if (user.password !== password) {
-      return res.status(401).json({ error: "Invalid username or password" });
-    }
-    
+
+    // On successful login, reset failed attempts and ban
+    await bansCollection.updateOne(
+      { _id: 'global' },
+      { $set: { failedAttempts: 0 }, $unset: { banUntil: "" } }
+    );
+
     // Generate token
     const token = generateSessionToken();
     const userData = {
@@ -155,9 +184,9 @@ app.post("/api/auth/login", async (req, res) => {
       fullName: user.fullName,
       role: user.role
     };
-    
+
     sessions.set(token, { user: userData, createdAt: new Date() });
-    
+
     return res.json({ success: true, token, user: userData });
   } catch (err) {
     await logSystemError('LOGIN_ERROR', err.message, err.stack, '/api/auth/login', username);
