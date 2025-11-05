@@ -16,6 +16,31 @@ function normalizeKenyanPhone(p){
 }
 function isNumeric(x){ return /^[0-9]+$/.test(x||""); }
 
+// Extract DOB from Kenyan ID number (YYMMDD format in first 6 digits)
+function extractDOBFromID(idNo) {
+  if (!idNo || idNo.length < 6) return null;
+  const yymmdd = idNo.slice(0, 6);
+  if (!isNumeric(yymmdd)) return null;
+  
+  const yy = parseInt(yymmdd.slice(0, 2));
+  const mm = parseInt(yymmdd.slice(2, 4));
+  const dd = parseInt(yymmdd.slice(4, 6));
+  
+  // Basic validation
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  
+  // Determine century (assume 1900s if yy > 30, else 2000s)
+  const year = yy > 30 ? 1900 + yy : 2000 + yy;
+  
+  try {
+    const dob = new Date(year, mm - 1, dd);
+    if (isNaN(dob.getTime())) return null;
+    return dob;
+  } catch {
+    return null;
+  }
+}
+
 function mainMenu(){
   return (
     "CON Main Menu:\n" +
@@ -77,11 +102,16 @@ router.post("/ussd", async (req, res) => {
       }
       if (step === 5) {
         if (!db) return res.send("END Service temporarily unavailable (DB).");
+        
+        const nationalId = parts[4] === "0" ? null : parts[4];
+        const dob = nationalId ? extractDOBFromID(nationalId) : null;
+        
         await db.collection("constituents").insertOne({
           phone: phoneNumber,
           name: parts[2],
           ward: parts[3],
-          nationalId: parts[4] === "0" ? null : parts[4],
+          nationalId: nationalId,
+          dateOfBirth: dob,
           createdAt: new Date()
         });
         return res.send("END Registration complete. Thank you.");
@@ -116,8 +146,9 @@ router.post("/ussd", async (req, res) => {
           title: parts[3],
           description: parts[4],
           location: parts[5] === "0" ? null : parts[5],
-          status: "open",
-          createdAt: new Date()
+          status: "pending",
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
         return res.send(`END Issue submitted. Ticket: ${ticketNo}. We'll follow up.`);
       }
@@ -126,6 +157,7 @@ router.post("/ussd", async (req, res) => {
     // --- Option 3: Announcements ---
     if (parts[1] === "3") {
       if (!db) return res.send("END No announcements right now.");
+      // Only show title, no time, for USSD/news
       const latest = await db.collection("announcements")
         .find({}).project({ _id: 0, title: 1 })
         .sort({ createdAt: -1 }).limit(3).toArray();
@@ -140,6 +172,7 @@ router.post("/ussd", async (req, res) => {
         const n = Number(parts[2]);
         if (n >= 1 && n <= latest.length) {
           const item = latest[n-1];
+          // Only show title, no time
           return res.send("END " + item.title);
         }
         return res.send("END Invalid option.");

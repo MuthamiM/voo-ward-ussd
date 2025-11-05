@@ -8,25 +8,29 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --primary-light: #818cf8;
+            --primary: #7c3aed;
+            --primary-dark: #6d28d9;
+            --primary-light: #a78bfa;
             --secondary: #06b6d4;
             --success: #10b981;
             --warning: #f59e0b;
             --danger: #ef4444;
             --info: #0ea5e9;
-            --dark: #0f172a;
-            --gray-50: #f8fafc;
-            --gray-100: #f1f5f9;
-            --gray-200: #e2e8f0;
-            --gray-300: #cbd5e1;
-            --gray-400: #94a3b8;
-            --gray-500: #64748b;
-            --gray-600: #475569;
-            --gray-700: #334155;
-            --gray-800: #1e293b;
-            --gray-900: #0f172a;
+            --dark: #1e1b4b;
+            --accent-purple: #c084fc;
+            --accent-pink: #ec4899;
+            --accent-orange: #fb923c;
+            --accent-teal: #2dd4bf;
+            --gray-50: #fafafa;
+            --gray-100: #f4f4f5;
+            --gray-200: #e4e4e7;
+            --gray-300: #d4d4d8;
+            --gray-400: #a1a1aa;
+            --gray-500: #71717a;
+            --gray-600: #52525b;
+            --gray-700: #3f3f46;
+            --gray-800: #27272a;
+            --gray-900: #18181b;
         }
 
         * {
@@ -36,8 +40,8 @@
         }
 
         body {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6d28d9 100%);
             background-attachment: fixed;
             min-height: 100vh;
             color: #1f2937;
@@ -343,11 +347,12 @@
         }
 
         .btn-primary {
-            background: white;
-            color: #667eea;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            color: white;
+            box-shadow: 0 10px 25px rgba(124, 58, 237, 0.3);
             position: relative;
             overflow: hidden;
+            font-weight: 600;
         }
 
         .btn-primary::before {
@@ -358,14 +363,15 @@
             width: 0;
             height: 0;
             border-radius: 50%;
-            background: rgba(102, 126, 234, 0.1);
+            background: rgba(255, 255, 255, 0.3);
             transform: translate(-50%, -50%);
             transition: width 0.6s, height 0.6s;
         }
 
         .btn-primary:hover {
             transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 15px 35px rgba(124, 58, 237, 0.5);
+            background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
         }
 
         .btn-primary:hover::before {
@@ -417,13 +423,13 @@
         }
 
         .navbar {
-            background: #ffffff;
-            border-bottom: 1px solid var(--gray-200);
+            background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
+            border-bottom: 2px solid rgba(124, 58, 237, 0.1);
             padding: 0;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.12);
             backdrop-filter: blur(10px);
         }
 
@@ -529,6 +535,8 @@
             padding: 36px;
             background: var(--gray-50);
             min-height: calc(100vh - 87px);
+            width: 100%;
+            overflow-x: auto;
         }
 
         /* ========================================
@@ -542,12 +550,12 @@
         }
 
         .stat-card {
-            background: white;
-            border-radius: 16px;
+            background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
+            border-radius: 20px;
             padding: 28px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid var(--gray-200);
+            border: 2px solid transparent;
             animation: scaleIn 0.5s ease-out backwards;
             position: relative;
             overflow: hidden;
@@ -560,7 +568,7 @@
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
             opacity: 0;
             transition: opacity 0.5s ease;
         }
@@ -575,7 +583,7 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 5px;
             background: linear-gradient(90deg, var(--primary) 0%, var(--primary-light) 100%);
             transform: scaleX(0);
             transition: transform 0.4s ease;
@@ -585,10 +593,58 @@
             transform: scaleX(1);
         }
 
-        .stat-card:nth-child(1) { animation-delay: 0.05s; }
-        .stat-card:nth-child(2) { animation-delay: 0.1s; }
-        .stat-card:nth-child(3) { animation-delay: 0.15s; }
-        .stat-card:nth-child(4) { animation-delay: 0.2s; }
+        /* Individual card color schemes */
+        .stat-card:nth-child(1) { 
+            animation-delay: 0.05s;
+            border-color: rgba(124, 58, 237, 0.2);
+            background: linear-gradient(145deg, #faf5ff 0%, #ffffff 100%);
+        }
+        .stat-card:nth-child(1) .stat-card-icon {
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+        }
+        .stat-card:nth-child(1)::before {
+            background: linear-gradient(90deg, #7c3aed 0%, #a78bfa 100%);
+        }
+
+        .stat-card:nth-child(2) { 
+            animation-delay: 0.1s;
+            border-color: rgba(236, 72, 153, 0.2);
+            background: linear-gradient(145deg, #fdf2f8 0%, #ffffff 100%);
+        }
+        .stat-card:nth-child(2) .stat-card-icon {
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
+        }
+        .stat-card:nth-child(2)::before {
+            background: linear-gradient(90deg, #ec4899 0%, #f472b6 100%);
+        }
+
+        .stat-card:nth-child(3) { 
+            animation-delay: 0.15s;
+            border-color: rgba(251, 146, 60, 0.2);
+            background: linear-gradient(145deg, #fff7ed 0%, #ffffff 100%);
+        }
+        .stat-card:nth-child(3) .stat-card-icon {
+            background: linear-gradient(135deg, #fb923c 0%, #fdba74 100%);
+            box-shadow: 0 8px 20px rgba(251, 146, 60, 0.4);
+        }
+        .stat-card:nth-child(3)::before {
+            background: linear-gradient(90deg, #fb923c 0%, #fdba74 100%);
+        }
+
+        .stat-card:nth-child(4) { 
+            animation-delay: 0.2s;
+            border-color: rgba(45, 212, 191, 0.2);
+            background: linear-gradient(145deg, #f0fdfa 0%, #ffffff 100%);
+        }
+        .stat-card:nth-child(4) .stat-card-icon {
+            background: linear-gradient(135deg, #2dd4bf 0%, #5eead4 100%);
+            box-shadow: 0 8px 20px rgba(45, 212, 191, 0.4);
+        }
+        .stat-card:nth-child(4)::before {
+            background: linear-gradient(90deg, #2dd4bf 0%, #5eead4 100%);
+        }
 
         @keyframes scaleIn {
             from {
@@ -614,16 +670,21 @@
         }
 
         .stat-card-icon {
-            width: 56px;
-            height: 56px;
+            width: 64px;
+            height: 64px;
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            border-radius: 14px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 26px;
+            font-size: 28px;
             color: white;
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover .stat-card-icon {
+            transform: scale(1.1) rotate(5deg);
         }
 
         .stat-card-trend {
@@ -680,7 +741,7 @@
             font-size: 14px;
             font-weight: 600;
             color: var(--gray-600);
-            border-radius: 10px;
+            border-radius: 12px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             white-space: nowrap;
             position: relative;
@@ -689,13 +750,14 @@
 
         .tab:hover {
             color: var(--gray-900);
-            background: rgba(99, 102, 241, 0.08);
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%);
+            transform: translateY(-2px);
         }
 
         .tab.active {
-            color: var(--primary);
-            background: white;
-            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+            color: white;
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
             font-weight: 700;
         }
 
@@ -705,6 +767,8 @@
 
         .content {
             padding: 35px;
+            width: 100%;
+            overflow-x: auto;
         }
 
         .tab-content {
@@ -889,13 +953,14 @@
         td {
             padding: 20px;
             color: #475569;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.6;
         }
 
         td strong {
             color: var(--dark);
-            font-weight: 700;
+            font-weight: 600;
         }
 
         .badge {
@@ -1004,27 +1069,54 @@
         }
 
         .modal-content {
-            background: white;
+            background: linear-gradient(145deg, #ffffff 0%, #faf5ff 100%);
             border-radius: 20px;
             padding: 35px;
             width: 90%;
             max-width: 500px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 25px 50px rgba(124, 58, 237, 0.4);
             animation: scaleIn 0.3s ease-out;
+            border: 2px solid rgba(124, 58, 237, 0.2);
         }
 
         .modal-header {
             margin-bottom: 25px;
+            border-bottom: 2px solid rgba(124, 58, 237, 0.1);
+            padding-bottom: 15px;
         }
 
         .modal-title {
             font-size: 24px;
             font-weight: 700;
-            color: var(--dark);
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .modal-body {
             margin-bottom: 25px;
+        }
+        
+        .modal-body .form-input {
+            background: white !important;
+            border: 2px solid #e2e8f0 !important;
+            color: #1f2937 !important;
+            font-size: 15px !important;
+            font-weight: 500 !important;
+        }
+        
+        .modal-body .form-input:focus {
+            border-color: #7c3aed !important;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1) !important;
+        }
+        
+        .modal-body label {
+            color: #4b5563 !important;
+            font-weight: 600 !important;
+            font-size: 14px !important;
+            margin-bottom: 8px !important;
+            display: block !important;
         }
 
         .modal-footer {
@@ -1046,44 +1138,200 @@
            RESPONSIVE
         ======================================== */
         @media (max-width: 768px) {
+            /* Login page mobile */
+            .login-card {
+                width: 95%;
+                padding: 30px 20px;
+                margin: 10px;
+            }
+
+            .login-card h1 {
+                font-size: 24px;
+            }
+
+            .login-card p {
+                font-size: 13px;
+            }
+
+            .form-input {
+                font-size: 15px;
+                padding: 14px;
+            }
+
+            /* Dashboard mobile */
             .navbar-content {
                 flex-direction: column;
-                gap: 15px;
+                gap: 10px;
+                padding: 15px;
+            }
+
+            .navbar-brand h1 {
+                font-size: 18px;
             }
 
             .navbar-user {
                 width: 100%;
                 justify-content: space-between;
+                flex-wrap: wrap;
             }
 
+            .user-info {
+                font-size: 13px;
+            }
+
+            .user-role {
+                font-size: 11px;
+                padding: 3px 10px;
+            }
+
+            .btn-danger {
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+
+            /* Stats grid mobile */
             .stats-grid {
                 grid-template-columns: 1fr;
+                gap: 12px;
+                padding: 15px;
+            }
+
+            .stat-card {
+                padding: 18px;
+            }
+
+            .stat-card-value {
+                font-size: 28px;
+            }
+
+            .stat-card-label {
+                font-size: 13px;
+            }
+
+            /* Content mobile */
+            .content {
+                padding: 15px;
+                width: 100%;
+                overflow-x: auto;
             }
 
             .content-header {
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 12px;
             }
 
+            .content-title {
+                font-size: 20px;
+            }
+
+            /* Tabs mobile */
             .tabs {
                 padding: 0 5px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .tab {
-                padding: 14px 18px;
-                font-size: 14px;
+                padding: 12px 16px;
+                font-size: 13px;
+                white-space: nowrap;
             }
 
-            .content {
+            /* Table mobile */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                font-size: 13px;
+                width: 100%;
+                min-width: unset !important;
+                word-break: break-word;
+            }
+
+            th {
+                padding: 12px 10px;
+                font-size: 11px;
+            }
+
+            td {
+                padding: 12px 10px;
+                font-size: 13px;
+            }
+
+            /* Buttons mobile */
+            .btn-sm {
+                font-size: 13px;
+                padding: 8px 14px;
+            }
+
+            /* Modal mobile */
+            .modal-content {
+                width: 95%;
+                max-width: 95%;
+                margin: 10px;
                 padding: 20px;
+            }
+
+            .modal-header h2 {
+                font-size: 20px;
+            }
+
+            .form-group label {
+                font-size: 13px;
+            }
+
+            /* Badge mobile */
+            .badge {
+                font-size: 11px;
+                padding: 4px 10px;
+            }
+
+            /* Make announcement text wrap on mobile */
+            td > div {
+                max-width: 100% !important;
+                word-wrap: break-word;
+            }
+        }
+
+        /* Extra small phones */
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 25px 15px;
+            }
+
+            .navbar-brand h1 {
+                font-size: 16px;
+            }
+
+            .stat-card-value {
+                font-size: 24px;
+            }
+
+            .content-title {
+                font-size: 18px;
+            }
+
+            .tab {
+                padding: 10px 12px;
+                font-size: 12px;
             }
 
             table {
                 font-size: 12px;
+                width: 100%;
+                min-width: unset !important;
+                word-break: break-word;
             }
 
             th, td {
-                padding: 12px;
+                padding: 10px 8px;
+            }
+
+            .modal-content {
+                padding: 15px;
             }
         }
 
@@ -1195,6 +1443,7 @@
                                         <th>Location</th>
                                         <th>Status</th>
                                         <th>Created At</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="issues-tbody"></tbody>
@@ -1246,6 +1495,7 @@
                                     <tr>
                                         <th>Phone</th>
                                         <th>National ID</th>
+                                        <th>Date of Birth</th>
                                         <th>Full Name</th>
                                         <th>Location</th>
                                         <th>Village</th>
@@ -1466,9 +1716,10 @@
                     <button class="tab" onclick="showTab('users')">User Management</button>
                 `;
             } else {
-                // PA sees limited tabs
+                // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
                 tabsNav.innerHTML = `
                     <button class="tab active" onclick="showTab('issues')">Issues</button>
+                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
                     <button class="tab" onclick="showTab('announcements')">Announcements</button>
                 `;
             }
@@ -1534,6 +1785,7 @@
                         </div>
                     `;
                 } else {
+                    // PA sees: Issues, Bursaries, Announcements stats
                     statsGrid.innerHTML = `
                         <div class="stat-card">
                             <div class="stat-card-header">
@@ -1541,6 +1793,13 @@
                             </div>
                             <div class="stat-card-value">${data.issues.total}</div>
                             <div class="stat-card-label">Reported Issues</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-header">
+                                <span class="stat-card-icon">B</span>
+                            </div>
+                            <div class="stat-card-value">${data.bursaries.total}</div>
+                            <div class="stat-card-label">Bursary Applications</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-card-header">
@@ -1561,30 +1820,59 @@
         // ========================================
         async function loadIssues() {
             const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
             
             try {
                 const res = await apiRequest('/api/admin/issues');
                 const issues = await res.json();
                 
                 if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
                     return;
                 }
                 
-                tbody.innerHTML = issues.map(issue => `
+                tbody.innerHTML = issues.map(issue => {
+                    const statusBadgeClass = issue.status === 'resolved' ? 'approved' : 
+                                            issue.status === 'in-progress' ? 'pending' : 'open';
+                    return `
                     <tr>
                         <td><strong>${issue.ticket}</strong></td>
                         <td><strong>${issue.reporter_name || 'Unknown'}</strong></td>
                         <td>${issue.phone_number}</td>
                         <td>${issue.message}</td>
                         <td>${issue.location || 'Not specified'}</td>
-                        <td><span class="badge ${issue.status}">${issue.status}</span></td>
+                        <td><span class="badge ${statusBadgeClass}">${issue.status}</span></td>
                         <td>${new Date(issue.created_at).toLocaleString()}</td>
+                        <td>
+                            <select onchange="updateIssueStatus('${issue._id}', this.value)" style="padding: 6px 10px; border-radius: 8px; border: 2px solid #e2e8f0; background: white; color: #1f2937; font-weight: 600; cursor: pointer; font-size: 13px;">
+                                <option value="pending" ${issue.status === 'pending' ? 'selected' : ''}>Pending</option>
+                                <option value="in-progress" ${issue.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                            </select>
+                        </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+            }
+        }
+        
+        async function updateIssueStatus(issueId, newStatus) {
+            try {
+                const res = await apiRequest(`/api/admin/issues/${issueId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (!res.ok) {
+                    throw new Error('Failed to update status');
+                }
+                
+                loadIssues();
+                loadStats();
+            } catch (err) {
+                alert('Error updating status: ' + err.message);
             }
         }
 
@@ -1625,29 +1913,40 @@
         // ========================================
         async function loadConstituents() {
             const tbody = document.getElementById('constituents-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading-state"><div class="spinner"></div><div>Loading constituents...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="loading-state"><div class="spinner"></div><div>Loading constituents...</div></td></tr>';
             
             try {
                 const res = await apiRequest('/api/admin/constituents');
                 const constituents = await res.json();
                 
                 if (constituents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><div class="empty-state-text">No constituents registered yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-text">No constituents registered yet</div></td></tr>';
                     return;
                 }
                 
-                tbody.innerHTML = constituents.map(c => `
+                tbody.innerHTML = constituents.map(c => {
+                    let dobDisplay = '-';
+                    if (c.date_of_birth) {
+                        const dob = new Date(c.date_of_birth);
+                        if (!isNaN(dob.getTime())) {
+                            dobDisplay = dob.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        }
+                    }
+                    
+                    return `
                     <tr>
                         <td>${c.phone_number}</td>
                         <td>${c.national_id}</td>
+                        <td><span class="badge badge-info">${dobDisplay}</span></td>
                         <td><strong>${c.full_name}</strong></td>
                         <td>${c.location}</td>
                         <td>${c.village}</td>
                         <td>${new Date(c.created_at).toLocaleString()}</td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="6" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }
         }
 
@@ -1667,14 +1966,39 @@
                     return;
                 }
                 
-                tbody.innerHTML = announcements.map(a => `
-                    <tr>
-                        <td><strong>${a.title}</strong></td>
-                        <td>${a.body}</td>
-                        <td>${a.created_by || 'Unknown'} (${a.created_by_role || 'N/A'})</td>
-                        <td>${new Date(a.created_at).toLocaleString()}</td>
+                tbody.innerHTML = announcements.map(a => {
+                    // Use createdAt (not created_at) for time
+                    const date = new Date(a.createdAt || a.created_at);
+                    const formattedDate = date.toLocaleString('en-GB', {
+                        day: '2-digit', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: false
+                    });
+                    return `
+                    <tr style="border-left: 4px solid #8b5cf6;">
+                        <td>
+                            <div style="font-size: 16px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; font-family: 'Segoe UI', system-ui, sans-serif;">
+                                ${a.title}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="font-size: 15px; line-height: 1.6; color: #1f2937; font-family: 'Segoe UI', system-ui, sans-serif; padding: 8px 0; max-width: 600px;">
+                                ${a.body}
+                            </div>
+                        </td>
+                        <td style="white-space: nowrap;">
+                            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                                ${a.created_by_role || 'Admin'}
+                            </span>
+                            <div style="margin-top: 4px; font-size: 13px; color: #6b7280;">
+                                ${a.created_by || 'Unknown'}
+                            </div>
+                        </td>
+                        <td style="color: #6b7280; font-size: 14px; white-space: nowrap;">
+                            ${formattedDate}
+                        </td>
                     </tr>
-                `).join('');
+                `;
+                }).join('');
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }
@@ -1857,7 +2181,32 @@
         // EXPORT DATA
         // ========================================
         function exportData(type) {
-            window.location.href = API_BASE + '/api/admin/export/' + type;
+            if (!authToken) {
+                alert('You must be logged in to export data.');
+                return;
+            }
+            fetch(API_BASE + '/api/admin/export/' + type, {
+                headers: {
+                    'Authorization': 'Bearer ' + authToken
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Export failed');
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = type + '.csv';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(err => {
+                alert('Export failed: ' + err.message);
+            });
         }
 
         // ========================================

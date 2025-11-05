@@ -11,14 +11,61 @@ const app = express();
 require("dotenv").config();
 
 // MongoDB connection helper
+let dbConnection = null;
+let isDbConnected = false;
+
 async function getDbConnection() {
   if (!process.env.MONGO_URI) return null;
   try {
     const { getDb } = require("./lib/mongo");
-    return await getDb();
+    dbConnection = await getDb();
+    isDbConnected = true;
+    return dbConnection;
   } catch (err) {
     console.error("DB connection failed:", err.message);
+    isDbConnected = false;
     return null;
+  }
+}
+
+// Initialize DB on startup
+getDbConnection().then(db => {
+  if (db) {
+    console.log('✅ MongoDB connected successfully');
+  } else {
+    console.error('❌ MongoDB connection failed - check MONGO_URI');
+  }
+});
+
+// Helper function to get current DB connection
+function getDb() {
+  if (!dbConnection) {
+    throw new Error('Database not connected');
+  }
+  return dbConnection;
+}
+
+// Error monitoring system
+async function logSystemError(errorType, errorMessage, errorStack, endpoint, userId = null) {
+  try {
+    if (!isDbConnected) return;
+    
+    const db = getDb();
+    const errorsCollection = db.collection('system_errors');
+    
+    await errorsCollection.insertOne({
+      type: errorType,
+      message: errorMessage,
+      stack: errorStack,
+      endpoint: endpoint,
+      userId: userId,
+      timestamp: new Date(),
+      resolved: false
+    });
+    
+    console.error(`🚨 SYSTEM ERROR LOGGED: ${errorType} - ${errorMessage}`);
+  } catch (err) {
+    console.error('Failed to log error to database:', err.message);
   }
 }
 
@@ -68,52 +115,334 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // --- Admin Dashboard Authentication Routes ---
-app.post("/api/auth/login", (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   const { username, password } = req.body;
   
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password required" });
   }
   
-  // Fast authentication - no async/await delays
-  const user = username.toLowerCase();
-  
-  if ((user === "admin" && password === "admin123") || (user === "mca" && password === "mca123")) {
+  try {
+    // Check MongoDB connection
+    if (!isDbConnected) {
+      await logSystemError('DB_CONNECTION_FAILED', 'Database not connected during login attempt', 'MongoDB unavailable', '/api/auth/login');
+      console.error('❌ Database not connected during login attempt');
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    // Find user in MongoDB
+    const db = getDb();
+    const usersCollection = db.collection('users');
+    
+    const user = await usersCollection.findOne({ 
+      username: username.toLowerCase() 
+    });
+    
+    if (!user) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+    
+    // Compare password (plain text for now - will add bcrypt later)
+    if (user.password !== password) {
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+    
+    // Generate token
     const token = generateSessionToken();
     const userData = {
-      id: "mca-1",
-      username: user,
-      fullName: "MCA Administrator",
-      role: "MCA"
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role
     };
     
     sessions.set(token, { user: userData, createdAt: new Date() });
     
     return res.json({ success: true, token, user: userData });
+  } catch (err) {
+    await logSystemError('LOGIN_ERROR', err.message, err.stack, '/api/auth/login', username);
+    console.error('Login error:', err);
+    return res.status(500).json({ error: "Login failed" });
   }
-  
-  if (user === "pa" && password === "pa123") {
-    const token = generateSessionToken();
-    const userData = {
-      id: "pa-1",
-      username: "pa",
-      fullName: "Personal Assistant", 
-      role: "PA"
-    };
-    
-    sessions.set(token, { user: userData, createdAt: new Date() });
-    
-    return res.json({ success: true, token, user: userData });
-  }
-  
-  // Quick failure response
-  return res.status(401).json({ error: "Invalid credentials. Use admin/admin123 or pa/pa123" });
 });
 
 app.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   sessions.delete(token);
   res.json({ success: true });
+});
+
+// PUBLIC SEED ENDPOINT - Seeds initial users (no auth required, runs once)
+app.get("/api/seed-users", async (req, res) => {
+  try {
+    if (!isDbConnected) {
+      await logSystemError('DB_CONNECTION_FAILED', 'Database not connected during seed attempt', 'MongoDB unavailable', '/api/seed-users');
+      return res.status(503).json({ 
+        success: false, 
+        error: "Database not connected" 
+      });
+    }
+    
+    const db = getDb();
+    const usersCollection = db.collection('users');
+    
+    // Check if users already exist
+    const existingUsers = await usersCollection.countDocuments();
+    
+    if (existingUsers > 0) {
+      const users = await usersCollection.find({}).project({ password: 0 }).toArray();
+      return res.json({
+        success: true,
+        message: "Users already exist",
+        users: users.map(u => ({ username: u.username, role: u.role, fullName: u.fullName }))
+      });
+    }
+    
+    // Create admin user
+    const adminUser = {
+      username: 'admin',
+      password: 'admin123',
+      fullName: 'MCA Administrator',
+      role: 'MCA',
+      createdAt: new Date()
+    };
+    
+    const adminResult = await usersCollection.insertOne(adminUser);
+    
+    // Create PA user
+    const paUser = {
+      username: 'pa',
+      password: 'pa123',
+      fullName: 'Personal Assistant',
+      role: 'PA',
+      createdAt: new Date()
+    };
+    
+    const paResult = await usersCollection.insertOne(paUser);
+    
+    res.json({
+      success: true,
+      message: "Users created successfully!",
+      users: [
+        { username: 'admin', password: 'admin123', role: 'MCA', id: adminResult.insertedId },
+        { username: 'pa', password: 'pa123', role: 'PA', id: paResult.insertedId }
+      ]
+    });
+    
+  } catch (err) {
+    await logSystemError('SEED_ERROR', err.message, err.stack, '/api/seed-users');
+    console.error('Seed error:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message 
+    });
+  }
+});
+
+// --- ERROR MONITORING ENDPOINTS ---
+
+// Get system errors (Admin only)
+app.get("/api/admin/system-errors", requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const { resolved } = req.query;
+    
+    const filter = resolved !== undefined ? { resolved: resolved === 'true' } : {};
+    
+    const errors = await db.collection('system_errors')
+      .find(filter)
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .toArray();
+    
+    res.json({ success: true, errors, count: errors.length });
+  } catch (err) {
+    console.error('Error fetching system errors:', err);
+    res.status(500).json({ error: "Failed to fetch system errors" });
+  }
+});
+
+// Mark error as resolved (Admin only)
+app.patch("/api/admin/system-errors/:id/resolve", requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const { ObjectId } = require('mongodb');
+    
+    await db.collection('system_errors').updateOne(
+      { _id: new ObjectId(req.params.id) },
+      { $set: { resolved: true, resolvedAt: new Date() } }
+    );
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error resolving system error:', err);
+    res.status(500).json({ error: "Failed to resolve error" });
+  }
+});
+
+// Get unresolved error count (for notifications)
+app.get("/api/admin/system-errors/count", requireAuth, async (req, res) => {
+  try {
+    if (!isDbConnected) {
+      return res.json({ count: 0 });
+    }
+    
+    const db = getDb();
+    const count = await db.collection('system_errors')
+      .countDocuments({ resolved: false });
+    
+    res.json({ count });
+  } catch (err) {
+    console.error('Error counting system errors:', err);
+    res.json({ count: 0 });
+  }
+});
+
+// Get all users (MCA only)
+app.get("/api/auth/users", requireAuth, async (req, res) => {
+  try {
+    // Check if user is MCA
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const users = await db.collection('users')
+      .find({})
+      .project({ password: 0 }) // Don't send passwords
+      .toArray();
+    
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching users:', err);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// Create new user (MCA only)
+app.post("/api/auth/users", requireAuth, async (req, res) => {
+  try {
+    // Check if user is MCA
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    const { username, password, fullName, role } = req.body;
+    
+    if (!username || !password || !fullName || !role) {
+      return res.status(400).json({ error: "All fields required" });
+    }
+    
+    if (role !== 'PA' && role !== 'MCA') {
+      return res.status(400).json({ error: "Role must be PA or MCA" });
+    }
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    
+    // Check if username exists
+    const existing = await db.collection('users').findOne({ 
+      username: username.toLowerCase() 
+    });
+    
+    if (existing) {
+      return res.status(400).json({ error: "Username already exists" });
+    }
+    
+    // Create user
+    const newUser = {
+      username: username.toLowerCase(),
+      password, // Plain text for now
+      fullName,
+      role,
+      createdAt: new Date()
+    };
+    
+    const result = await db.collection('users').insertOne(newUser);
+    
+    res.json({ 
+      success: true, 
+      user: { 
+        _id: result.insertedId, 
+        username: newUser.username,
+        fullName: newUser.fullName,
+        role: newUser.role,
+        createdAt: newUser.createdAt
+      } 
+    });
+  } catch (err) {
+    console.error('Error creating user:', err);
+    res.status(500).json({ error: "Failed to create user" });
+  }
+});
+
+// Delete user (MCA only)
+app.delete("/api/auth/users/:id", requireAuth, async (req, res) => {
+  try {
+    // Check if user is MCA
+    if (req.user.role !== 'MCA') {
+      return res.status(403).json({ error: "Access denied. MCA only." });
+    }
+    
+    const { id } = req.params;
+    
+    if (!isDbConnected) {
+      return res.status(503).json({ error: "Database connection unavailable" });
+    }
+    
+    const db = getDb();
+    const { ObjectId } = require('mongodb');
+    
+    // Prevent deleting yourself
+    if (id === req.user.id) {
+      return res.status(400).json({ error: "Cannot delete your own account" });
+    }
+    
+    // Prevent deleting main admin account
+    const userToDelete = await db.collection('users').findOne({ 
+      _id: new ObjectId(id) 
+    });
+    
+    if (userToDelete && userToDelete.username === 'admin') {
+      return res.status(403).json({ error: "Cannot delete main admin account" });
+    }
+    
+    const result = await db.collection('users').deleteOne({ 
+      _id: new ObjectId(id) 
+    });
+    
+    if (result.deletedCount === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
 });
 
 // Get stats
@@ -162,13 +491,14 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
     
     // Format data for admin display
     const formatted = issues.map((issue, index) => ({
+      _id: issue._id,
       ticket: issue.ticketNo || `ISS-${String(index + 1).padStart(3, '0')}`,
       category: 'General',
       message: `${issue.title}: ${issue.description}`,
       phone_number: issue.phone,
       reporter_name: issue.reporterName || 'Unknown',
       location: issue.location || 'Not specified',
-      status: issue.status || 'open',
+      status: issue.status || 'pending',
       created_at: issue.createdAt
     }));
     
@@ -176,6 +506,36 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Issues error:", err);
     res.json([]);
+  }
+});
+
+// Update issue status
+app.patch("/api/admin/issues/:id/status", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!['pending', 'in-progress', 'resolved'].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+    
+    const db = await getDbConnection();
+    if (!db) return res.status(500).json({ error: "Database unavailable" });
+    
+    const { ObjectId } = require("mongodb");
+    const result = await db.collection("issues").updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { status: status, updatedAt: new Date() } }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Issue not found" });
+    }
+    
+    res.json({ success: true, status: status });
+  } catch (err) {
+    console.error("Update issue status error:", err);
+    res.status(500).json({ error: "Failed to update status" });
   }
 });
 
@@ -223,6 +583,7 @@ app.get("/api/admin/constituents", requireAuth, async (req, res) => {
     const formatted = constituents.map(c => ({
       phone_number: c.phone,
       national_id: c.nationalId || 'N/A',
+      date_of_birth: c.dateOfBirth || null,
       full_name: c.name,
       location: c.ward || 'N/A',
       village: c.ward || 'N/A',
