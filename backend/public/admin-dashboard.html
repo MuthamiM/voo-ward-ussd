@@ -5,6 +5,124 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOO Ward Admin Dashboard</title>
     <style>
+        /* Announcements Dropdown Styles */
+        .announcements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-top: 10px;
+        }
+        .announcement-dropdown {
+            background: rgba(36, 37, 42, 0.85);
+            border-radius: 18px;
+            border: 1.5px solid var(--glass-border);
+            box-shadow: 0 4px 24px rgba(124, 58, 237, 0.08);
+            transition: box-shadow 0.3s, border 0.3s, background 0.3s;
+            cursor: pointer;
+            overflow: hidden;
+            outline: none;
+            position: relative;
+        }
+        .announcement-dropdown:hover, .announcement-dropdown:focus {
+            box-shadow: 0 8px 32px rgba(124, 58, 237, 0.18);
+            border: 1.5px solid #a78bfa;
+            background: rgba(36, 37, 42, 0.97);
+        }
+        .announcement-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 28px 18px 28px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #a78bfa;
+            user-select: none;
+        }
+        .announcement-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #a78bfa;
+            flex: 1;
+        }
+        .announcement-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            margin-left: 18px;
+        }
+        .announcement-role {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3px 12px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+        .announcement-date {
+            color: #bdb7e5;
+            font-size: 13px;
+        }
+        .announcement-chevron {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(124, 58, 237, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 18px;
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            position: relative;
+        }
+        .announcement-chevron::before {
+            content: '';
+            display: block;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2.5px solid #a78bfa;
+            border-right: 2.5px solid #a78bfa;
+            transform: rotate(45deg);
+            margin: auto;
+            position: absolute;
+            left: 6px;
+            top: 6px;
+        }
+        .announcement-dropdown.open .announcement-chevron {
+            transform: rotate(180deg);
+        }
+        .announcement-body {
+            max-height: 0;
+            overflow: hidden;
+            background: rgba(36, 37, 42, 0.97);
+            color: #fafafa;
+            font-size: 16px;
+            padding: 0 28px;
+            line-height: 1.7;
+            transition: max-height 0.45s cubic-bezier(0.4,0,0.2,1), padding 0.3s;
+        }
+        .announcement-dropdown.open .announcement-body {
+            max-height: 400px;
+            padding: 16px 28px 18px 28px;
+        }
+        .announcement-by {
+            color: #bdb7e5;
+            font-size: 13px;
+            padding: 0 28px 18px 28px;
+            opacity: 0.85;
+            display: none;
+        }
+        .announcement-dropdown.open .announcement-by {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .announcement-header, .announcement-body, .announcement-by {
+                padding-left: 12px;
+                padding-right: 12px;
+            }
+        }
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         
         :root {
@@ -1632,19 +1750,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>Body</th>
-                                        <th>Created By</th>
-                                        <th>Created At</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="announcements-tbody"></tbody>
-                            </table>
-                        </div>
+                        <div class="announcements-list" id="announcements-list"></div>
                     </div>
 
                     <!-- User Management Tab (MCA only) -->
@@ -2076,53 +2182,57 @@
         // ANNOUNCEMENTS
         // ========================================
         async function loadAnnouncements() {
-            const tbody = document.getElementById('announcements-tbody');
-            tbody.innerHTML = '<tr><td colspan="4" class="loading-state"><div class="spinner"></div><div>Loading announcements...</div></td></tr>';
-            
+            const list = document.getElementById('announcements-list');
+            list.innerHTML = '<div class="loading-state"><div class="spinner"></div><div>Loading announcements...</div></div>';
             try {
                 const res = await apiRequest('/api/admin/announcements');
                 const announcements = await res.json();
-                
                 if (announcements.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="empty-state"><div class="empty-state-text">No announcements yet</div></td></tr>';
+                    list.innerHTML = '<div class="empty-state"><div class="empty-state-text">No announcements yet</div></div>';
                     return;
                 }
-                
-                tbody.innerHTML = announcements.map(a => {
-                    // Use createdAt (not created_at) for time
+                list.innerHTML = announcements.map((a, i) => {
                     const date = new Date(a.createdAt || a.created_at);
                     const formattedDate = date.toLocaleString('en-GB', {
                         day: '2-digit', month: 'short', year: 'numeric',
                         hour: '2-digit', minute: '2-digit', hour12: false
                     });
                     return `
-                    <tr style="border-left: 4px solid #8b5cf6;">
-                        <td>
-                            <div style="font-size: 16px; font-weight: 600; color: #7c3aed; margin-bottom: 4px; font-family: 'Segoe UI', system-ui, sans-serif;">
-                                ${a.title}
+                    <div class="announcement-dropdown" tabindex="0">
+                        <div class="announcement-header">
+                            <div class="announcement-title">${a.title}</div>
+                            <div class="announcement-meta">
+                                <span class="announcement-role">${a.created_by_role || 'Admin'}</span>
+                                <span class="announcement-date">${formattedDate}</span>
                             </div>
-                        </td>
-                        <td>
-                            <div style="font-size: 15px; line-height: 1.6; color: #1f2937; font-family: 'Segoe UI', system-ui, sans-serif; padding: 8px 0; max-width: 600px;">
-                                ${a.body}
-                            </div>
-                        </td>
-                        <td style="white-space: nowrap;">
-                            <span style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
-                                ${a.created_by_role || 'Admin'}
-                            </span>
-                            <div style="margin-top: 4px; font-size: 13px; color: #6b7280;">
-                                ${a.created_by || 'Unknown'}
-                            </div>
-                        </td>
-                        <td style="color: #6b7280; font-size: 14px; white-space: nowrap;">
-                            ${formattedDate}
-                        </td>
-                    </tr>
-                `;
+                            <div class="announcement-chevron"></div>
+                        </div>
+                        <div class="announcement-body">${a.body.replace(/\n/g, '<br>')}</div>
+                        <div class="announcement-by">By: ${a.created_by || 'Unknown'}</div>
+                    </div>
+                    `;
                 }).join('');
+                // Add expand/collapse logic
+                setTimeout(() => {
+                    document.querySelectorAll('.announcement-dropdown').forEach(drop => {
+                        drop.addEventListener('click', function(e) {
+                            if (e.target.classList.contains('announcement-chevron')) {
+                                drop.classList.toggle('open');
+                            } else if (e.target.classList.contains('announcement-header')) {
+                                drop.classList.toggle('open');
+                            } else if (e.target.closest('.announcement-header')) {
+                                drop.classList.toggle('open');
+                            }
+                        });
+                        drop.addEventListener('keypress', function(e) {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                drop.classList.toggle('open');
+                            }
+                        });
+                    });
+                }, 100);
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="4" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+                list.innerHTML = `<div class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></div>`;
             }
         }
 
