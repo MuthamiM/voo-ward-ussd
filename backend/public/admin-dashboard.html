@@ -1582,7 +1582,46 @@
             background: rgba(0, 0, 0, 0.2);
             border-radius: 2px;
         }
-    </style>
+        
+                /* ---- Glassmorphism overrides for dashboard cards ---- */
+                .glass-card {
+                    background: rgba(255,255,255,0.12) !important;
+                    border-radius: 12px !important;
+                    border: 1px solid rgba(255,255,255,0.18) !important;
+                    box-shadow: 0 8px 24px rgba(2,6,23,0.45) !important;
+                    color: inherit !important;
+                    padding: 1rem !important;
+                    transition: transform 150ms ease, box-shadow 150ms ease !important;
+                    backdrop-filter: blur(8px) saturate(120%) !important;
+                    -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+                    background-image: linear-gradient(to right bottom, rgba(255,255,255,0.06), rgba(255,255,255,0.02)) !important;
+                }
+
+                /* Hover / focus state */
+                .glass-card:hover,
+                .glass-card:focus-within {
+                    transform: translateY(-4px) !important;
+                    box-shadow: 0 12px 30px rgba(2,6,23,0.55) !important;
+                }
+
+                /* Apply glass look to dashboard card-like selectors so no markup changes needed. */
+                .stat-card,
+                .tabs-container,
+                .table-container,
+                .content,
+                .tab-content,
+                .login-box,
+                .stat-card-icon,
+                .announcement-card,
+                .issue-card,
+                .placecard {
+                    background: rgba(255,255,255,0.12) !important;
+                    border: 1px solid rgba(255,255,255,0.18) !important;
+                    box-shadow: 0 8px 24px rgba(2,6,23,0.35) !important;
+                    backdrop-filter: blur(8px) saturate(120%) !important;
+                    -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+                }
+        </style>
 </head>
 <body>
     <!-- LOGIN PAGE -->
@@ -2516,5 +2555,16 @@
             }
         }, 30000);
     </script>
+</script>
+
+<!-- Glassmorphism helper script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Add the glass-card class to common dashboard elements so the CSS above applies.
+        document.querySelectorAll('.placecard, .stat-card, .announcement-card, .issue-card, .table-container, .tabs-container, .content, .tab-content').forEach(el => {
+            if (!el.classList.contains('glass-card')) el.classList.add('glass-card');
+        });
+    });
+</script>
 </body>
 </html>
