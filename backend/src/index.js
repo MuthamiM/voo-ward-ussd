@@ -75,6 +75,9 @@ app.post("/ussd", async (req, res) => {
 });
 
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
+// Mount admin dashboard API routes (merged from admin-dashboard.js)
+const adminDashboard = require('./admin-dashboard');
+app.use(adminDashboard);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
