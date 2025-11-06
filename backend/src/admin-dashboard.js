@@ -6,14 +6,15 @@ const crypto = require("crypto");
 // Load environment variables
 require("dotenv").config();
 
-const app = express();
+
+const router = express.Router();
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+router.use(express.json());
+router.use(express.urlencoded({ extended: false }));
 
 // CORS - allow frontend to connect
-app.use((req, res, next) => {
+router.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
@@ -101,7 +102,7 @@ async function connectDB() {
 }
 
 // Health check
-app.get("/health", (req, res) => {
+router.get("/health", (req, res) => {
   res.json({ 
     ok: true, 
     service: "voo-admin-dashboard", 
@@ -115,7 +116,7 @@ app.get("/health", (req, res) => {
 // ============================================
 
 // Login
-app.post("/api/auth/login", async (req, res) => {
+router.post("/api/auth/login", async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -166,19 +167,19 @@ app.post("/api/auth/login", async (req, res) => {
 });
 
 // Logout
-app.post("/api/auth/logout", requireAuth, (req, res) => {
+router.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   sessions.delete(token);
   res.json({ success: true, message: "Logged out successfully" });
 });
 
 // Get current user
-app.get("/api/auth/me", requireAuth, (req, res) => {
+router.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
 // Create user (MCA only)
-app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const { username, password, fullName, role } = req.body;
     
@@ -232,7 +233,7 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all users (MCA only)
-app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -252,7 +253,7 @@ app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Delete user (MCA only)
-app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
+router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -286,7 +287,7 @@ app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
 // ============================================
 
 // Get all reported issues (PA and MCA can access)
-app.get("/api/admin/issues", requireAuth, async (req, res) => {
+router.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -306,7 +307,7 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
 });
 
 // Get all bursary applications (MCA only)
-app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -326,7 +327,7 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all constituents (MCA only)
-app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -346,7 +347,7 @@ app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => 
 });
 
 // Get all announcements (PA and MCA can access)
-app.get("/api/admin/announcements", requireAuth, async (req, res) => {
+router.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -366,7 +367,7 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Update issue status (PA and MCA can access)
-app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
+router.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
@@ -393,7 +394,7 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
 });
 
 // Update bursary status (MCA only)
-app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
+router.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -430,7 +431,7 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
 });
 
 // Create announcement (PA and MCA can access)
-app.post("/api/admin/announcements", requireAuth, async (req, res) => {
+router.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
     
@@ -459,7 +460,7 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Delete announcement
-app.delete("/api/admin/announcements/:id", async (req, res) => {
+router.delete("/api/admin/announcements/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -485,7 +486,7 @@ app.delete("/api/admin/announcements/:id", async (req, res) => {
 });
 
 // Dashboard statistics
-app.get("/api/admin/stats", async (req, res) => {
+router.get("/api/admin/stats", async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -533,7 +534,7 @@ app.get("/api/admin/stats", async (req, res) => {
 });
 
 // Export issues as CSV (PA and MCA can access)
-app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
+router.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -560,7 +561,7 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
 });
 
 // Export bursaries as CSV (MCA only)
-app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -587,7 +588,7 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
 });
 
 // Export constituents as CSV (MCA only)
-app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -614,9 +615,9 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
 });
 
 // Serve admin dashboard HTML
-app.use(express.static(path.join(__dirname, "../public")));
+router.use(express.static(path.join(__dirname, "../public")));
 
-app.get("/", (req, res) => {
+router.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
 });
 
@@ -1077,24 +1078,6 @@ app.get("/old", (req, res) => {
   `);
 });
 
-// Start server
-const PORT = process.env.ADMIN_PORT || 5000;
-app.listen(PORT, async () => {
-  console.log(`\n  VOO WARD ADMIN DASHBOARD`);
-  console.log(` Dashboard: http://localhost:${PORT}`);
-  console.log(`  Health: http://localhost:${PORT}/health`);
-  
-  // Test MongoDB connection
-  const database = await connectDB();
-  if (database) {
-    console.log(` MongoDB Connected: Ready to view data`);
-    
-    // Initialize admin user
-    await initializeAdmin();
-  } else {
-    console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
-  }
-  
-  console.log(`\n Ready to view issues, bursaries & constituents!\n`);
-  console.log(` Login with: admin / admin123 (Change after first login!)\n`);
-});
+
+// Export router for use in main server
+module.exports = router;
