@@ -9,6 +9,11 @@ if (require.resolve("dotenv")) {
 
 const app = express();
 
+
+const path = require('path');
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
+
 // Redirect root to admin dashboard
 app.get('/', (req, res) => {
   res.redirect('/admin-dashboard.html');
