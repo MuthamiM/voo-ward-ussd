@@ -186,25 +186,23 @@ router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ error: "All fields required" });
     }
-    
     if (role !== "PA" && role !== "MCA") {
       return res.status(400).json({ error: "Role must be PA or MCA" });
     }
-    
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+    // Enforce max 2 admin users
+    const adminCount = await database.collection("admin_users").countDocuments({ role: "MCA" });
+    if (role === "MCA" && adminCount >= 2) {
+      return res.status(403).json({ error: "Maximum 2 admin users allowed" });
+    }
     // Check if username exists
-    const existing = await database.collection("admin_users").findOne({ 
-      username: username.toLowerCase() 
-    });
-    
+    const existing = await database.collection("admin_users").findOne({ username: username.toLowerCase() });
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
-    
     // Create user
     const newUser = {
       username: username.toLowerCase(),
@@ -214,9 +212,7 @@ router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
       created_at: new Date(),
       created_by: req.user.id
     };
-    
     const result = await database.collection("admin_users").insertOne(newUser);
-    
     res.status(201).json({
       success: true,
       user: {
@@ -630,11 +626,9 @@ async function initializeAdmin() {
       return;
     }
     
-    const existingAdmin = await database.collection("admin_users").findOne({ role: "MCA" });
-    
-    if (!existingAdmin) {
+    const existingAdmins = await database.collection("admin_users").find({ role: "MCA" }).toArray();
+    if (!existingAdmins || existingAdmins.length === 0) {
       console.log("🔧 Creating default MCA admin user...");
-      
       const defaultAdmin = {
         username: "admin",
         password: hashPassword("admin123"),
@@ -642,15 +636,13 @@ async function initializeAdmin() {
         role: "MCA",
         created_at: new Date()
       };
-      
       await database.collection("admin_users").insertOne(defaultAdmin);
-      
       console.log("✅ Default MCA admin created:");
       console.log("   Username: admin");
       console.log("   Password: admin123");
       console.log("   IMPORTANT: Change password after first login!");
     } else {
-      console.log("✅ MCA admin user exists");
+      console.log(`✅ MCA admin user(s) exist: ${existingAdmins.map(a => a.username).join(", ")}`);
     }
   } catch (err) {
     console.error("❌ Error initializing admin user:", err.message);
