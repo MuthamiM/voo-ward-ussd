@@ -649,6 +649,70 @@ async function initializeAdmin() {
   }
 }
 
+// Secure seed endpoint to create or update a default admin remotely.
+// Protected by the SEED_ADMIN_TOKEN environment variable. Usage:
+//  - Set SEED_ADMIN_TOKEN in Render / your env.
+//  - POST /api/auth/seed-admin with header `x-seed-token: <token>` or body { token }
+//  - Body may include optional: { username, password, fullName, role, force }
+// If the username exists the endpoint updates password and full_name; otherwise it inserts.
+router.post('/api/auth/seed-admin', async (req, res) => {
+  try {
+    const provided = req.headers['x-seed-token'] || req.body?.token;
+    const expected = process.env.SEED_ADMIN_TOKEN;
+
+    if (!expected) {
+      return res.status(500).json({ error: 'SEED_ADMIN_TOKEN not configured on server' });
+    }
+
+    if (!provided || provided !== expected) {
+      return res.status(403).json({ error: 'Invalid or missing seed token' });
+    }
+
+    const {
+      username = 'admin',
+      password = 'admin123',
+      fullName = 'MCA Administrator',
+      role = 'MCA',
+      force = false
+    } = req.body || {};
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    // If there are existing MCA admins and force is not true, warn the caller.
+    const existingAdmins = await database.collection('admin_users').find({ role: 'MCA' }).toArray();
+    if (existingAdmins.length > 0 && !force) {
+      return res.status(409).json({ error: 'MCA admin(s) already exist. Use force=true to override or update a specific username.' });
+    }
+
+    const uname = username.toLowerCase();
+    const existing = await database.collection('admin_users').findOne({ username: uname });
+    if (existing) {
+      // Update existing user password and info
+      await database.collection('admin_users').updateOne(
+        { _id: existing._id },
+        { $set: { password: hashPassword(password), full_name: fullName, role, updated_at: new Date() } }
+      );
+      return res.json({ success: true, message: 'Existing admin updated', username: uname });
+    }
+
+    // Insert new admin
+    const newUser = {
+      username: uname,
+      password: hashPassword(password),
+      full_name: fullName,
+      role,
+      created_at: new Date()
+    };
+
+    await database.collection('admin_users').insertOne(newUser);
+    return res.status(201).json({ success: true, message: 'Admin user created', username: uname });
+  } catch (err) {
+    console.error('Seed admin error:', err);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 // OLD HTML CODE REMOVED - Now served from file
 router.get("/old", (req, res) => {
   res.send(`
