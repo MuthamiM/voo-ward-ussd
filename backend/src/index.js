@@ -9,6 +9,11 @@ if (require.resolve("dotenv")) {
 
 const app = express();
 
+// Redirect root to admin dashboard
+app.get('/', (req, res) => {
+  res.redirect('/admin-dashboard.html');
+});
+
 // 1) Health first, no DB dependency
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "voo-kyamatu-ussd", ts: new Date().toISOString() });
