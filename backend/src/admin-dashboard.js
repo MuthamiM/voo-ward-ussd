@@ -658,7 +658,7 @@ async function initializeAdmin() {
 }
 
 // OLD HTML CODE REMOVED - Now served from file
-app.get("/old", (req, res) => {
+router.get("/old", (req, res) => {
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
