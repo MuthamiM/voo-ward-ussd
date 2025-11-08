@@ -2,6 +2,19 @@ const express = require("express");
 const path = require("path");
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
+const bcrypt = require('bcryptjs');
+// Optional Redis for sessions and rate-limiting. Set REDIS_URL in env to enable.
+let redisClient = null;
+if (process.env.REDIS_URL) {
+  try {
+    const IORedis = require('ioredis');
+    redisClient = new IORedis(process.env.REDIS_URL);
+    console.log('🔌 Redis enabled for sessions/rate-limiter');
+  } catch (e) {
+    console.warn('⚠️ Could not initialize Redis client:', e.message);
+    redisClient = null;
+  }
+}
 
 // Load environment variables
 require("dotenv").config();
@@ -12,6 +25,8 @@ const router = express.Router();
 // Middleware
 router.use(express.json());
 router.use(express.urlencoded({ extended: false }));
+// Accept plain text bodies (some USSD gateways post text/plain)
+router.use(express.text({ type: ['text/*', 'application/*+xml'] }));
 
 // CORS - allow frontend to connect
 router.use((req, res, next) => {
@@ -24,14 +39,23 @@ router.use((req, res, next) => {
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
 
-// Simple in-memory rate limiter for USSD endpoint (per IP)
-// Structure: Map<ip, { timestamps: [ms, ...] }>
+// Rate limiter: in-memory fallback, or Redis-backed when REDIS_URL is set
 const ussdRateLimits = new Map();
 
-function checkUssdRateLimit(ip, windowMs = 60_000, maxRequests = 6) {
+async function checkUssdRateLimit(ip, windowMs = 60_000, maxRequests = 6) {
+  if (redisClient) {
+    try {
+      const key = `ussd:rl:${ip}`;
+      const count = await redisClient.incr(key);
+      if (count === 1) await redisClient.pexpire(key, windowMs);
+      return count <= maxRequests;
+    } catch (e) {
+      console.warn('Redis rate-limit error, falling back to memory', e.message);
+    }
+  }
+
   const now = Date.now();
   const entry = ussdRateLimits.get(ip) || { timestamps: [] };
-  // prune
   entry.timestamps = entry.timestamps.filter(ts => now - ts < windowMs);
   if (entry.timestamps.length >= maxRequests) {
     ussdRateLimits.set(ip, entry);
@@ -48,7 +72,16 @@ function isMainAdmin(user) {
   return user && user.username === "admin" && user.role === "MCA";
 }
 function hashPassword(password) {
+  // legacy SHA-256 for existing users
   return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+async function hashPasswordBcrypt(password) {
+  return bcrypt.hash(password, 10);
+}
+
+function isBcryptHash(s) {
+  return typeof s === 'string' && s.startsWith('$2');
 }
 
 // Helper: Generate session token
@@ -57,20 +90,44 @@ function generateSessionToken() {
 }
 
 // Middleware: Verify authentication
-function requireAuth(req, res, next) {
-  const token = req.headers.authorization?.replace("Bearer ", "");
-  
-  if (!token) {
-    return res.status(401).json({ error: "Authentication required" });
+// Session helpers (Redis-backed if enabled)
+async function setSession(token, sessionObj, ttlSeconds = 60 * 60 * 24) {
+  if (redisClient) {
+    await redisClient.set(`sess:${token}`, JSON.stringify(sessionObj), 'EX', ttlSeconds);
+  } else {
+    sessions.set(token, sessionObj);
   }
-  
-  const session = sessions.get(token);
-  if (!session) {
-    return res.status(401).json({ error: "Invalid or expired session" });
+}
+
+async function getSession(token) {
+  if (!token) return null;
+  if (redisClient) {
+    const s = await redisClient.get(`sess:${token}`);
+    return s ? JSON.parse(s) : null;
   }
-  
-  req.user = session.user;
-  next();
+  return sessions.get(token) || null;
+}
+
+async function deleteSession(token) {
+  if (redisClient) {
+    await redisClient.del(`sess:${token}`);
+  } else {
+    sessions.delete(token);
+  }
+}
+
+async function requireAuth(req, res, next) {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) return res.status(401).json({ error: "Authentication required" });
+    const session = await getSession(token);
+    if (!session) return res.status(401).json({ error: "Invalid or expired session" });
+    req.user = session.user;
+    next();
+  } catch (err) {
+    console.error('Auth middleware error', err);
+    return res.status(500).json({ error: 'Authentication error' });
+  }
 }
 
 // Middleware: Verify MCA role
@@ -156,13 +213,39 @@ router.post("/api/auth/login", async (req, res) => {
       username: username.toLowerCase() 
     });
     
-    if (!user || user.password !== hashPassword(password)) {
-      return res.status(401).json({ error: "Invalid username or password" });
+    if (!user) return res.status(401).json({ error: "Invalid username or password" });
+
+    // Check password: support bcrypt or legacy SHA-256. Migrate SHA users to bcrypt on successful login.
+    let match = false;
+    try {
+      if (isBcryptHash(user.password)) {
+        match = await bcrypt.compare(password, user.password);
+      } else {
+        match = (user.password === hashPassword(password));
+      }
+    } catch (e) {
+      console.error('Password check error', e);
     }
-    
+
+    if (!match) return res.status(401).json({ error: "Invalid username or password" });
+
+    // If legacy SHA-256 hash, migrate to bcrypt
+    if (!isBcryptHash(user.password)) {
+      try {
+        const newHash = await hashPasswordBcrypt(password);
+        const database = await connectDB();
+        if (database) {
+          await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash } });
+          console.log(`🔁 Migrated user ${user.username} password to bcrypt`);
+        }
+      } catch (e) {
+        console.warn('Password migration failed for', user.username, e.message);
+      }
+    }
+
     // Create session
     const token = generateSessionToken();
-    sessions.set(token, {
+    await setSession(token, {
       user: {
         id: user._id.toString(),
         username: user.username,
@@ -189,9 +272,9 @@ router.post("/api/auth/login", async (req, res) => {
 });
 
 // Logout
-router.post("/api/auth/logout", requireAuth, (req, res) => {
+router.post("/api/auth/logout", requireAuth, async (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  sessions.delete(token);
+  await deleteSession(token);
   res.json({ success: true, message: "Logged out successfully" });
 });
 
@@ -326,7 +409,7 @@ router.post('/api/ussd', async (req, res) => {
     console.info('USSD request', { ip, phone, rawText: incoming });
 
     // Rate limit per IP
-    if (!checkUssdRateLimit(ip)) {
+    if (!(await checkUssdRateLimit(ip))) {
       console.warn('USSD rate limit exceeded for IP', ip);
       res.set('Content-Type', 'text/plain');
       return res.send('END Too many requests. Try again in a minute.');
