@@ -24,6 +24,24 @@ router.use((req, res, next) => {
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
 
+// Simple in-memory rate limiter for USSD endpoint (per IP)
+// Structure: Map<ip, { timestamps: [ms, ...] }>
+const ussdRateLimits = new Map();
+
+function checkUssdRateLimit(ip, windowMs = 60_000, maxRequests = 6) {
+  const now = Date.now();
+  const entry = ussdRateLimits.get(ip) || { timestamps: [] };
+  // prune
+  entry.timestamps = entry.timestamps.filter(ts => now - ts < windowMs);
+  if (entry.timestamps.length >= maxRequests) {
+    ussdRateLimits.set(ip, entry);
+    return false;
+  }
+  entry.timestamps.push(now);
+  ussdRateLimits.set(ip, entry);
+  return true;
+}
+
 // Helper: Hash password
 // Helper: Check if user is the main admin
 function isMainAdmin(user) {
@@ -297,14 +315,36 @@ router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) =
 // ------------------------
 router.post('/api/ussd', async (req, res) => {
   try {
-    // normalize incoming fields
+    // Logging and rate-limiting
+    const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip || '').toString();
+    const phone = req.body.phoneNumber || req.body.phone || req.body.from || req.body.msisdn || '';
+
+    // Normalize incoming fields - accept common provider fields
     const rawText = req.body.text ?? req.body.Text ?? req.body.input ?? '';
-    const text = (rawText === null || rawText === undefined) ? '' : String(rawText).trim();
+    const incoming = (rawText === null || rawText === undefined) ? '' : String(rawText);
+
+    console.info('USSD request', { ip, phone, rawText: incoming });
+
+    // Rate limit per IP
+    if (!checkUssdRateLimit(ip)) {
+      console.warn('USSD rate limit exceeded for IP', ip);
+      res.set('Content-Type', 'text/plain');
+      return res.send('END Too many requests. Try again in a minute.');
+    }
+
+    // Robust parsing: treat spaces and multiple separators as '*', remove unwanted chars
+    let text = incoming.trim();
+    // Replace multiple whitespace with '*', convert spaces to '*' for providers that use spaces
+    text = text.replace(/\s+/g, '*');
+    // Normalize repeated '*' and remove trailing/leading separators
+    text = text.replace(/\*+/g, '*').replace(/^\*|\*$/g, '');
 
     // responder helper (Africa's Talking expects plain text starting with CON or END)
     const reply = (message, end = false) => {
       const prefix = end ? 'END ' : 'CON ';
       res.set('Content-Type', 'text/plain');
+      // Log outgoing
+      console.info('USSD reply', { ip, phone, message: (prefix + message).slice(0, 200) });
       return res.send(prefix + message);
     };
 
@@ -314,7 +354,7 @@ router.post('/api/ussd', async (req, res) => {
     }
 
     // split AT-style '1*REF' flows
-    const parts = text.split('*');
+    const parts = text.split('*').filter(p => p !== '');
 
     // option 1 selected -> ask for ref code
     if (parts[0] === '1' && parts.length === 1) {
@@ -939,10 +979,14 @@ router.get("/old", (req, res) => {
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1> VOO Kyamatu Ward Admin Dashboard</h1>
-            <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
-        </div>
+    <div class="header">
+      <h1> VOO Kyamatu Ward Admin Dashboard</h1>
+      <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
+      <div style="position: absolute; right: 20px; top: 22px;">
+        <button id="login-btn" class="export-btn">Login</button>
+        <button id="logout-btn" class="export-btn" style="display:none; background:#dc3545;">Logout</button>
+      </div>
+    </div>
         
         <div class="stats" id="stats">
             <div class="stat-card">
@@ -972,7 +1016,7 @@ router.get("/old", (req, res) => {
         
         <div class="content">
             <div id="issues-content">
-                <button class="export-btn" onclick="exportData('issues')">📥 Export Issues CSV</button>
+                <button class="export-btn requires-admin" onclick="exportData('issues')">📥 Export Issues CSV</button>
                 <div class="table-container">
                     <table id="issues-table">
                         <thead>
@@ -991,7 +1035,7 @@ router.get("/old", (req, res) => {
             </div>
             
             <div id="bursaries-content" style="display:none;">
-                <button class="export-btn" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
+                <button class="export-btn requires-admin" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
                 <div class="table-container">
                     <table id="bursaries-table">
                         <thead>
@@ -1011,7 +1055,7 @@ router.get("/old", (req, res) => {
             </div>
             
             <div id="constituents-content" style="display:none;">
-                <button class="export-btn" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
+                <button class="export-btn requires-admin" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
                 <div class="table-container">
                     <table id="constituents-table">
                         <thead>
@@ -1049,8 +1093,76 @@ router.get("/old", (req, res) => {
     <script>
         const API_BASE = window.location.origin;
         
-        // Load statistics
-        async function loadStats() {
+    // Authentication token stored in localStorage
+    let TOKEN = localStorage.getItem('token') || null;
+
+    function authHeaders() {
+      return TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {};
+    }
+
+    async function fetchWithAuth(url, opts = {}) {
+      opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
+      return fetch(url, opts);
+    }
+
+    // Login/logout helpers
+    async function showLogin() {
+      const user = prompt('Username:');
+      if (!user) return;
+      const pass = prompt('Password:');
+      if (!pass) return;
+      try {
+        const res = await fetch(API_BASE + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await res.json();
+        if (!res.ok) return alert('Login failed: ' + (data.error || JSON.stringify(data)));
+        TOKEN = data.token;
+        localStorage.setItem('token', TOKEN);
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline-block';
+        await fetchMe();
+        loadStats(); loadIssues();
+      } catch (err) { alert('Login error: ' + err.message); }
+    }
+
+    async function doLogout() {
+      TOKEN = null;
+      localStorage.removeItem('token');
+      document.getElementById('login-btn').style.display = 'inline-block';
+      document.getElementById('logout-btn').style.display = 'none';
+      // reload UI with limited access
+      applyAccess(false);
+    }
+
+    async function fetchMe() {
+      if (!TOKEN) return applyAccess(false);
+      try {
+        const res = await fetch(API_BASE + '/api/auth/me', { headers: authHeaders() });
+        if (!res.ok) return applyAccess(false);
+        const data = await res.json();
+        applyAccess(data.fullAccess === true);
+      } catch (err) {
+        console.error('me fetch error', err);
+        applyAccess(false);
+      }
+    }
+
+    function applyAccess(fullAccess) {
+      document.querySelectorAll('.requires-admin').forEach(el => {
+        el.style.display = fullAccess ? 'inline-block' : 'none';
+      });
+      // Hide bursaries tab for non-admins
+      if (!fullAccess) {
+        const bursTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.toLowerCase().includes('bursaries'));
+        if (bursTab) bursTab.style.display = 'none';
+      }
+    }
+
+    // Load statistics
+    async function loadStats() {
             try {
                 const res = await fetch(API_BASE + '/api/admin/stats');
                 const data = await res.json();
@@ -1069,7 +1181,7 @@ router.get("/old", (req, res) => {
             tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
             
             try {
-                const res = await fetch(API_BASE + '/api/admin/issues');
+                const res = await fetchWithAuth(API_BASE + '/api/admin/issues');
                 const issues = await res.json();
                 
                 if (issues.length === 0) {
@@ -1098,7 +1210,7 @@ router.get("/old", (req, res) => {
             tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
             
             try {
-                const res = await fetch(API_BASE + '/api/admin/bursaries');
+                const res = await fetchWithAuth(API_BASE + '/api/admin/bursaries');
                 const bursaries = await res.json();
                 
                 if (bursaries.length === 0) {
@@ -1128,7 +1240,7 @@ router.get("/old", (req, res) => {
             tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
             
             try {
-                const res = await fetch(API_BASE + '/api/admin/constituents');
+                const res = await fetchWithAuth(API_BASE + '/api/admin/constituents');
                 const constituents = await res.json();
                 
                 if (constituents.length === 0) {
@@ -1157,7 +1269,7 @@ router.get("/old", (req, res) => {
             tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
             
             try {
-                const res = await fetch(API_BASE + '/api/admin/announcements');
+                const res = await fetchWithAuth(API_BASE + '/api/admin/announcements');
                 const announcements = await res.json();
                 
                 if (announcements.length === 0) {
@@ -1198,14 +1310,37 @@ router.get("/old", (req, res) => {
             else if (tab === 'announcements') loadAnnouncements();
         }
         
-        // Export data
-        function exportData(type) {
-            window.location.href = API_BASE + '/api/admin/export/' + type;
-        }
+    // Export data (fetch with auth and download)
+    async function exportData(type) {
+      try {
+        const res = await fetchWithAuth(API_BASE + '/api/admin/export/' + type);
+        if (!res.ok) return alert('Export failed: ' + res.statusText);
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = type + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Export error: ' + err.message);
+      }
+    }
         
-        // Initialize
-        loadStats();
-        loadIssues();
+    // Initialize
+    document.getElementById('login-btn').addEventListener('click', showLogin);
+    document.getElementById('logout-btn').addEventListener('click', doLogout);
+    // reflect stored token UI
+    if (TOKEN) {
+      document.getElementById('login-btn').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'inline-block';
+    }
+    fetchMe();
+    loadStats();
+    loadIssues();
         
         // Auto-refresh every 30 seconds
         setInterval(() => {
