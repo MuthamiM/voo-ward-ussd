@@ -25,6 +25,10 @@ router.use((req, res, next) => {
 const sessions = new Map();
 
 // Helper: Hash password
+// Helper: Check if user is the main admin
+function isMainAdmin(user) {
+  return user && user.username === "admin" && user.role === "MCA";
+}
 function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
@@ -175,7 +179,10 @@ router.post("/api/auth/logout", requireAuth, (req, res) => {
 
 // Get current user
 router.get("/api/auth/me", requireAuth, (req, res) => {
-  res.json({ user: req.user });
+  res.json({
+    user: req.user,
+    fullAccess: isMainAdmin(req.user)
+  });
 });
 
 // Create user (MCA only)
@@ -252,29 +259,108 @@ router.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Prevent deleting yourself
-    if (id === req.user.id) {
-      return res.status(400).json({ error: "Cannot delete your own account" });
-    }
-    
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
-    const result = await database.collection("admin_users").deleteOne({
-      _id: new ObjectId(id)
-    });
-    
+    // Find user to delete
+    const userToDelete = await database.collection("admin_users").findOne({ _id: new ObjectId(id) });
+    if (!userToDelete) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    // Prevent deleting the main admin (username 'admin')
+    if (userToDelete.username === "admin") {
+      return res.status(403).json({ error: "Cannot delete the main admin user" });
+    }
+    // Prevent deleting yourself
+    if (id === req.user.id) {
+      return res.status(400).json({ error: "Cannot delete your own account" });
+    }
+    const result = await database.collection("admin_users").deleteOne({ _id: new ObjectId(id) });
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: "User not found" });
     }
-    
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ------------------------
+// USSD: Bursary tracking
+// Supports Africa's Talking (text, sessionId, phoneNumber) and generic providers
+// Flow (simple):
+// - initial request (text === '' ) -> show menu
+// - user selects 1 -> prompt for ref code
+// - user replies with ref code (or sends 1*REF) -> lookup and return status
+// ------------------------
+router.post('/api/ussd', async (req, res) => {
+  try {
+    // normalize incoming fields
+    const rawText = req.body.text ?? req.body.Text ?? req.body.input ?? '';
+    const text = (rawText === null || rawText === undefined) ? '' : String(rawText).trim();
+
+    // responder helper (Africa's Talking expects plain text starting with CON or END)
+    const reply = (message, end = false) => {
+      const prefix = end ? 'END ' : 'CON ';
+      res.set('Content-Type', 'text/plain');
+      return res.send(prefix + message);
+    };
+
+    // initial menu (no input)
+    if (!text) {
+      return reply('Welcome to VOO Ward USSD\n1. Check Bursary Status\n0. Exit');
+    }
+
+    // split AT-style '1*REF' flows
+    const parts = text.split('*');
+
+    // option 1 selected -> ask for ref code
+    if (parts[0] === '1' && parts.length === 1) {
+      return reply('Enter your bursary reference code:');
+    }
+
+    // user provided 1*REF or direct REF
+    if (parts[0] === '1' && parts.length >= 2) {
+      const ref = parts.slice(1).join('*').trim();
+      if (!ref) return reply('Reference code cannot be empty. Enter your bursary reference code:');
+
+      const database = await connectDB();
+      if (!database) return reply('Service unavailable. Please try later.', true);
+
+      const app = await database.collection('bursary_applications').findOne({ ref_code: ref });
+      if (!app) return reply(`No application found for ref ${ref}.`, true);
+
+      const status = app.status || 'Pending';
+      const notes = app.admin_notes ? ` Notes: ${app.admin_notes}` : '';
+      return reply(`Ref ${ref}\nStatus: ${status}.${notes}`, true);
+    }
+
+    // fallback: if user typed a direct ref code
+    if (/^[A-Za-z0-9-]{3,}$/.test(text)) {
+      const ref = text;
+      const database = await connectDB();
+      if (!database) return reply('Service unavailable. Please try later.', true);
+
+      const app = await database.collection('bursary_applications').findOne({ ref_code: ref });
+      if (!app) return reply(`No application found for ref ${ref}.`, true);
+
+      const status = app.status || 'Pending';
+      const notes = app.admin_notes ? ` Notes: ${app.admin_notes}` : '';
+      return reply(`Ref ${ref}\nStatus: ${status}.${notes}`, true);
+    }
+
+    // exit
+    if (text === '0') return reply('Goodbye', true);
+
+    // default
+    return reply('Invalid choice.\n1. Check Bursary Status\n0. Exit');
+  } catch (err) {
+    console.error('USSD error:', err);
+    // ensure we end the session on errors
+    res.set('Content-Type', 'text/plain');
+    return res.send('END Service error. Please try again later.');
   }
 });
 
@@ -634,6 +720,8 @@ async function initializeAdmin() {
         password: hashPassword("admin123"),
         full_name: "MCA Administrator",
         role: "MCA",
+        // mark the default admin as immutable so it cannot be deleted
+        immutable: true,
         created_at: new Date()
       };
       await database.collection("admin_users").insertOne(defaultAdmin);
@@ -1136,4 +1224,6 @@ router.get("/old", (req, res) => {
 
 
 // Export router for use in main server
+// Expose connectDB for other modules (e.g. USSD handler) and export router
+router.connectDB = connectDB;
 module.exports = router;
