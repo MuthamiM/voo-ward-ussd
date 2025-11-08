@@ -1070,6 +1070,17 @@ router.get("/old", (req, res) => {
         <button id="logout-btn" class="export-btn" style="display:none; background:#dc3545;">Logout</button>
       </div>
     </div>
+    <!-- Login modal -->
+    <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
+      <div style="background:white; padding:20px; width:320px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.2); margin:auto;">
+        <h3 style="margin-bottom:10px;">Admin Login</h3>
+        <form id="login-form">
+          <div style="margin-bottom:8px;"><input id="login-username" placeholder="Username" style="width:100%; padding:8px;" /></div>
+          <div style="margin-bottom:12px;"><input id="login-password" type="password" placeholder="Password" style="width:100%; padding:8px;" /></div>
+          <div style="text-align:right;"><button id="login-submit" class="export-btn" type="submit">Sign in</button> <button id="login-cancel" type="button" style="margin-left:8px;" class="export-btn">Cancel</button></div>
+        </form>
+      </div>
+    </div>
         
         <div class="stats" id="stats">
             <div class="stat-card">
@@ -1188,12 +1199,18 @@ router.get("/old", (req, res) => {
       return fetch(url, opts);
     }
 
-    // Login/logout helpers
-    async function showLogin() {
-      const user = prompt('Username:');
-      if (!user) return;
-      const pass = prompt('Password:');
-      if (!pass) return;
+    // Login/logout helpers (modal-based)
+    function showLogin() {
+      // use flex to allow centering via align-items/justify-content
+      document.getElementById('login-modal').style.display = 'flex';
+      document.getElementById('login-username').focus();
+    }
+
+    async function submitLogin(ev) {
+      ev.preventDefault();
+      const user = document.getElementById('login-username').value.trim();
+      const pass = document.getElementById('login-password').value;
+      if (!user || !pass) return alert('Enter username and password');
       try {
         const res = await fetch(API_BASE + '/api/auth/login', {
           method: 'POST',
@@ -1206,18 +1223,22 @@ router.get("/old", (req, res) => {
         localStorage.setItem('token', TOKEN);
         document.getElementById('login-btn').style.display = 'none';
         document.getElementById('logout-btn').style.display = 'inline-block';
+        document.getElementById('login-modal').style.display = 'none';
         await fetchMe();
         loadStats(); loadIssues();
       } catch (err) { alert('Login error: ' + err.message); }
     }
 
     async function doLogout() {
+      const token = TOKEN;
       TOKEN = null;
       localStorage.removeItem('token');
       document.getElementById('login-btn').style.display = 'inline-block';
       document.getElementById('logout-btn').style.display = 'none';
-      // reload UI with limited access
       applyAccess(false);
+      if (token) {
+        try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (e) {}
+      }
     }
 
     async function fetchMe() {
@@ -1416,6 +1437,18 @@ router.get("/old", (req, res) => {
     // Initialize
     document.getElementById('login-btn').addEventListener('click', showLogin);
     document.getElementById('logout-btn').addEventListener('click', doLogout);
+    // Wire up modal form submit and cancel
+    document.getElementById('login-form').addEventListener('submit', submitLogin);
+    document.getElementById('login-cancel').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('login-modal').style.display = 'none';
+    });
+    // Close modal when clicking outside the dialog
+    document.getElementById('login-modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('login-modal')) {
+        document.getElementById('login-modal').style.display = 'none';
+      }
+    });
     // reflect stored token UI
     if (TOKEN) {
       document.getElementById('login-btn').style.display = 'none';
@@ -1444,4 +1477,13 @@ router.get("/old", (req, res) => {
 // Export router for use in main server
 // Expose connectDB for other modules (e.g. USSD handler) and export router
 router.connectDB = connectDB;
+// Bootstrap default admin on module load (best-effort)
+(async function bootstrapAdmin() {
+  try {
+    // initializeAdmin will connect to DB and create the default admin if none exists
+    await initializeAdmin();
+  } catch (e) {
+    console.warn('Bootstrap admin initialization failed:', e && e.message ? e.message : e);
+  }
+})();
 module.exports = router;
