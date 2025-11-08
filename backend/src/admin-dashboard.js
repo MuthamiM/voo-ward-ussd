@@ -301,20 +301,25 @@ router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    // Enforce max 2 admin users
+    // Enforce limits: only 1 MCA (main admin) and maximum 3 PA users
     const adminCount = await database.collection("admin_users").countDocuments({ role: "MCA" });
-    if (role === "MCA" && adminCount >= 2) {
-      return res.status(403).json({ error: "Maximum 2 admin users allowed" });
+    const paCount = await database.collection("admin_users").countDocuments({ role: "PA" });
+    if (role === "MCA" && adminCount >= 1) {
+      return res.status(403).json({ error: "Maximum 1 MCA admin allowed" });
+    }
+    if (role === "PA" && paCount >= 3) {
+      return res.status(403).json({ error: "Maximum 3 PA users allowed" });
     }
     // Check if username exists
     const existing = await database.collection("admin_users").findOne({ username: username.toLowerCase() });
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
-    // Create user
+    // Create user (store bcrypt hash)
+    const pwHash = await hashPasswordBcrypt(password);
     const newUser = {
       username: username.toLowerCase(),
-      password: hashPassword(password),
+      password: pwHash,
       full_name: fullName,
       role: role,
       created_at: new Date(),
@@ -370,8 +375,8 @@ router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) =
       return res.status(404).json({ error: "User not found" });
     }
     // Prevent deleting the main admin (username 'admin')
-    if (userToDelete.username === "admin") {
-      return res.status(403).json({ error: "Cannot delete the main admin user" });
+    if (userToDelete.username === "admin" || userToDelete.immutable) {
+      return res.status(403).json({ error: "Cannot delete the main or immutable admin user" });
     }
     // Prevent deleting yourself
     if (id === req.user.id) {
@@ -836,12 +841,24 @@ async function initializeAdmin() {
     }
     
     const existingAdmins = await database.collection("admin_users").find({ role: "MCA" }).toArray();
+    // Remove legacy 'martin' user if present
+    try {
+      const legacy = await database.collection('admin_users').findOne({ username: 'martin' });
+      if (legacy) {
+        await database.collection('admin_users').deleteOne({ _id: legacy._id });
+        console.log('🗑️ Removed legacy PA/MCA user: martin');
+      }
+    } catch (e) {
+      console.warn('Could not check/remove legacy user martin:', e && e.message ? e.message : e);
+    }
+
     if (!existingAdmins || existingAdmins.length === 0) {
       console.log("🔧 Creating default MCA admin user...");
+      const pwHash = await hashPasswordBcrypt('admin123');
       const defaultAdmin = {
         username: "admin",
-        password: hashPassword("admin123"),
-        full_name: "MCA Administrator",
+        password: pwHash,
+        full_name: "Zak",
         role: "MCA",
         // mark the default admin as immutable so it cannot be deleted
         immutable: true,
@@ -853,6 +870,30 @@ async function initializeAdmin() {
       console.log("   Password: admin123");
       console.log("   IMPORTANT: Change password after first login!");
     } else {
+      // Ensure the primary admin record is named 'admin' and has full_name 'Zak'
+      const main = await database.collection('admin_users').findOne({ username: 'admin' });
+      if (main) {
+        if (main.full_name !== 'Zak' || !isBcryptHash(main.password)) {
+          try {
+            const update = {};
+            if (main.full_name !== 'Zak') update.full_name = 'Zak';
+            if (!isBcryptHash(main.password)) {
+              // If password is legacy SHA, don't change it unless it matches admin123; otherwise leave it.
+              // Migrate to bcrypt only if it matches admin123
+              if (main.password === hashPassword('admin123')) {
+                update.password = await hashPasswordBcrypt('admin123');
+              }
+            }
+            if (Object.keys(update).length) {
+              update.updated_at = new Date();
+              await database.collection('admin_users').updateOne({ _id: main._id }, { $set: update });
+              console.log('ℹ️ Updated default admin metadata');
+            }
+          } catch (e) {
+            console.warn('Could not update default admin metadata:', e && e.message ? e.message : e);
+          }
+        }
+      }
       console.log(`✅ MCA admin user(s) exist: ${existingAdmins.map(a => a.username).join(", ")}`);
     }
   } catch (err) {
@@ -882,7 +923,7 @@ router.post('/api/auth/seed-admin', async (req, res) => {
     const {
       username = 'admin',
       password = 'admin123',
-      fullName = 'MCA Administrator',
+      fullName = 'Zak',
       role = 'MCA',
       force = false
     } = req.body || {};
@@ -899,18 +940,20 @@ router.post('/api/auth/seed-admin', async (req, res) => {
     const uname = username.toLowerCase();
     const existing = await database.collection('admin_users').findOne({ username: uname });
     if (existing) {
-      // Update existing user password and info
+      // Update existing user password and info (store bcrypt)
+      const newHash = await hashPasswordBcrypt(password);
       await database.collection('admin_users').updateOne(
         { _id: existing._id },
-        { $set: { password: hashPassword(password), full_name: fullName, role, updated_at: new Date() } }
+        { $set: { password: newHash, full_name: fullName, role, updated_at: new Date() } }
       );
       return res.json({ success: true, message: 'Existing admin updated', username: uname });
     }
 
-    // Insert new admin
+    // Insert new admin (bcrypt password)
+    const newHash = await hashPasswordBcrypt(password);
     const newUser = {
       username: uname,
-      password: hashPassword(password),
+      password: newHash,
       full_name: fullName,
       role,
       created_at: new Date()
