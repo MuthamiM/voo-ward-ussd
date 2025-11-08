@@ -79,6 +79,19 @@ app.post("/ussd", async (req, res) => {
 const adminDashboard = require('./admin-dashboard');
 app.use(adminDashboard);
 
+// Expose DB connector for other routers (ussd handler)
+if (adminDashboard && adminDashboard.connectDB) {
+  app.locals.connectDB = adminDashboard.connectDB;
+}
+
+// Mount provider-agnostic USSD router at /api/ussd
+try {
+  const ussdRouter = require('./ussd-handler');
+  app.use('/api/ussd', ussdRouter);
+} catch (err) {
+  console.warn('USSD router not loaded:', err.message);
+}
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`[PRODUCTION] VOO Kyamatu Ward USSD API listening on :${PORT}`);
