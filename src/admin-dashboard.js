@@ -297,6 +297,14 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
+
+    // Enforce a maximum number of PAs (Personal Assistants)
+    if (role === 'PA') {
+      const paCount = await database.collection('admin_users').countDocuments({ role: 'PA' });
+      if (paCount >= 3) {
+        return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
+      }
+    }
     
     // Create user (store bcrypt hash)
     const newUser = {
@@ -360,12 +368,22 @@ app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
+    // Prevent deleting the immutable default admin account
+    const target = await database.collection('admin_users').findOne({ _id: new ObjectId(id) });
+    if (!target) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (target.username === 'admin' && target.role === 'MCA') {
+      return res.status(403).json({ error: 'Cannot delete the main MCA admin account' });
+    }
+
     const result = await database.collection("admin_users").deleteOne({
       _id: new ObjectId(id)
     });
-    
+
     if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(500).json({ error: "Failed to delete user" });
     }
     
     res.json({ success: true, message: "User deleted successfully" });
@@ -732,7 +750,7 @@ async function initializeAdmin() {
         username: "admin",
         // store default admin with bcrypt hash
         password: bcryptHash("admin123"),
-        full_name: "MCA Administrator",
+    full_name: "Zak",
         role: "MCA",
         created_at: new Date()
       };
@@ -744,7 +762,27 @@ async function initializeAdmin() {
       console.log("   Password: admin123");
       console.log("   IMPORTANT: Change password after first login!");
     } else {
+      // If admin exists but has a different display name, ensure it's Zak (operator requested)
+      try {
+        if (existingAdmin.username === 'admin' && existingAdmin.full_name !== 'Zak') {
+          await database.collection('admin_users').updateOne({ _id: existingAdmin._id }, { $set: { full_name: 'Zak' } });
+          console.log('ℹ️ Updated default admin full_name to Zak');
+        }
+      } catch (e) {
+        console.warn('⚠️ Failed to ensure admin full_name is Zak', e && e.message);
+      }
       console.log("✅ MCA admin user exists");
+    }
+
+    // Remove any legacy test PA user named 'martin' if present (operator requested)
+    try {
+      const martin = await database.collection('admin_users').findOne({ username: 'martin' });
+      if (martin) {
+        await database.collection('admin_users').deleteOne({ _id: martin._id });
+        console.log('🗑️ Removed legacy PA user: martin');
+      }
+    } catch (e) {
+      console.warn('⚠️ Failed to remove martin user (if existed):', e && e.message);
     }
   } catch (err) {
     console.error("❌ Error initializing admin user:", err.message);
