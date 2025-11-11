@@ -323,8 +323,10 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
       return res.status(400).json({ error: "All fields required" });
     }
     
-    if (role !== "PA" && role !== "MCA") {
-      return res.status(400).json({ error: "Role must be PA or MCA" });
+    // Allowed roles: MCA (main admin), PA (personal assistant), CLERK
+    const allowedRoles = ['PA', 'MCA', 'CLERK'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: `Role must be one of: ${allowedRoles.join(', ')}` });
     }
     
     const database = await connectDB();
