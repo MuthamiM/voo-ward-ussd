@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 
 // Load environment variables
 require("dotenv").config();
+const chatbotSvc = require('./chatbot');
 
 const app = express();
 
@@ -112,56 +113,11 @@ async function connectDB() {
   }
 }
 
-// Helper: send notification to a phone number. Uses Twilio if configured (ACCOUNT SID, AUTH TOKEN, FROM).
-// If Twilio not configured, stores notification in `notifications` collection for auditing.
-async function sendNotificationToPhone(db, phone, message) {
-  // normalize phone (basic)
-  if (!phone || !message) return;
-  const TW_SID = process.env.TWILIO_ACCOUNT_SID;
-  const TW_TOKEN = process.env.TWILIO_AUTH_TOKEN;
-  const TW_FROM = process.env.TWILIO_FROM;
-
-  // record attempt in notifications collection
-  const notifications = db.collection('notifications');
-  const record = {
-    phone,
-    message,
-    provider: null,
-    status: 'queued',
-    created_at: new Date()
-  };
-
-  try {
-    if (TW_SID && TW_TOKEN && TW_FROM) {
-      // send via Twilio REST API using fetch (no dependency required)
-      const auth = Buffer.from(`${TW_SID}:${TW_TOKEN}`).toString('base64');
-      const body = new URLSearchParams({ From: TW_FROM, To: phone, Body: message });
-      const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: body.toString()
-      });
-
-      const data = await resp.json();
-      record.provider = 'twilio';
-      record.status = resp.ok ? 'sent' : 'failed';
-      record.response = data;
-      await notifications.insertOne(record);
-      return { ok: resp.ok, result: data };
-    }
-  } catch (e) {
-    record.status = 'error';
-    record.error = e && e.message;
-    await notifications.insertOne(record);
-    throw e;
-  }
-
-  // Fallback: store notification for manual sending
-  await notifications.insertOne(record);
-  return { ok: false, queued: true };
+// Notifications have been disabled per operator request.
+// keep a no-op helper to avoid removing all call sites; it will log the intent and return a neutral result.
+async function sendNotificationToPhone(/* db, phone, message */) {
+  console.log('Notifications disabled: sendNotificationToPhone called - notifications removed from this deployment.');
+  return { ok: false, queued: false };
 }
 
 // Health check
@@ -575,16 +531,9 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
           console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
         }
 
-        // Notify reporter by SMS (best-effort). If messaging provider not configured, record notification in DB.
-        const notifyMsg = `Your report (${id}) has been marked as ${status}. Thank you.`;
-        try {
-          if (updated && updated.phone_number) {
-            await sendNotificationToPhone(database, updated.phone_number, notifyMsg);
-          } else {
-            console.warn('No phone number available on updated issue', id);
-          }
-        } catch (notifyErr) {
-          console.warn('Notification send failed for issue', id, notifyErr && notifyErr.message);
+        // Notifications are disabled in this deployment. We still update USSD interactions above.
+        if (updated && updated.phone_number) {
+          console.log('Notification suppressed for issue', id, 'phone', updated.phone_number);
         }
       }
     } catch (e) {
@@ -684,11 +633,8 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
           ? `Your report (${tickets[0]}) has been marked as ${targetStatus}. Thank you.`
           : `Your ${tickets.length} reports (${tickets.slice(0,5).join(',')}${tickets.length>5? ',...':''}) have been marked as ${targetStatus}. Thank you.`;
 
-        try {
-          await sendNotificationToPhone(database, phone, notifyMsg);
-        } catch (notifyErr) {
-          console.warn('Notification send failed for phone', phone, notifyErr && notifyErr.message);
-        }
+        // Notifications suppressed by configuration - log intent
+        console.log('Notification suppressed for phone', phone, 'tickets', tickets.join(','));
       } catch (e) {
         console.warn('Error in post-update processing for phone', phone, e && e.message);
       }
@@ -718,65 +664,9 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
   }
 });
 
-// List notifications (MCA only)
-app.get('/api/admin/notifications', requireAuth, requireMCA, async (req, res) => {
-  try {
-    const database = await connectDB();
-    if (!database) return res.status(503).json({ error: 'Database not connected' });
-    const status = req.query.status;
-    const q = {};
-    if (status) q.status = status;
-    const items = await database.collection('notifications').find(q).sort({ created_at: -1 }).limit(500).toArray();
-    res.json(items);
-  } catch (e) {
-    console.error('Error listing notifications', e && e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
-
-// Retry notifications - accepts { ids: ['id1','id2'] } or { all: true, status: 'queued' }
-app.post('/api/admin/notifications/retry', requireAuth, requireMCA, async (req, res) => {
-  try {
-    const { ids, all, status } = req.body || {};
-    const database = await connectDB();
-    if (!database) return res.status(503).json({ error: 'Database not connected' });
-
-    let cursor;
-    if (Array.isArray(ids) && ids.length) {
-      const oids = ids.map(i => {
-        try { return new ObjectId(i); } catch(e){ return null; }
-      }).filter(Boolean);
-      cursor = database.collection('notifications').find({ _id: { $in: oids } });
-    } else if (all) {
-      const q = status ? { status } : {}; cursor = database.collection('notifications').find(q);
-    } else {
-      return res.status(400).json({ error: 'Provide ids array or all=true' });
-    }
-
-    const toRetry = await cursor.toArray();
-    const results = [];
-    for (const n of toRetry) {
-      try {
-        // attempt to send again
-        const phone = n.phone;
-        const message = n.message;
-        // call sendNotificationToPhone which will insert a record for the attempt
-        const attempt = await sendNotificationToPhone(database, phone, message);
-        // update original notification record with retry metadata
-        await database.collection('notifications').updateOne({ _id: n._id }, { $set: { last_retry_at: new Date(), last_retry_result: attempt, status: attempt.ok ? 'sent' : 'failed' } });
-        results.push({ id: n._id.toString(), ok: !!attempt.ok });
-      } catch (e) {
-        console.warn('Retry failed for notification', n._id && n._id.toString(), e && e.message);
-        results.push({ id: n._id && n._id.toString(), ok: false, error: e && e.message });
-      }
-    }
-
-    res.json({ success: true, count: results.length, results });
-  } catch (e) {
-    console.error('Error retrying notifications', e && e.message);
-    res.status(500).json({ error: e.message });
-  }
-});
+// Notifications functionality removed: endpoints for listing/retrying notifications were deprecated per configuration.
+// The sending path was already disabled earlier; keeping these endpoints would expose internal queues that are no longer used.
+// If you need a safe administrative endpoint in the future, re-add intentionally with appropriate access controls.
 
 // Update bursary status (MCA only)
 app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
@@ -915,6 +805,18 @@ app.get("/api/admin/stats", async (req, res) => {
   } catch (err) {
     console.error("Error fetching stats:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Simple chatbot/help endpoint to guide admins in using the dashboard
+app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    const reply = await chatbotSvc.generateReply(message, req.user);
+    res.json({ reply });
+  } catch (err) {
+    console.error('Chatbot error', err && err.message);
+    res.status(500).json({ error: 'chatbot error' });
   }
 });
 
