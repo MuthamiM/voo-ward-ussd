@@ -271,6 +271,49 @@ app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Change password (authenticated)
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body || {};
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: 'current_password and new_password are required' });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'new_password must be at least 6 characters' });
+    }
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const user = await database.collection('admin_users').findOne({ _id: new ObjectId(req.user.id) });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // verify current password against bcrypt or legacy sha256
+    let ok = false;
+    try {
+      if (isBcryptHash(user.password)) {
+        ok = await bcrypt.compare(current_password, user.password);
+      } else {
+        ok = user.password === hashPassword(current_password);
+      }
+    } catch (e) {
+      console.error('Password verify error:', e && e.message);
+      ok = false;
+    }
+
+    if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    // set new bcrypt password
+    const newHash = await bcrypt.hash(new_password, 10);
+    await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash, updated_at: new Date() } });
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Create user (MCA only)
 app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
@@ -875,440 +918,442 @@ async function initializeAdmin() {
       const martin = await database.collection('admin_users').findOne({ username: 'martin' });
       if (martin) {
         await database.collection('admin_users').deleteOne({ _id: martin._id });
-        console.log('🗑️ Removed legacy PA user: martin');
+        console.log('Removed legacy PA user: martin');
       }
     } catch (e) {
-      console.warn('⚠️ Failed to remove martin user (if existed):', e && e.message);
+      console.warn(' Failed to remove martin user (if existed):', e && e.message);
     }
   } catch (err) {
-    console.error("❌ Error initializing admin user:", err.message);
+    console.error(" Error initializing admin user:", err.message);
   }
 }
 
 // OLD HTML CODE REMOVED - Now served from file
 app.get("/old", (req, res) => {
+  // Escape all `${` as `\${` to prevent server-side interpolation
   res.send(`
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOO Ward Admin Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 { font-size: 2em; margin-bottom: 10px; }
-        .header p { opacity: 0.9; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card h3 { color: #667eea; font-size: 2.5em; margin-bottom: 5px; }
-        .stat-card p { color: #666; font-size: 0.9em; }
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-            padding: 0 30px;
-        }
-        .tab {
-            padding: 15px 25px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 16px;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            font-weight: bold;
-        }
-        .tab:hover { color: #667eea; }
-        .content { padding: 30px; }
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-        tr:hover { background: #f8f9fa; }
-        .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-        .badge.open { background: #ffc107; color: #000; }
-        .badge.in_progress { background: #17a2b8; color: white; }
-        .badge.resolved { background: #28a745; color: white; }
-        .badge.pending { background: #ffc107; color: #000; }
-        .badge.approved { background: #28a745; color: white; }
-        .badge.rejected { background: #dc3545; color: white; }
-        .export-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-        }
-        .export-btn:hover { background: #218838; }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2em;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .empty {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-style: italic;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VOO Ward Admin Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { 
+      max-width: 1400px; 
+      margin: 0 auto; 
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2em; margin-bottom: 10px; }
+    .header p { opacity: 0.9; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      padding: 30px;
+      background: #f8f9fa;
+    }
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .stat-card h3 { color: #667eea; font-size: 2.5em; margin-bottom: 5px; }
+    .stat-card p { color: #666; font-size: 0.9em; }
+    .tabs {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e0e0e0;
+      padding: 0 30px;
+    }
+    .tab {
+      padding: 15px 25px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 16px;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab.active {
+      color: #667eea;
+      border-bottom-color: #667eea;
+      font-weight: bold;
+    }
+    .tab:hover { color: #667eea; }
+    .content { padding: 30px; }
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    th {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+    tr:hover { background: #f8f9fa; }
+    .badge {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      font-weight: 600;
+    }
+    .badge.open { background: #ffc107; color: #000; }
+    .badge.in_progress { background: #17a2b8; color: white; }
+    .badge.resolved { background: #28a745; color: white; }
+    .badge.pending { background: #ffc107; color: #000; }
+    .badge.approved { background: #28a745; color: white; }
+    .badge.rejected { background: #dc3545; color: white; }
+    .export-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-right: 10px;
+    }
+    .export-btn:hover { background: #218838; }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 1.2em;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+    .empty {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+      font-style: italic;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1> VOO Kyamatu Ward Admin Dashboard</h1>
-            <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
-        </div>
-        
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3 id="stat-constituents">-</h3>
-                <p>Total Constituents</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-issues">-</h3>
-                <p>Reported Issues</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-bursaries">-</h3>
-                <p>Bursary Applications</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-announcements">-</h3>
-                <p>Active Announcements</p>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
-            <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
-            <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
-            <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
-        </div>
-        
-        <div class="content">
-            <div id="issues-content">
-                <button class="export-btn" onclick="exportData('issues')">📥 Export Issues CSV</button>
-                <div class="table-container">
-                    <table id="issues-table">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Category</th>
-                                <th>Message</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="issues-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="bursaries-content" style="display:none;">
-                <button class="export-btn" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
-                <div class="table-container">
-                    <table id="bursaries-table">
-                        <thead>
-                            <tr>
-                                <th>Ref Code</th>
-                                <th>Student Name</th>
-                                <th>School/Institution</th>
-                                <th>Amount Requested</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bursaries-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="constituents-content" style="display:none;">
-                <button class="export-btn" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
-                <div class="table-container">
-                    <table id="constituents-table">
-                        <thead>
-                            <tr>
-                                <th>Phone Number</th>
-                                <th>National ID</th>
-                                <th>Full Name</th>
-                                <th>Location</th>
-                                <th>Village</th>
-                                <th>Registered At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="constituents-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="announcements-content" style="display:none;">
-                <div class="table-container">
-                    <table id="announcements-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Body</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="announcements-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+  <div class="container">
+    <div class="header">
+      <h1> VOO Kyamatu Ward Admin Dashboard</h1>
+      <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
     </div>
+        
+    <div class="stats" id="stats">
+      <div class="stat-card">
+        <h3 id="stat-constituents">-</h3>
+        <p>Total Constituents</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="stat-issues">-</h3>
+        <p>Reported Issues</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="stat-bursaries">-</h3>
+        <p>Bursary Applications</p>
+      </div>
+      <div class="stat-card">
+        <h3 id="stat-announcements">-</h3>
+        <p>Active Announcements</p>
+      </div>
+    </div>
+        
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
+      <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
+      <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
+      <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
+    </div>
+        
+    <div class="content">
+      <div id="issues-content">
+        <button class="export-btn" onclick="exportData('issues')">📥 Export Issues CSV</button>
+        <div class="table-container">
+          <table id="issues-table">
+            <thead>
+              <tr>
+                <th>Ticket</th>
+                <th>Category</th>
+                <th>Message</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="issues-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+            
+      <div id="bursaries-content" style="display:none;">
+        <button class="export-btn" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
+        <div class="table-container">
+          <table id="bursaries-table">
+            <thead>
+              <tr>
+                <th>Ref Code</th>
+                <th>Student Name</th>
+                <th>School/Institution</th>
+                <th>Amount Requested</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="bursaries-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+            
+      <div id="constituents-content" style="display:none;">
+        <button class="export-btn" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
+        <div class="table-container">
+          <table id="constituents-table">
+            <thead>
+              <tr>
+                <th>Phone Number</th>
+                <th>National ID</th>
+                <th>Full Name</th>
+                <th>Location</th>
+                <th>Village</th>
+                <th>Registered At</th>
+              </tr>
+            </thead>
+            <tbody id="constituents-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+            
+      <div id="announcements-content" style="display:none;">
+        <div class="table-container">
+          <table id="announcements-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Body</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody id="announcements-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    <script>
-        const API_BASE = window.location.origin;
+  <script>
+    const API_BASE = window.location.origin;
         
-        // Load statistics
-        async function loadStats() {
-            try {
-                const res = await fetch(API_BASE + '/api/admin/stats');
-                const data = await res.json();
-                document.getElementById('stat-constituents').textContent = data.constituents.total;
-                document.getElementById('stat-issues').textContent = data.issues.total;
-                document.getElementById('stat-bursaries').textContent = data.bursaries.total;
-                document.getElementById('stat-announcements').textContent = data.announcements.total;
-            } catch (err) {
-                console.error('Error loading stats:', err);
-            }
+    // Load statistics
+    async function loadStats() {
+      try {
+        const res = await fetch(API_BASE + '/api/admin/stats');
+        const data = await res.json();
+        document.getElementById('stat-constituents').textContent = data.constituents.total;
+        document.getElementById('stat-issues').textContent = data.issues.total;
+        document.getElementById('stat-bursaries').textContent = data.bursaries.total;
+        document.getElementById('stat-announcements').textContent = data.announcements.total;
+      } catch (err) {
+        console.error('Error loading stats:', err);
+      }
+    }
+        
+    // Load issues
+    async function loadIssues() {
+      const tbody = document.getElementById('issues-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
+            
+      try {
+        const res = await fetch(API_BASE + '/api/admin/issues');
+        const issues = await res.json();
+                
+        if (issues.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">No issues reported yet</td></tr>';
+          return;
         }
+                
+        tbody.innerHTML = issues.map(issue => `
+          <tr>
+            <td><strong>\${issue.ticket}</strong></td>
+            <td>\${issue.category}</td>
+            <td>\${issue.message}</td>
+            <td>\${issue.phone_number}</td>
+            <td><span class="badge \${issue.status}">\${issue.status}</span></td>
+            <td>\${new Date(issue.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading issues: ' + err.message + '</td></tr>';
+      }
+    }
         
-        // Load issues
-        async function loadIssues() {
-            const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
+    // Load bursaries
+    async function loadBursaries() {
+      const tbody = document.getElementById('bursaries-tbody');
+      tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
             
-            try {
-                const res = await fetch(API_BASE + '/api/admin/issues');
-                const issues = await res.json();
+      try {
+        const res = await fetch(API_BASE + '/api/admin/bursaries');
+        const bursaries = await res.json();
                 
-                if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No issues reported yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = issues.map(issue => \`
-                    <tr>
-                        <td><strong>\${issue.ticket}</strong></td>
-                        <td>\${issue.category}</td>
-                        <td>\${issue.message}</td>
-                        <td>\${issue.phone_number}</td>
-                        <td><span class="badge \${issue.status}">\${issue.status}</span></td>
-                        <td>\${new Date(issue.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading issues: ' + err.message + '</td></tr>';
-            }
+        if (bursaries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty">No bursary applications yet</td></tr>';
+          return;
         }
+                
+        tbody.innerHTML = bursaries.map(b => `
+          <tr>
+            <td><strong>\${b.ref_code}</strong></td>
+            <td>\${b.student_name}</td>
+            <td>\${b.institution}</td>
+            <td>KES \${b.amount_requested.toLocaleString()}</td>
+            <td>\${b.phone_number}</td>
+            <td><span class="badge \${b.status.toLowerCase()}">\${b.status}</span></td>
+            <td>\${new Date(b.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading bursaries: ' + err.message + '</td></tr>';
+      }
+    }
         
-        // Load bursaries
-        async function loadBursaries() {
-            const tbody = document.getElementById('bursaries-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
+    // Load constituents
+    async function loadConstituents() {
+      const tbody = document.getElementById('constituents-tbody');
+      tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
             
-            try {
-                const res = await fetch(API_BASE + '/api/admin/bursaries');
-                const bursaries = await res.json();
+      try {
+        const res = await fetch(API_BASE + '/api/admin/constituents');
+        const constituents = await res.json();
                 
-                if (bursaries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty">No bursary applications yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = bursaries.map(b => \`
-                    <tr>
-                        <td><strong>\${b.ref_code}</strong></td>
-                        <td>\${b.student_name}</td>
-                        <td>\${b.institution}</td>
-                        <td>KES \${b.amount_requested.toLocaleString()}</td>
-                        <td>\${b.phone_number}</td>
-                        <td><span class="badge \${b.status.toLowerCase()}">\${b.status}</span></td>
-                        <td>\${new Date(b.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading bursaries: ' + err.message + '</td></tr>';
-            }
+        if (constituents.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="empty">No constituents registered yet</td></tr>';
+          return;
         }
-        
-        // Load constituents
-        async function loadConstituents() {
-            const tbody = document.getElementById('constituents-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
-            
-            try {
-                const res = await fetch(API_BASE + '/api/admin/constituents');
-                const constituents = await res.json();
                 
-                if (constituents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No constituents registered yet</td></tr>';
-                    return;
-                }
+        tbody.innerHTML = constituents.map(c => `
+          <tr>
+            <td>\${c.phone_number}</td>
+            <td>\${c.national_id}</td>
+            <td><strong>\${c.full_name}</strong></td>
+            <td>\${c.location}</td>
+            <td>\${c.village}</td>
+            <td>\${new Date(c.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading constituents: ' + err.message + '</td></tr>';
+      }
+    }
+        
+    // Load announcements
+    async function loadAnnouncements() {
+      const tbody = document.getElementById('announcements-tbody');
+      tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
+            
+      try {
+        const res = await fetch(API_BASE + '/api/admin/announcements');
+        const announcements = await res.json();
                 
-                tbody.innerHTML = constituents.map(c => \`
-                    <tr>
-                        <td>\${c.phone_number}</td>
-                        <td>\${c.national_id}</td>
-                        <td><strong>\${c.full_name}</strong></td>
-                        <td>\${c.location}</td>
-                        <td>\${c.village}</td>
-                        <td>\${new Date(c.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading constituents: ' + err.message + '</td></tr>';
-            }
+        if (announcements.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="empty">No announcements yet</td></tr>';
+          return;
         }
-        
-        // Load announcements
-        async function loadAnnouncements() {
-            const tbody = document.getElementById('announcements-tbody');
-            tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
-            
-            try {
-                const res = await fetch(API_BASE + '/api/admin/announcements');
-                const announcements = await res.json();
                 
-                if (announcements.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No announcements yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = announcements.map(a => \`
-                    <tr>
-                        <td><strong>\${a.title}</strong></td>
-                        <td>\${a.body}</td>
-                        <td>\${new Date(a.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="3" class="error">Error loading announcements: ' + err.message + '</td></tr>';
-            }
-        }
+        tbody.innerHTML = announcements.map(a => `
+          <tr>
+            <td><strong>\${a.title}</strong></td>
+            <td>\${a.body}</td>
+            <td>\${new Date(a.created_at).toLocaleString()}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="3" class="error">Error loading announcements: ' + err.message + '</td></tr>';
+      }
+    }
         
-        // Show tab
-        function showTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
+    // Show tab
+    function showTab(tab) {
+      // Hide all content
+      document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
             
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      // Remove active class from tabs
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             
-            // Show selected content
-            document.getElementById(tab + '-content').style.display = 'block';
+      // Show selected content
+      document.getElementById(tab + '-content').style.display = 'block';
             
-            // Add active class to tab
-            event.target.classList.add('active');
+      // Add active class to tab
+      event.target.classList.add('active');
             
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-        }
+      // Load data for selected tab
+      if (tab === 'issues') loadIssues();
+      else if (tab === 'bursaries') loadBursaries();
+      else if (tab === 'constituents') loadConstituents();
+      else if (tab === 'announcements') loadAnnouncements();
+    }
         
-        // Export data
-        function exportData(type) {
-            window.location.href = API_BASE + '/api/admin/export/' + type;
-        }
+    // Export data
+    function exportData(type) {
+      window.location.href = API_BASE + '/api/admin/export/' + type;
+    }
         
-        // Initialize
-        loadStats();
-        loadIssues();
+    // Initialize
+    loadStats();
+    loadIssues();
         
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadStats();
-            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
-            if (activeTab.includes('issues')) loadIssues();
-            else if (activeTab.includes('bursaries')) loadBursaries();
-            else if (activeTab.includes('constituents')) loadConstituents();
-            else if (activeTab.includes('announcements')) loadAnnouncements();
-        }, 30000);
-    </script>
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      loadStats();
+      const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
+      if (activeTab.includes('issues')) loadIssues();
+      else if (activeTab.includes('bursaries')) loadBursaries();
+      else if (activeTab.includes('constituents')) loadConstituents();
+      else if (activeTab.includes('announcements')) loadAnnouncements();
+    }, 30000);
+  </script>
 </body>
 </html>
   `);
 });
 
-// Start server
+// Start server when run directly. When required as a module, export the app so
+// a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
-app.listen(PORT, async () => {
+async function startServer() {
   console.log(`\n  VOO WARD ADMIN DASHBOARD`);
   console.log(` Dashboard: http://localhost:${PORT}`);
   console.log(`  Health: http://localhost:${PORT}/health`);
@@ -1326,4 +1371,30 @@ app.listen(PORT, async () => {
   
   console.log(`\n Ready to view issues, bursaries & constituents!\n`);
   console.log(` Login with: admin / admin123 (Change after first login!)\n`);
-});
+
+  app.listen(PORT, () => {
+    // Listening logged above; keep process alive when run standalone
+  });
+}
+
+// If this file is executed directly (node admin-dashboard.js) start its own server.
+if (require.main === module) {
+  startServer().catch(err => {
+    console.error('Failed to start admin-dashboard server:', err && err.message);
+    process.exit(1);
+  });
+} else {
+  // Export the Express app so a parent application can mount it (e.g. app.use('/admin', adminApp))
+  module.exports = app;
+  // expose connectDB for parent apps that may want to reuse the DB connection
+  try { module.exports.connectDB = connectDB; } catch (e) { /* noop */ }
+  // Also attempt a best-effort DB connect + admin init when required (non-blocking)
+  (async () => {
+    try {
+      const database = await connectDB();
+      if (database) await initializeAdmin();
+    } catch (e) {
+      console.warn('Admin dashboard module init warning:', e && e.message);
+    }
+  })();
+}
