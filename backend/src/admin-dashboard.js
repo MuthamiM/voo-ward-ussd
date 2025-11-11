@@ -24,6 +24,7 @@ app.use((req, res, next) => {
 });
 
 const fs = require('fs');
+const multer = require('multer');
 
 
 // Simple session storage (in production, use Redis or proper session management)
@@ -115,6 +116,34 @@ async function connectDB() {
     return null;
   }
 }
+
+// Prepare upload directory for profile avatars
+const UPLOADS_DIR = path.join(__dirname, '../public/uploads/avatars');
+try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+
+// Multer storage for avatars
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: function (req, file, cb) {
+    // filename: userId-timestamp.ext
+    const uid = req.user ? (req.user.id || req.user.username || 'anon') : 'anon';
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const name = `${uid}-${Date.now()}${ext}`;
+    cb(null, name);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: function (req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Only JPEG, PNG or WEBP images are allowed'));
+    cb(null, true);
+  }
+});
 
 // Notifications have been disabled per operator request.
 // keep a no-op helper to avoid removing all call sites; it will log the intent and return a neutral result.
@@ -851,30 +880,63 @@ app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
 });
 
 // Admin: update current user's profile
-app.post('/api/admin/profile', requireAuth, async (req, res) => {
+// Accept multipart/form-data with an optional 'photo' file and optional 'settings' JSON string
+app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, res) => {
   try {
-    const { fullName, phone_number } = req.body || {};
+    // fullName and phone_number may come from form-data or JSON
+    const fullName = req.body.fullName || req.body.full_name || undefined;
+    const phone_number = req.body.phone_number || req.body.phone || undefined;
+
+    // settings may be a JSON string in form-data
+    let settings = {};
+    if (req.body.settings) {
+      try { settings = typeof req.body.settings === 'string' ? JSON.parse(req.body.settings) : req.body.settings; } catch (e) { settings = {}; }
+    }
+
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
 
-    const username = req.user.username;
     const update = {};
-    if (fullName) update.fullName = fullName;
+    if (fullName) update.full_name = fullName;
     if (phone_number) update.phone_number = phone_number;
+    if (settings && Object.keys(settings).length) update.settings = settings;
 
-    await database.collection('users').updateOne({ username }, { $set: update });
-    const user = await database.collection('users').findOne({ username }, { projection: { password: 0 } });
-    // update session user
-    // find session token for this user and update stored session (simple map)
+    if (req.file) {
+      // store public-facing URL for the saved avatar
+      const rel = path.posix.join('/uploads/avatars', req.file.filename);
+      update.photo_url = rel;
+    }
+
+    // Update admin_users collection (the login users) not a generic 'users' collection
+    const userId = new ObjectId(req.user.id);
+    await database.collection('admin_users').updateOne({ _id: userId }, { $set: update });
+    const user = await database.collection('admin_users').findOne({ _id: userId }, { projection: { password: 0 } });
+
+    // normalize user object for client-side; map DB fields to expected camelCase
+    const userResp = {
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      phone_number: user.phone_number,
+      photo_url: user.photo_url || null,
+      settings: user.settings || {}
+    };
+
+    // update any active sessions for this username
     for (const [token, sess] of sessions.entries()) {
-      if (sess.user && sess.user.username === username) {
-        sess.user = user; sessions.set(token, sess);
+      if (sess.user && sess.user.username === user.username) {
+        sess.user = { ...sess.user, ...userResp };
+        sessions.set(token, sess);
       }
     }
 
-    res.json({ success: true, user });
+    res.json({ success: true, user: userResp });
   } catch (e) {
     console.error('Error updating profile', e && e.message);
+    // multer fileFilter or size errors may come through here
+    if (e && e.message && e.message.includes('Only JPEG')) return res.status(400).json({ error: e.message });
+    if (e && e.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large (max 2MB)' });
     res.status(500).json({ error: 'failed to update profile' });
   }
 });
