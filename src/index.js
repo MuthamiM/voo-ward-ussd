@@ -94,6 +94,18 @@ if (!fs.existsSync(adminDashboardPath)) {
   console.error('[ERROR] admin-dashboard.js not found at', adminDashboardPath);
 } else {
   try {
+        // Read the file first to detect if it's actually an HTML file or a JS file
+        try {
+          const sample = fs.readFileSync(adminDashboardPath, { encoding: 'utf8' });
+          const preview = sample.slice(0, 200).replace(/\n/g, '\\n');
+          console.log('[DEBUG] admin-dashboard.js preview:', preview);
+          if (preview.trim().startsWith('<')) {
+            console.warn('[WARN] admin-dashboard.js appears to start with < — it may be an HTML file served instead of JS');
+          }
+        } catch (readErr) {
+          console.warn('[WARN] Could not read admin-dashboard.js preview:', readErr && readErr.message);
+        }
+
     const adminDashboard = require(adminDashboardPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
       app.use(adminDashboard);
@@ -106,6 +118,7 @@ if (!fs.existsSync(adminDashboardPath)) {
     }
   } catch (e) {
     console.error('⚠️ Failed to require admin-dashboard module:', e && e.message);
+        if (e && e.stack) console.error(e.stack);
   }
 }
 
