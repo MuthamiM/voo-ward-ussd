@@ -1394,6 +1394,11 @@
     /* Chatbot floating button and modal positioning */
     .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11000; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 20px rgba(0,0,0,0.18); cursor:pointer; font-size:18px; }
     .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
+    /* Ensure tab content can be the positioning context for inline widgets */
+    .tab-content { position: relative; }
+    /* Inline chatbot button placed inside a tab (shown near the issues table) */
+    .chatbot-inline-button { position: absolute; right: 18px; bottom: 18px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(8px) scale(0.98); transition: opacity 220ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
+    .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
@@ -1529,6 +1534,8 @@
                                 <tbody id="issues-tbody"></tbody>
                             </table>
                         </div>
+                        <!-- Inline chatbot trigger anchored to the issues panel (appears bottom-right of the panel) -->
+                        <button id="chatbotInlineBtn" class="chatbot-inline-button" title="Help" onclick="showChatbot()">?</button>
                     </div>
 
                     <!-- Bursaries Tab -->
@@ -1822,6 +1829,8 @@
                     // hide chatbot when logged out
                     const cb = document.getElementById('chatbotBtn');
                     if (cb) cb.style.display = 'none';
+                    const cib = document.getElementById('chatbotInlineBtn');
+                    if (cib) cib.classList.remove('visible');
                 });
             }
         }
@@ -1840,9 +1849,9 @@
             // Load initial data
             loadStats();
             loadIssues();
-            // show chatbot button when dashboard is visible
-            const cb = document.getElementById('chatbotBtn');
-            if (cb) cb.style.display = 'block';
+            // show inline chatbot in issues panel by default (issues tab is the default)
+            const cib = document.getElementById('chatbotInlineBtn');
+            if (cib) cib.classList.add('visible');
             // show edit help button only for MCA
             const eh = document.getElementById('editHelpBtn');
             if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
@@ -2709,6 +2718,13 @@
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
+
+            // toggle inline chatbot visibility depending on selected tab
+            const cib = document.getElementById('chatbotInlineBtn');
+            if (cib) {
+                if (tab === 'issues') cib.classList.add('visible');
+                else cib.classList.remove('visible');
+            }
         }
 
         // ========================================
@@ -2734,6 +2750,8 @@
             // hide chatbot by default until user is logged in
             const cb = document.getElementById('chatbotBtn');
             if (cb) cb.style.display = 'none';
+            const cib = document.getElementById('chatbotInlineBtn');
+            if (cib) cib.classList.remove('visible');
         });
 
         // Auto-refresh data every 30 seconds
