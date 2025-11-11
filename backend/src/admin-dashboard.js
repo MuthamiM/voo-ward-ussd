@@ -23,6 +23,9 @@ app.use((req, res, next) => {
   next();
 });
 
+const fs = require('fs');
+
+
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
 
@@ -817,6 +820,62 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('Chatbot error', err && err.message);
     res.status(500).json({ error: 'chatbot error' });
+  }
+});
+
+// Admin: get chatbot KB (for editor UI)
+app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const kbPath = path.join(__dirname, 'chatbot_kb.json');
+    if (!fs.existsSync(kbPath)) return res.json([]);
+    const raw = fs.readFileSync(kbPath, 'utf8');
+    const data = JSON.parse(raw);
+    res.json(data);
+  } catch (e) {
+    console.error('Error reading chatbot KB', e && e.message);
+    res.status(500).json({ error: 'failed to read kb' });
+  }
+});
+
+// Admin: update chatbot KB (replace entire KB)
+app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const kb = req.body;
+    const kbPath = path.join(__dirname, 'chatbot_kb.json');
+    fs.writeFileSync(kbPath, JSON.stringify(kb, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error writing chatbot KB', e && e.message);
+    res.status(500).json({ error: 'failed to write kb' });
+  }
+});
+
+// Admin: update current user's profile
+app.post('/api/admin/profile', requireAuth, async (req, res) => {
+  try {
+    const { fullName, phone_number } = req.body || {};
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const username = req.user.username;
+    const update = {};
+    if (fullName) update.fullName = fullName;
+    if (phone_number) update.phone_number = phone_number;
+
+    await database.collection('users').updateOne({ username }, { $set: update });
+    const user = await database.collection('users').findOne({ username }, { projection: { password: 0 } });
+    // update session user
+    // find session token for this user and update stored session (simple map)
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.username === username) {
+        sess.user = user; sessions.set(token, sess);
+      }
+    }
+
+    res.json({ success: true, user });
+  } catch (e) {
+    console.error('Error updating profile', e && e.message);
+    res.status(500).json({ error: 'failed to update profile' });
   }
 });
 
