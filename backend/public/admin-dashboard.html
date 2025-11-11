@@ -1432,6 +1432,7 @@
                                         <th>Message</th>
                                         <th>Location</th>
                                         <th>Status</th>
+                                        <th>Action Note</th>
                                         <th>Created At</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1518,6 +1519,32 @@
                                     </tr>
                                 </thead>
                                 <tbody id="announcements-tbody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- USSD Interactions (MCA only) -->
+                    <div id="ussd-content" class="tab-content" style="display:none;">
+                        <div class="content-header">
+                            <h2 class="content-title">USSD Interactions</h2>
+                            <div class="content-actions">
+                                <button class="btn-sm btn-success" onclick="exportData('ussd')">Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Phone</th>
+                                        <th>Raw Text</th>
+                                        <th>Parsed</th>
+                                        <th>Response</th>
+                                        <th>Ref Code</th>
+                                        <th>IP</th>
+                                        <th>Created At</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ussd-tbody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -1697,15 +1724,16 @@
             const tabsNav = document.getElementById('tabsNav');
             
             if (currentUser.role === 'MCA') {
-                // MCA sees everything
-                tabsNav.innerHTML = `
-                    <button class="tab active" onclick="showTab('issues')">Issues</button>
-                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
-                    <button class="tab" onclick="showTab('constituents')">Constituents</button>
-                    <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                    <button class="tab" onclick="showTab('users')">User Management</button>
-                `;
-            } else {
+                    // MCA sees everything
+                    tabsNav.innerHTML = `
+                        <button class="tab active" onclick="showTab('issues')">Issues</button>
+                        <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
+                        <button class="tab" onclick="showTab('constituents')">Constituents</button>
+                        <button class="tab" onclick="showTab('announcements')">Announcements</button>
+                        <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
+                        <button class="tab" onclick="showTab('users')">User Management</button>
+                    `;
+                } else {
                 // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
                 tabsNav.innerHTML = `
                     <button class="tab active" onclick="showTab('issues')">Issues</button>
@@ -1811,59 +1839,99 @@
         async function loadIssues() {
             const tbody = document.getElementById('issues-tbody');
             tbody.innerHTML = '<tr><td colspan="8" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
-            
+
             try {
                 const res = await apiRequest('/api/admin/issues');
                 const issues = await res.json();
-                
+
                 if (issues.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
                     return;
                 }
-                
+
                 tbody.innerHTML = issues.map(issue => {
-                    const statusBadgeClass = issue.status === 'resolved' ? 'approved' : 
-                                            issue.status === 'in-progress' ? 'pending' : 'open';
+                    const status = (issue.status || 'pending').replace(' ', '_');
                     return `
                     <tr>
                         <td><strong>${issue.ticket}</strong></td>
                         <td><strong>${issue.reporter_name || 'Unknown'}</strong></td>
-                        <td>${issue.phone_number}</td>
-                        <td>${issue.message}</td>
+                        <td>${issue.phone_number || ''}</td>
+                        <td>${issue.message || ''}</td>
                         <td>${issue.location || 'Not specified'}</td>
-                        <td><span class="badge ${statusBadgeClass}">${issue.status}</span></td>
-                        <td>${new Date(issue.created_at).toLocaleString()}</td>
                         <td>
-                            <select onchange="updateIssueStatus('${issue._id}', this.value)" style="padding: 6px 10px; border-radius: 8px; border: 2px solid #e2e8f0; background: white; color: #1f2937; font-weight: 600; cursor: pointer; font-size: 13px;">
+                            <select data-issue-id="${issue.ticket}" class="issue-status-select" style="padding:6px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;">
                                 <option value="pending" ${issue.status === 'pending' ? 'selected' : ''}>Pending</option>
-                                <option value="in-progress" ${issue.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="in_progress" ${issue.status === 'in_progress' || issue.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
                                 <option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>Resolved</option>
                             </select>
                         </td>
+                        <td>
+                            <textarea data-action-note-for="${issue.ticket}" class="action-note" placeholder="Add action note (optional)">${issue.action_note || ''}</textarea>
+                        </td>
+                        <td>${new Date(issue.created_at).toLocaleString()}</td>
+                        <td class="actions-col"><button class="btn btn-sm btn-info save-action" data-issue-id="${issue.ticket}">Save</button></td>
                     </tr>
                 `;
                 }).join('');
+
+                // attach save handlers
+                document.querySelectorAll('.save-action').forEach(btn => {
+                    btn.addEventListener('click', async (ev) => {
+                        const id = btn.dataset.issueId;
+                        const sel = document.querySelector(`select[data-issue-id="${id}"]`);
+                        const note = document.querySelector(`textarea[data-action-note-for="${id}"]`).value;
+                        btn.disabled = true; btn.textContent = 'Saving...';
+                        try {
+                            const r = await apiRequest(`/api/admin/issues/${id}`, {
+                                method: 'PATCH',
+                                body: JSON.stringify({ status: sel.value, action_note: note })
+                            });
+                            if (!r.ok) {
+                                const err = await r.json();
+                                throw new Error(err.error || 'save failed');
+                            }
+                            btn.textContent = 'Saved';
+                            setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; loadIssues(); loadStats(); },700);
+                        } catch (e) {
+                            alert('Save failed: '+e.message);
+                            btn.disabled = false; btn.textContent = 'Save';
+                        }
+                    });
+                });
+
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }
         }
-        
-        async function updateIssueStatus(issueId, newStatus) {
-            try {
-                const res = await apiRequest(`/api/admin/issues/${issueId}/status`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ status: newStatus })
-                });
-                
-                if (!res.ok) {
-                    throw new Error('Failed to update status');
-                }
-                
-                loadIssues();
-                loadStats();
-            } catch (err) {
-                alert('Error updating status: ' + err.message);
-            }
+
+        // ========================================
+        // USSD INTERACTIONS
+        // ========================================
+        async function loadUssd() {
+            // ensure there's a ussd table in the DOM
+            let tbody = document.getElementById('ussd-tbody');
+            if(!tbody){ console.warn('USSD table not present'); return; }
+            tbody.innerHTML = '<tr><td colspan="7" class="loading-state"><div class="spinner"></div><div>Loading USSD interactions...</div></td></tr>';
+            try{
+                const res = await apiRequest('/api/admin/ussd');
+                const items = await res.json();
+                if(!items.length) return tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-text">No USSD interactions yet</div></td></tr>';
+                tbody.innerHTML = items.map(i=>{
+                    const phone = (i.phone_number || '').toString();
+                    const text = (i.text || '').toString().replace(/</g,'&lt;');
+                    let parsed = '';
+                    if (i.parsed_text) {
+                        try { parsed = typeof i.parsed_text === 'string' ? i.parsed_text : JSON.stringify(i.parsed_text); }
+                        catch (e) { parsed = String(i.parsed_text); }
+                        parsed = parsed.replace(/</g,'&lt;');
+                    }
+                    const response = (i.response || '').toString().replace(/</g,'&lt;');
+                    const ref = (i.ref_code || '').toString().replace(/</g,'&lt;');
+                    const ip = (i.ip || '').toString();
+                    const created = i.created_at ? new Date(i.created_at).toLocaleString() : '';
+                    return `<tr><td>${phone}</td><td>${text}</td><td>${parsed}</td><td>${response}</td><td>${ref}</td><td>${ip}</td><td>${created}</td></tr>`;
+                }).join('');
+            }catch(e){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-text">Error: ${e.message}</div></td></tr>`; }
         }
 
         // ========================================
@@ -2167,6 +2235,7 @@
             else if (tab === 'bursaries') loadBursaries();
             else if (tab === 'constituents') loadConstituents();
             else if (tab === 'announcements') loadAnnouncements();
+            else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
         }
 

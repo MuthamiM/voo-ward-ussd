@@ -305,6 +305,13 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
         return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
       }
     }
+    // Enforce only one MCA (main administrator)
+    if (role === 'MCA') {
+      const mcaCount = await database.collection('admin_users').countDocuments({ role: 'MCA' });
+      if (mcaCount >= 1) {
+        return res.status(400).json({ error: 'There is already an MCA user. Only one MCA allowed.' });
+      }
+    }
     
     // Create user (store bcrypt hash)
     const newUser = {
@@ -660,9 +667,20 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       .sort({ created_at: -1 })
       .toArray();
     
-    let csv = "Ticket,Category,Message,Phone,Status,Created At\n";
+    // Include action metadata in export: action_by, action_at, action_note
+    let csv = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
     issues.forEach(issue => {
-      csv += `"${issue.ticket}","${issue.category}","${issue.message}","${issue.phone_number}","${issue.status}","${issue.created_at}"\n`;
+      const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
+      const category = (issue.category || '').toString().replace(/"/g, '""');
+      const message = (issue.message || '').toString().replace(/"/g, '""');
+      const phone = (issue.phone_number || '').toString().replace(/"/g, '""');
+      const status = (issue.status || '').toString().replace(/"/g, '""');
+      const actionBy = (issue.action_by || '').toString().replace(/"/g, '""');
+      const actionAt = issue.action_at ? new Date(issue.action_at).toISOString() : '';
+      const actionNote = (issue.action_note || '').toString().replace(/"/g, '""');
+      const created = issue.created_at ? new Date(issue.created_at).toISOString() : '';
+
+      csv += `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`;
     });
     
     res.header("Content-Type", "text/csv");
@@ -670,6 +688,81 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
     res.send(csv);
   } catch (err) {
     console.error("Error exporting issues:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Persist USSD interactions (public endpoint used by USSD gateway)
+app.post('/api/ussd', async (req, res) => {
+  try {
+    const { phone, text, response, ref_code, parsed_text } = req.body || {};
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const doc = {
+      phone_number: phone || (req.body && req.body.phone_number) || '',
+      text: text || '',
+      parsed_text: parsed_text || null,
+      response: response || '',
+      ref_code: ref_code || null,
+      ip: req.ip,
+      created_at: new Date()
+    };
+
+    await database.collection('ussd_interactions').insertOne(doc);
+    res.json({ success: true, data: doc });
+  } catch (err) {
+    console.error('Error saving USSD interaction:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: list USSD interactions
+app.get('/api/admin/ussd', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const interactions = await database.collection('ussd_interactions')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+
+    res.json(interactions);
+  } catch (err) {
+    console.error('Error fetching USSD interactions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: export USSD interactions as CSV
+app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const interactions = await database.collection('ussd_interactions')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+
+    let csv = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
+    interactions.forEach(i => {
+      const phone = (i.phone_number || '').toString().replace(/"/g, '""');
+      const text = (i.text || '').toString().replace(/"/g, '""');
+      const parsed = i.parsed_text ? JSON.stringify(i.parsed_text).replace(/"/g, '""') : '';
+      const response = (i.response || '').toString().replace(/"/g, '""');
+      const ref = (i.ref_code || '').toString().replace(/"/g, '""');
+      const ip = (i.ip || '').toString();
+      const created = i.created_at ? new Date(i.created_at).toISOString() : '';
+      csv += `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
+    res.send(csv);
+  } catch (err) {
+    console.error('Error exporting USSD interactions:', err);
     res.status(500).json({ error: err.message });
   }
 });
