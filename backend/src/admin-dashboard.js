@@ -189,58 +189,10 @@ app.post("/api/auth/login", async (req, res) => {
     
     const database = await connectDB();
     
-    // FALLBACK: Allow demo login when database is not connected (local testing only)
+    // When database is not connected, require DB for authentication.
     if (!database) {
-      console.log("⚠️  Database not connected - using demo login mode");
-      
-      // Demo credentials: admin/admin123 or pa/pa123
-      if (username.toLowerCase() === "admin" && password === "admin123") {
-        const token = generateSessionToken();
-        sessions.set(token, {
-          user: {
-            id: "demo-mca-id",
-            username: "admin",
-            fullName: "MCA Administrator (Demo)",
-            role: "MCA"
-          },
-          createdAt: new Date()
-        });
-        
-        return res.json({
-          success: true,
-          token,
-          user: {
-            id: "demo-mca-id",
-            username: "admin",
-            fullName: "MCA Administrator (Demo)",
-            role: "MCA"
-          }
-        });
-      } else if (username.toLowerCase() === "pa" && password === "pa123") {
-        const token = generateSessionToken();
-        sessions.set(token, {
-          user: {
-            id: "demo-pa-id",
-            username: "pa",
-            fullName: "Personal Assistant (Demo)",
-            role: "PA"
-          },
-          createdAt: new Date()
-        });
-        
-        return res.json({
-          success: true,
-          token,
-          user: {
-            id: "demo-pa-id",
-            username: "pa",
-            fullName: "Personal Assistant (Demo)",
-            role: "PA"
-          }
-        });
-      } else {
-        return res.status(401).json({ error: "Invalid credentials. Use admin/admin123 or pa/pa123 in demo mode" });
-      }
+      console.error('Database not connected - authentication requires a configured database');
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
     // PRODUCTION: Use database authentication
@@ -744,10 +696,85 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
 
     const succeeded = results.filter(r => r.ok).length;
     const failed = results.length - succeeded;
+    // Record audit entry for this bulk operation
+    try {
+      await database.collection('admin_audit').insertOne({
+        action: 'bulk-resolve',
+        performed_by: req.user?.username || 'unknown',
+        count: succeeded,
+        failed: failed,
+        tickets: issueIds,
+        note: note || null,
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Failed to write audit entry for bulk-resolve', auditErr && auditErr.message);
+    }
+
     res.json({ success: true, updated: succeeded, failed, results });
   } catch (err) {
     console.error('Bulk resolve error:', err && err.message);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// List notifications (MCA only)
+app.get('/api/admin/notifications', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+    const status = req.query.status;
+    const q = {};
+    if (status) q.status = status;
+    const items = await database.collection('notifications').find(q).sort({ created_at: -1 }).limit(500).toArray();
+    res.json(items);
+  } catch (e) {
+    console.error('Error listing notifications', e && e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// Retry notifications - accepts { ids: ['id1','id2'] } or { all: true, status: 'queued' }
+app.post('/api/admin/notifications/retry', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { ids, all, status } = req.body || {};
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    let cursor;
+    if (Array.isArray(ids) && ids.length) {
+      const oids = ids.map(i => {
+        try { return new ObjectId(i); } catch(e){ return null; }
+      }).filter(Boolean);
+      cursor = database.collection('notifications').find({ _id: { $in: oids } });
+    } else if (all) {
+      const q = status ? { status } : {}; cursor = database.collection('notifications').find(q);
+    } else {
+      return res.status(400).json({ error: 'Provide ids array or all=true' });
+    }
+
+    const toRetry = await cursor.toArray();
+    const results = [];
+    for (const n of toRetry) {
+      try {
+        // attempt to send again
+        const phone = n.phone;
+        const message = n.message;
+        // call sendNotificationToPhone which will insert a record for the attempt
+        const attempt = await sendNotificationToPhone(database, phone, message);
+        // update original notification record with retry metadata
+        await database.collection('notifications').updateOne({ _id: n._id }, { $set: { last_retry_at: new Date(), last_retry_result: attempt, status: attempt.ok ? 'sent' : 'failed' } });
+        results.push({ id: n._id.toString(), ok: !!attempt.ok });
+      } catch (e) {
+        console.warn('Retry failed for notification', n._id && n._id.toString(), e && e.message);
+        results.push({ id: n._id && n._id.toString(), ok: false, error: e && e.message });
+      }
+    }
+
+    res.json({ success: true, count: results.length, results });
+  } catch (e) {
+    console.error('Error retrying notifications', e && e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
