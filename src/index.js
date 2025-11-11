@@ -76,7 +76,7 @@ app.post("/ussd", async (req, res) => {
 
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
-const adminDashboard = require('./admin-dashboard');
+const adminDashboard = require('../backend/src/admin-dashboard');
 // Defensive: some versions of admin-dashboard manage their own server and do not
 // export an express router. Only call app.use when a middleware/router is exported.
 if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
