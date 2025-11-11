@@ -1394,6 +1394,7 @@
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()">Logout</button>
+                    <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
                 </div>
             </div>
         </nav>
@@ -1579,7 +1580,87 @@
         </div>
     </div>
 
+    <!-- Change Password Modal -->
+    <div class="modal" id="changePasswordModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Change Password</h3>
+            </div>
+            <div class="modal-body">
+                <div id="changePasswordError"></div>
+                <form id="changePasswordForm">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" required autocomplete="current-password" style="color: #1f2937;">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword1">New Password</label>
+                        <input type="password" id="newPassword1" class="form-input" required autocomplete="new-password" style="color: #1f2937;">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword2">Confirm New Password</label>
+                        <input type="password" id="newPassword2" class="form-input" required autocomplete="new-password" style="color: #1f2937;">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
+                <button class="btn-sm btn-info" onclick="changePassword()">Change Password</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Add User Modal -->
+        // ========================================
+        // PASSWORD CHANGE
+        // ========================================
+        function showChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.add('show');
+            document.getElementById('changePasswordError').innerHTML = '';
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword1').value = '';
+            document.getElementById('newPassword2').value = '';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').classList.remove('show');
+            document.getElementById('changePasswordError').innerHTML = '';
+        }
+
+        async function changePassword() {
+            const current = document.getElementById('currentPassword').value;
+            const new1 = document.getElementById('newPassword1').value;
+            const new2 = document.getElementById('newPassword2').value;
+            const errorDiv = document.getElementById('changePasswordError');
+            errorDiv.innerHTML = '';
+            if (!current || !new1 || !new2) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">All fields are required</div>';
+                return;
+            }
+            if (new1 !== new2) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">New passwords do not match</div>';
+                return;
+            }
+            if (new1.length < 6) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">New password must be at least 6 characters</div>';
+                return;
+            }
+            try {
+                const res = await apiRequest('/api/auth/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ current_password: current, new_password: new1 })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to change password'}</div>`;
+                    return;
+                }
+                closeChangePasswordModal();
+                alert('Password changed successfully! Please use your new password next time.');
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            }
+        }
     <div class="modal" id="addUserModal">
         <div class="modal-content">
             <div class="modal-header">
