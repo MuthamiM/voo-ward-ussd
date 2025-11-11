@@ -89,6 +89,7 @@ const candidatePaths = [
 
 console.log('[DEBUG] CWD:', process.cwd());
 let chosenPath = null;
+let adminDashboard = null;
 for (const p of candidatePaths) {
   try {
     const exists = fs.existsSync(p);
@@ -126,7 +127,7 @@ if (!chosenPath) {
 } else {
   console.log('[DEBUG] Requiring admin-dashboard from chosen path:', chosenPath);
   try {
-    const adminDashboard = require(chosenPath);
+    adminDashboard = require(chosenPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
       app.use(adminDashboard);
       console.log('[DEBUG] admin-dashboard mounted successfully from', chosenPath);
