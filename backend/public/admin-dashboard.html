@@ -33,6 +33,30 @@
             --gray-900: #18181b;
         }
 
+        /* Smooth update animation for rows when status changes */
+        .row-updated {
+            animation: highlight-row 1s ease forwards;
+        }
+
+        @keyframes highlight-row {
+            0% { background: rgba(124,58,237,0.12); }
+            100% { background: transparent; }
+        }
+
+        /* Small button spinner */
+        .btn .spinner-inline {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.6);
+            border-top-color: rgba(255,255,255,0.95);
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
         * {
             margin: 0;
             padding: 0;
@@ -1960,8 +1984,18 @@
                     btn.addEventListener('click', async (ev) => {
                         const id = btn.dataset.issueId;
                         const sel = document.querySelector(`select[data-issue-id="${id}"]`);
-                        const note = document.querySelector(`textarea[data-action-note-for="${id}"]`).value;
-                        btn.disabled = true; btn.textContent = 'Saving...';
+                        const noteEl = document.querySelector(`textarea[data-action-note-for="${id}"]`);
+                        const note = noteEl.value;
+                        const row = btn.closest('tr');
+
+                        // UX: show inline saving state
+                        btn.disabled = true;
+                        const originalText = btn.textContent;
+                        btn.textContent = 'Saving';
+                        const spinner = document.createElement('span');
+                        spinner.className = 'spinner-inline';
+                        btn.appendChild(spinner);
+
                         try {
                             const r = await apiRequest(`/api/admin/issues/${id}`, {
                                 method: 'PATCH',
@@ -1971,11 +2005,26 @@
                                 const err = await r.json();
                                 throw new Error(err.error || 'save failed');
                             }
+
+                            // Success UX: animate row, show saved state
+                            row.classList.add('row-updated');
                             btn.textContent = 'Saved';
-                            setTimeout(()=>{ btn.textContent='Save'; btn.disabled=false; loadIssues(); loadStats(); },700);
+                            setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                                // remove animation class after it finishes
+                                row.classList.remove('row-updated');
+                            }, 900);
+
+                            // Optionally refresh stats in background
+                            try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
                         } catch (e) {
                             alert('Save failed: '+e.message);
-                            btn.disabled = false; btn.textContent = 'Save';
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                        } finally {
+                            // clean up spinner if still present
+                            if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
                         }
                     });
                 });
