@@ -80,8 +80,16 @@ app.post("/ussd", async (req, res) => {
 // export an express router. Only call app.use when a middleware/router is exported.
 // Defensive: Log resolved path and check file existence before requiring admin-dashboard
 const fs = require('fs');
-const adminDashboardPath = require('path').resolve(__dirname, '../backend/src/admin-dashboard.js');
+const path = require('path');
+const adminDashboardPath = path.resolve(process.cwd(), 'backend/src/admin-dashboard.js');
+console.log('[DEBUG] CWD:', process.cwd());
 console.log('[DEBUG] Attempting to require admin-dashboard from:', adminDashboardPath);
+try {
+  const dirList = fs.readdirSync(path.dirname(adminDashboardPath));
+  console.log('[DEBUG] Files in backend/src:', dirList);
+} catch (e) {
+  console.warn('[WARN] Could not list backend/src directory:', e && e.message);
+}
 if (!fs.existsSync(adminDashboardPath)) {
   console.error('[ERROR] admin-dashboard.js not found at', adminDashboardPath);
 } else {
