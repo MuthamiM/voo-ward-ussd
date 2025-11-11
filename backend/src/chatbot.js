@@ -1,16 +1,28 @@
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
+// Load fallback knowledge base from JSON for easier editing
+let KB = [];
+try {
+  KB = require('./chatbot_kb.json');
+} catch (e) {
+  console.warn('Chatbot KB not found or invalid, falling back to inline rules');
+}
+
 function fallbackReply(text) {
   const t = (text || '').toLowerCase();
   if (!t) return 'Hi — tell me what you need help with. Try: "resolve issues", "export issues", "change password".';
-  if (t.includes('resolve') || t.includes('bulk resolve')) return 'To resolve issues: select the checkboxes next to issues, click "Resolve Selected", provide an optional action note, then confirm. This will mark issues as resolved in the system.';
-  if (t.includes('export') || t.includes('csv')) return 'To export issues as CSV: open the Issues tab and click "Export CSV". A file named issues.csv will be downloaded containing ticket, category, message, phone, status and action metadata.';
-  if (t.includes('password') || t.includes('change password')) return 'To change your password: click the "Change Password" button in the top-right, provide your current and new password, then submit.';
-  if (t.includes('ussd') || t.includes('interactions')) return 'USSD interactions are visible under the USSD tab. You can review recent interactions, phone numbers, parsed input and responses there.';
-  if (t.includes('parsed_text') || t.includes('parsed')) return 'The `parsed_text` field contains structured data extracted from the user input (for example JSON or key-value pairs). Use it to quickly understand the user intent — open the USSD tab and inspect the parsed_text column for each interaction. If it is empty, the gateway did not provide a parser for that session.';
-  if (t.includes('search') && t.includes('phone')) return 'To search by phone: open the USSD or Constituents tab and use the search box (or export CSV and filter). You can also programmatically query /api/admin/ussd for phone numbers.';
-  if (t.includes('notification')) return 'Notifications (SMS) have been disabled in this deployment. Reporters will not receive SMS. Use the in-dashboard tools to manage and update reports.';
+
+  if (Array.isArray(KB) && KB.length) {
+    for (const entry of KB) {
+      if (!entry.keys || !entry.reply) continue;
+      for (const k of entry.keys) {
+        if (t.includes(k.toLowerCase())) return entry.reply;
+      }
+    }
+  }
+
+  // Fallback hard-coded answers if KB didn't match
   if (t.includes('help') || t === 'hi' || t === 'hello') return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
   return 'Sorry — I did not understand that. Try: "resolve issues", "export issues", or "change password".';
 }
