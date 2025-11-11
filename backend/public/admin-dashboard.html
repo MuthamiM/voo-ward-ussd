@@ -1387,6 +1387,10 @@
         .modal-header { font-weight: 700; margin-bottom: 8px; }
         .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
         .modal.show { display:block; }
+        /* Chat rows */
+        .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
+        .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
+        .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
     </style>
 </head>
 <body>
@@ -1423,6 +1427,21 @@
             </form>
         </div>
     </div>
+        <!-- Chatbot Modal -->
+        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end;">
+            <div class="modal" style="width:380px; max-width:92%; margin:0 16px 24px auto;">
+                <div class="modal-header">Help Chat</div>
+                <div id="chatbot-messages" style="max-height:300px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
+                </div>
+            </div>
+        </div>
 
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
@@ -1443,7 +1462,7 @@
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()">Logout</button>
-                    <button class="btn-sm btn-info" style="margin-left:8px;" onclick="showNotificationsModal()">Notifications</button>
+                    <button class="btn-sm btn-info" style="margin-left:8px;" onclick="showChatbot()">Help</button>
                     <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
                 </div>
             </div>
@@ -2138,41 +2157,42 @@
             }
         }
 
-        // Notifications modal helpers
-        function showNotificationsModal() {
-            document.getElementById('notificationsModal').style.display = 'flex';
-            loadFailedNotifications();
-        }
-
-        async function loadFailedNotifications() {
-            const tbody = document.getElementById('notifications-tbody');
-            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
-            try {
-                const res = await apiRequest('/api/admin/notifications?status=queued');
-                const items = await res.json();
-                if (!items.length) return tbody.innerHTML = '<tr><td colspan="4">No queued notifications</td></tr>';
-                tbody.innerHTML = items.map(n => `
-                    <tr>
-                        <td>${n.phone}</td>
-                        <td style="max-width:300px;">${(n.message||'').slice(0,200)}</td>
-                        <td>${n.status}</td>
-                        <td><button class="btn-sm btn-primary" onclick="retryNotification('${n._id}')">Retry</button></td>
-                    </tr>
-                `).join('');
-            } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="4">Error: ${e.message}</td></tr>`;
+        // In-dashboard chatbot helper
+        function showChatbot() {
+            document.getElementById('chatbotModal').style.display = 'flex';
+            const convo = document.getElementById('chatbot-messages');
+            if (!convo.children.length) {
+                appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
             }
+            document.getElementById('chatbot-input').focus();
         }
 
-        async function retryNotification(id) {
+        function hideChatbot() {
+            document.getElementById('chatbotModal').style.display = 'none';
+        }
+
+        function appendChatMessage(who, text) {
+            const c = document.getElementById('chatbot-messages');
+            const el = document.createElement('div');
+            el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
+            el.textContent = text;
+            c.appendChild(el);
+            c.scrollTop = c.scrollHeight;
+        }
+
+        async function sendChatbotMessage() {
+            const input = document.getElementById('chatbot-input');
+            const text = (input.value || '').trim();
+            if (!text) return;
+            appendChatMessage('user', text);
+            input.value = '';
             try {
-                const res = await apiRequest('/api/admin/notifications/retry', { method: 'POST', body: JSON.stringify({ ids: [id] }) });
+                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text }) });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Retry failed');
-                showToast('Retry attempted', 'info');
-                loadFailedNotifications();
+                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply);
+                else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
             } catch (e) {
-                showToast('Retry failed: ' + e.message, 'error');
+                appendChatMessage('bot', 'Error contacting help service: ' + e.message);
             }
         }
 
@@ -2553,29 +2573,12 @@
     <div id="bulkResolveModal" class="modal-backdrop" style="display:none;">
         <div class="modal">
             <div class="modal-header">Resolve selected issues</div>
-            <div>You're about to resolve <strong id="bulkResolveCount">0</strong> issue(s). This will notify reporters.</div>
+            <div>You're about to resolve <strong id="bulkResolveCount">0</strong> issue(s). This will mark them resolved.</div>
             <div style="margin-top:8px;"><label for="bulkResolveNote">Optional action note</label><textarea id="bulkResolveNote" rows="3" style="width:100%;margin-top:6px;"></textarea></div>
             <input type="hidden" id="bulkResolveSelected" />
             <div class="modal-footer">
                 <button class="btn-sm" onclick="hideBulkResolveModal()">Cancel</button>
                 <button class="btn-sm btn-primary" onclick="confirmBulkResolve()">Confirm</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notifications Modal -->
-    <div id="notificationsModal" class="modal-backdrop" style="display:none;">
-        <div class="modal">
-            <div class="modal-header">Notifications</div>
-            <div style="margin-bottom:8px;">Failed / Queued notifications (most recent). <button class="btn-sm btn-primary" onclick="loadFailedNotifications()">Refresh</button></div>
-            <div style="max-height:300px; overflow:auto;">
-                <table style="width:100%; border-collapse: collapse;">
-                    <thead><tr><th>Phone</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody id="notifications-tbody"></tbody>
-                </table>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-sm" onclick="document.getElementById('notificationsModal').style.display='none'">Close</button>
             </div>
         </div>
     </div>
