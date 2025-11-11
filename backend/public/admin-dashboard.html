@@ -1383,7 +1383,18 @@
 
         /* Modal (simple) */
         .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
-        .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
+            .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
+        /* Profile avatar & settings */
+        #profileAvatar { width:42px; height:42px; border-radius:50%; display:block; }
+        .profile-row { display:flex; gap:12px; align-items:center; }
+        .settings-switch { display:flex; align-items:center; gap:8px; }
+        .settings-switch input[type="checkbox"] { width:18px; height:18px; }
+        /* Smaller change password modal */
+        #changePasswordModal .modal-content { max-width:420px; width:92%; padding:14px; }
+        /* Dark theme variant */
+        body.dark-theme { background: #0b1220; color: #e6eef8; }
+        body.dark-theme .container { background: #071026; }
+        body.dark-theme .navbar { background: rgba(10,10,12,0.9); color: #e6eef8; }
         .modal-header { font-weight: 700; margin-bottom: 8px; }
     .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
     .modal.show { display:block; }
@@ -1392,12 +1403,16 @@
     .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
     .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
     /* Chatbot floating button and modal positioning */
-    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11000; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 20px rgba(0,0,0,0.18); cursor:pointer; font-size:18px; }
+    /* global floating chatbot removed (inline Issues-panel help used instead) */
     .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
+    /* Floating chatbot button (viewport fixed bottom-right) */
+    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11001; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform: translateY(6px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
+    .chatbot-button svg { display:block; }
+    .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
     /* Inline chatbot button placed inside a tab (shown near the issues table) */
-    .chatbot-inline-button { position: absolute; right: 18px; bottom: 18px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(8px) scale(0.98); transition: opacity 220ms ease, transform 220ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
+    .chatbot-inline-button { position: absolute; right: 18px; bottom: 68px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(10px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
     .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
@@ -1437,8 +1452,13 @@
             </form>
         </div>
     </div>
-        <!-- Floating Chatbot Button -->
-        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()">?</button>
+        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
+        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot">
+            <!-- Bot SVG icon -->
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
+            </svg>
+        </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
         <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
@@ -1476,14 +1496,22 @@
                 </div>
                 
                         <div class="navbar-user">
-                    <div class="user-info">
-                        <span class="user-info-name" id="userFullName" style="cursor:pointer;" onclick="showProfileModal()">Loading...</span>
-                        <span class="user-info-role" id="userRole">...</span>
-                    </div>
-                    <button id="editHelpBtn" class="btn-sm btn-info" style="margin-left:8px; display:none;" onclick="showKbEditor()">Edit Help</button>
-                    <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
-                    <button class="btn-logout" onclick="logout()">Logout</button>
-                </div>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <button id="editHelpBtn" class="btn-sm btn-info" style="display:none;" onclick="showKbEditor()">Edit Help</button>
+                                <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
+                                <button class="btn-logout" onclick="logout()">Logout</button>
+                            </div>
+                            <!-- Profile avatar on the far right -->
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="text-align:right; margin-right:6px;">
+                                    <div id="userFullName" style="font-weight:700; cursor:pointer;" onclick="showProfileModal()">Loading...</div>
+                                    <div id="userRole" style="font-size:12px; color:#6b7280;">...</div>
+                                </div>
+                                <button id="profileAvatarBtn" onclick="showProfileModal()" title="Your profile" style="border: none; background: transparent; padding:0; cursor:pointer;">
+                                    <img id="profileAvatar" src="" alt="avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.14);background:linear-gradient(135deg,#7c3aed,#a78bfa);"/>
+                                </button>
+                            </div>
+                        </div>
             </div>
         </nav>
 
@@ -1831,6 +1859,7 @@
                     if (cb) cb.style.display = 'none';
                     const cib = document.getElementById('chatbotInlineBtn');
                     if (cib) cib.classList.remove('visible');
+                    const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
             }
         }
@@ -1842,6 +1871,9 @@
             // Update user info
             document.getElementById('userFullName').textContent = currentUser.fullName;
             document.getElementById('userRole').textContent = currentUser.role;
+            // set avatar if present
+            const pav = document.getElementById('profileAvatar');
+            if (pav) pav.src = currentUser.photo_url || '';
             
             // Setup dashboard based on role
             setupDashboard();
@@ -2302,10 +2334,24 @@
         }
 
         // Profile modal helpers
+        // Profile modal helpers (enhanced)
         function showProfileModal() {
             if (!currentUser) return showToast('Not logged in', 'error');
             document.getElementById('profileFullName').value = currentUser.fullName || '';
             document.getElementById('profilePhone').value = currentUser.phone_number || '';
+            // avatar preview
+            const avatar = document.getElementById('profilePhotoPreview');
+            if (avatar) {
+                if (currentUser.photo_url) avatar.src = currentUser.photo_url;
+                else avatar.src = '';
+            }
+            // load settings from localStorage (or user payload)
+            const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
+            document.getElementById('setting_dark_theme').checked = !!s.darkTheme;
+            document.getElementById('setting_compact_mode').checked = !!s.compactMode;
+            document.getElementById('setting_animations').checked = (s.animations !== false);
+            document.getElementById('setting_sounds').checked = !!s.sounds;
+
             document.getElementById('profileModal').style.display = 'flex';
         }
 
@@ -2314,19 +2360,83 @@
         async function saveProfile() {
             const fullName = document.getElementById('profileFullName').value.trim();
             const phone_number = document.getElementById('profilePhone').value.trim();
+            const photoInput = document.getElementById('profilePhotoInput');
+            const settings = {
+                darkTheme: !!document.getElementById('setting_dark_theme').checked,
+                compactMode: !!document.getElementById('setting_compact_mode').checked,
+                animations: !!document.getElementById('setting_animations').checked,
+                sounds: !!document.getElementById('setting_sounds').checked
+            };
+
             try {
-                const res = await apiRequest('/api/admin/profile', { method: 'POST', body: JSON.stringify({ fullName, phone_number }) });
+                let res;
+                if (photoInput && photoInput.files && photoInput.files.length) {
+                    // use FormData for file upload
+                    const fd = new FormData();
+                    fd.append('fullName', fullName);
+                    fd.append('phone_number', phone_number);
+                    fd.append('settings', JSON.stringify(settings));
+                    fd.append('photo', photoInput.files[0]);
+
+                    res = await fetch(API_BASE + '/api/admin/profile', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + authToken },
+                        body: fd
+                    });
+                } else {
+                    res = await apiRequest('/api/admin/profile', { method: 'POST', body: JSON.stringify({ fullName, phone_number, settings }) });
+                }
+
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Save failed');
-                // update local currentUser
-                currentUser = data.user;
+
+                // update local currentUser and UI
+                currentUser = data.user || { ...currentUser, fullName, phone_number };
+                if (data.user && data.user.photo_url) currentUser.photo_url = data.user.photo_url;
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 document.getElementById('userFullName').textContent = currentUser.fullName;
+                if (currentUser.photo_url) document.getElementById('profileAvatar').src = currentUser.photo_url;
+
+                // persist settings and apply
+                localStorage.setItem('voo_profile_settings', JSON.stringify(settings));
+                applyProfileSettings(settings);
+
                 showToast('Profile updated', 'success');
                 hideProfileModal();
             } catch (e) {
                 showToast('Profile save failed: ' + e.message, 'error');
             }
+        }
+
+        function handleProfilePhotoPreview() {
+            const input = document.getElementById('profilePhotoInput');
+            const preview = document.getElementById('profilePhotoPreview');
+            if (!input || !preview) return;
+            const f = input.files && input.files[0];
+            if (!f) { preview.src = currentUser?.photo_url || ''; return; }
+            const reader = new FileReader();
+            reader.onload = (ev) => preview.src = ev.target.result;
+            reader.readAsDataURL(f);
+        }
+
+        function applyProfileSettings(s) {
+            if (!s) s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
+            if (s.darkTheme) document.body.classList.add('dark-theme'); else document.body.classList.remove('dark-theme');
+            // compactMode and animations/sounds adjustments can be picked up elsewhere; store for other UI pieces
+            localStorage.setItem('voo_profile_settings', JSON.stringify(s));
+        }
+
+        // toggle helpers for settings
+        function toggleSetting(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
+            if (id === 'setting_dark_theme') s.darkTheme = el.checked;
+            if (id === 'setting_compact_mode') s.compactMode = el.checked;
+            if (id === 'setting_animations') s.animations = el.checked;
+            if (id === 'setting_sounds') s.sounds = el.checked;
+            localStorage.setItem('voo_profile_settings', JSON.stringify(s));
+            applyProfileSettings(s);
         }
 
         // KB editor helpers
@@ -2747,6 +2857,8 @@
                 currentUser = JSON.parse(storedUser);
                 showDashboard();
             }
+            // apply any stored profile settings (theme, compact, etc.)
+            try { applyProfileSettings(); } catch (e) { /* ignore */ }
             // hide chatbot by default until user is logged in
             const cb = document.getElementById('chatbotBtn');
             if (cb) cb.style.display = 'none';
@@ -2772,19 +2884,38 @@
 
     <!-- Profile Modal -->
     <div id="profileModal" class="modal-backdrop" style="display:none;">
-        <div class="modal">
+        <div class="modal" style="max-width:520px; width:92%;">
             <div class="modal-header">Your Profile</div>
-            <div style="margin-top:8px;">
-                <label>Full name</label>
-                <input id="profileFullName" style="width:100%; padding:8px; margin-top:6px;" />
+            <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
+                <div style="width:100px; text-align:center;">
+                    <img id="profilePhotoPreview" src="" alt="avatar preview" style="width:88px;height:88px;border-radius:12px;object-fit:cover;border:2px solid rgba(0,0,0,0.06); background:#fff;" />
+                    <div style="margin-top:8px; font-size:12px; color:#6b7280;">Profile photo</div>
+                </div>
+                <div style="flex:1;">
+                    <div style="margin-bottom:8px;"><label>Full name</label><input id="profileFullName" style="width:100%; padding:8px; margin-top:6px;" /></div>
+                    <div style="margin-bottom:8px;"><label>Phone number</label><input id="profilePhone" style="width:100%; padding:8px; margin-top:6px;" /></div>
+                    <div style="margin-bottom:8px;">
+                        <label>Upload photo</label>
+                        <input id="profilePhotoInput" type="file" accept="image/*" style="display:block;margin-top:6px;" onchange="handleProfilePhotoPreview()" />
+                    </div>
+                </div>
             </div>
-            <div style="margin-top:8px;">
-                <label>Phone number</label>
-                <input id="profilePhone" style="width:100%; padding:8px; margin-top:6px;" />
+
+            <hr style="margin:12px 0;" />
+
+            <div>
+                <div style="font-weight:700; margin-bottom:8px;">Profile settings</div>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <label class="settings-switch"><input id="setting_dark_theme" type="checkbox" onchange="toggleSetting('setting_dark_theme')" /> Enable dark theme</label>
+                    <label class="settings-switch"><input id="setting_compact_mode" type="checkbox" onchange="toggleSetting('setting_compact_mode')" /> Compact table mode</label>
+                    <label class="settings-switch"><input id="setting_animations" type="checkbox" onchange="toggleSetting('setting_animations')" /> Enable UI animations</label>
+                    <label class="settings-switch"><input id="setting_sounds" type="checkbox" onchange="toggleSetting('setting_sounds')" /> Enable sound cues</label>
+                </div>
             </div>
+
             <div class="modal-footer">
                 <button class="btn-sm" onclick="hideProfileModal()">Cancel</button>
-                <button class="btn-sm btn-primary" onclick="saveProfile()">Save</button>
+                <button class="btn-sm btn-primary" onclick="saveProfile()">Save profile & settings</button>
             </div>
         </div>
     </div>
