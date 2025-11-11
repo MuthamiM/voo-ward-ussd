@@ -2095,7 +2095,7 @@
         // ---- Modal & Toast helpers ----
         function showToast(msg, type='info', timeout=4000) {
             const container = document.getElementById('toasts');
-            if (!container) return alert(msg);
+            if (!container) { console.warn(msg); return; }
             const t = document.createElement('div');
             t.className = `toast ${type}`;
             t.textContent = msg;
