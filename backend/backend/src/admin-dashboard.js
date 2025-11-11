@@ -1253,7 +1253,10 @@ router.get("/old", (req, res) => {
       ev.preventDefault();
       const user = document.getElementById('login-username').value.trim();
       const pass = document.getElementById('login-password').value;
-      if (!user || !pass) return alert('Enter username and password');
+      if (!user || !pass) {
+        if (typeof showToast === 'function') showToast('Enter username and password', 'error'); else console.warn('Enter username and password');
+        return;
+      }
       try {
         const res = await fetch(API_BASE + '/api/auth/login', {
           method: 'POST',
@@ -1261,7 +1264,10 @@ router.get("/old", (req, res) => {
           body: JSON.stringify({ username: user, password: pass })
         });
         const data = await res.json();
-        if (!res.ok) return alert('Login failed: ' + (data.error || JSON.stringify(data)));
+        if (!res.ok) {
+          if (typeof showToast === 'function') showToast('Login failed: ' + (data.error || JSON.stringify(data)), 'error'); else console.warn('Login failed: ' + (data.error || JSON.stringify(data)));
+          return;
+        }
         TOKEN = data.token;
         localStorage.setItem('token', TOKEN);
         document.getElementById('login-btn').style.display = 'none';
@@ -1269,7 +1275,7 @@ router.get("/old", (req, res) => {
         document.getElementById('login-modal').style.display = 'none';
         await fetchMe();
         loadStats(); loadIssues();
-      } catch (err) { alert('Login error: ' + err.message); }
+  } catch (err) { if (typeof showToast === 'function') showToast('Login error: ' + err.message, 'error'); else console.warn('Login error: ' + err.message); }
     }
 
     async function doLogout() {
@@ -1461,7 +1467,10 @@ router.get("/old", (req, res) => {
     async function exportData(type) {
       try {
         const res = await fetchWithAuth(API_BASE + '/api/admin/export/' + type);
-        if (!res.ok) return alert('Export failed: ' + res.statusText);
+        if (!res.ok) {
+          if (typeof showToast === 'function') showToast('Export failed: ' + res.statusText, 'error'); else console.warn('Export failed: ' + res.statusText);
+          return;
+        }
         const text = await res.text();
         const blob = new Blob([text], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
@@ -1473,7 +1482,7 @@ router.get("/old", (req, res) => {
         a.remove();
         URL.revokeObjectURL(url);
       } catch (err) {
-        alert('Export error: ' + err.message);
+        if (typeof showToast === 'function') showToast('Export error: ' + err.message, 'error'); else console.warn('Export error: ' + err.message);
       }
     }
         

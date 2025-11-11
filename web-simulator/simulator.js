@@ -52,12 +52,14 @@ async function startSession() {
     phoneNumber = document.getElementById('phone-input').value.trim();
     
     if (!phoneNumber) {
-        alert('[WARNING] Please enter your phone number first!');
+        displayError('[WARNING] Please enter your phone number first!');
+        console.warn('[USSD Simulator] missing phone number');
         return;
     }
-    
+
     if (!phoneNumber.startsWith('254') || phoneNumber.length < 12) {
-        alert('[WARNING] Phone number must start with 254 and be 12 digits (e.g., 254712345678)');
+        displayError('[WARNING] Phone number must start with 254 and be 12 digits (e.g., 254712345678)');
+        console.warn('[USSD Simulator] invalid phone number format:', phoneNumber);
         return;
     }
     
@@ -134,7 +136,8 @@ async function sendResponse() {
     const userInput = input.value.trim();
     
     if (!userInput) {
-        alert('[WARNING] Please enter your response first!');
+        displayError('[WARNING] Please enter your response first!');
+        console.warn('[USSD Simulator] empty response');
         return;
     }
     

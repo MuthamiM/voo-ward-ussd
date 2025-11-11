@@ -82,15 +82,45 @@ function TextbookDashboard({ token }) {
 
       if (response.ok) {
         fetchData(); // Refresh data
-        alert(`Request updated to ${newStatus}`);
+        showToast(`Request updated to ${newStatus}`, 'success');
       } else {
-        alert('Failed to update request');
+        showToast('Failed to update request', 'error');
       }
     } catch (err) {
       console.error('Error updating request:', err);
-      alert('Error updating request');
+      showToast('Error updating request', 'error');
     }
   };
+
+  // small toast helper for feedback
+  function showToast(message, type = 'info', ttl = 4000) {
+    try {
+      const containerId = 'vk-tb-toast';
+      let container = document.getElementById(containerId);
+      if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.style.position = 'fixed';
+        container.style.right = '18px';
+        container.style.top = '18px';
+        container.style.zIndex = 99999;
+        document.body.appendChild(container);
+      }
+      const el = document.createElement('div');
+      el.textContent = message;
+      el.style.padding = '8px 12px';
+      el.style.marginTop = '8px';
+      el.style.borderRadius = '6px';
+      el.style.color = '#fff';
+      el.style.fontSize = '13px';
+      el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
+      el.style.maxWidth = '320px';
+      el.style.wordBreak = 'break-word';
+      el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+      container.appendChild(el);
+      setTimeout(() => { try { container.removeChild(el); } catch (e) {} }, ttl);
+    } catch (e) { if (type === 'error') console.error(message); else console.log(message); }
+  }
 
   // Statistics calculations
   const stats = {
