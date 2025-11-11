@@ -112,6 +112,58 @@ async function connectDB() {
   }
 }
 
+// Helper: send notification to a phone number. Uses Twilio if configured (ACCOUNT SID, AUTH TOKEN, FROM).
+// If Twilio not configured, stores notification in `notifications` collection for auditing.
+async function sendNotificationToPhone(db, phone, message) {
+  // normalize phone (basic)
+  if (!phone || !message) return;
+  const TW_SID = process.env.TWILIO_ACCOUNT_SID;
+  const TW_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+  const TW_FROM = process.env.TWILIO_FROM;
+
+  // record attempt in notifications collection
+  const notifications = db.collection('notifications');
+  const record = {
+    phone,
+    message,
+    provider: null,
+    status: 'queued',
+    created_at: new Date()
+  };
+
+  try {
+    if (TW_SID && TW_TOKEN && TW_FROM) {
+      // send via Twilio REST API using fetch (no dependency required)
+      const auth = Buffer.from(`${TW_SID}:${TW_TOKEN}`).toString('base64');
+      const body = new URLSearchParams({ From: TW_FROM, To: phone, Body: message });
+      const resp = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TW_SID}/Messages.json`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: body.toString()
+      });
+
+      const data = await resp.json();
+      record.provider = 'twilio';
+      record.status = resp.ok ? 'sent' : 'failed';
+      record.response = data;
+      await notifications.insertOne(record);
+      return { ok: resp.ok, result: data };
+    }
+  } catch (e) {
+    record.status = 'error';
+    record.error = e && e.message;
+    await notifications.insertOne(record);
+    throw e;
+  }
+
+  // Fallback: store notification for manual sending
+  await notifications.insertOne(record);
+  return { ok: false, queued: true };
+}
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ 
@@ -552,7 +604,42 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Issue not found" });
     }
-    res.json({ success: true, message: `Issue ${id} updated`, update });
+    // Fetch updated issue
+    const updated = await database.collection('issues').findOne({ ticket: id });
+
+    // If status changed to resolved, update USSD interactions and notify reporter(s)
+    try {
+      const newStatus = (status || '').toString().toLowerCase();
+      if (newStatus === 'resolved' || newStatus === 'resolved') {
+        // Update any USSD interactions for the reporter's phone
+        try {
+          if (updated && updated.phone_number) {
+            await database.collection('ussd_interactions').updateMany(
+              { phone_number: updated.phone_number },
+              { $set: { issue_status: status, related_ticket: id, updated_at: new Date() } }
+            );
+          }
+        } catch (uErr) {
+          console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
+        }
+
+        // Notify reporter by SMS (best-effort). If messaging provider not configured, record notification in DB.
+        const notifyMsg = `Your report (${id}) has been marked as ${status}. Thank you.`;
+        try {
+          if (updated && updated.phone_number) {
+            await sendNotificationToPhone(database, updated.phone_number, notifyMsg);
+          } else {
+            console.warn('No phone number available on updated issue', id);
+          }
+        } catch (notifyErr) {
+          console.warn('Notification send failed for issue', id, notifyErr && notifyErr.message);
+        }
+      }
+    } catch (e) {
+      console.warn('Post-update hooks error for issue', id, e && e.message);
+    }
+
+    res.json({ success: true, message: `Issue ${id} updated`, update, issue: updated });
   } catch (err) {
     console.error("Error updating issue:", err);
     res.status(500).json({ error: err.message });
