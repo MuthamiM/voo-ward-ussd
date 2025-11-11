@@ -1395,6 +1395,11 @@
         body.dark-theme { background: #0b1220; color: #e6eef8; }
         body.dark-theme .container { background: #071026; }
         body.dark-theme .navbar { background: rgba(10,10,12,0.9); color: #e6eef8; }
+        /* Compact mode reduces paddings for dense tables/cards */
+        body.compact-mode table td, body.compact-mode table th { padding: 8px !important; }
+        body.compact-mode .stat-card { padding: 12px !important; }
+        /* Disable animations when requested */
+        body.no-animations *, body.no-animations *::before, body.no-animations *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
         .modal-header { font-weight: 700; margin-bottom: 8px; }
     .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
     .modal.show { display:block; }
@@ -1508,7 +1513,7 @@
                                     <div id="userRole" style="font-size:12px; color:#6b7280;">...</div>
                                 </div>
                                 <button id="profileAvatarBtn" onclick="showProfileModal()" title="Your profile" style="border: none; background: transparent; padding:0; cursor:pointer;">
-                                    <img id="profileAvatar" src="" alt="avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.14);background:linear-gradient(135deg,#7c3aed,#a78bfa);"/>
+                                    <img id="profileAvatar" src="/images/avatar-placeholder.svg" alt="avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.14);background:linear-gradient(135deg,#7c3aed,#a78bfa);"/>
                                 </button>
                             </div>
                         </div>
@@ -1871,9 +1876,9 @@
             // Update user info
             document.getElementById('userFullName').textContent = currentUser.fullName;
             document.getElementById('userRole').textContent = currentUser.role;
-            // set avatar if present
+            // set avatar if present (or placeholder)
             const pav = document.getElementById('profileAvatar');
-            if (pav) pav.src = currentUser.photo_url || '';
+            if (pav) pav.src = currentUser.photo_url || '/images/avatar-placeholder.svg';
             
             // Setup dashboard based on role
             setupDashboard();
@@ -2216,7 +2221,30 @@
             t.className = `toast ${type}`;
             t.textContent = msg;
             container.appendChild(t);
+            // play sound cue for success/error if enabled in settings
+            try {
+                const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
+                if (s.sounds) {
+                    playSound(type === 'success' ? 'success' : (type === 'error' ? 'error' : 'info'));
+                }
+            } catch (e) { /* ignore */ }
             setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>{ try{ container.removeChild(t); }catch(e){} },300); }, timeout);
+        }
+
+        function playSound(kind) {
+            try {
+                // simple WebAudio beep
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const o = ctx.createOscillator();
+                const g = ctx.createGain();
+                o.type = kind === 'error' ? 'sawtooth' : 'sine';
+                o.frequency.value = kind === 'success' ? 880 : (kind === 'error' ? 220 : 440);
+                o.connect(g); g.connect(ctx.destination);
+                g.gain.setValueAtTime(0.0001, ctx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                o.start();
+                setTimeout(() => { g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05); o.stop(); try{ ctx.close(); } catch(e){} }, 220);
+            } catch (e) { /* audio might be blocked */ }
         }
 
         function showBulkResolveModal(selected) {
@@ -2422,7 +2450,9 @@
         function applyProfileSettings(s) {
             if (!s) s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
             if (s.darkTheme) document.body.classList.add('dark-theme'); else document.body.classList.remove('dark-theme');
-            // compactMode and animations/sounds adjustments can be picked up elsewhere; store for other UI pieces
+            if (s.compactMode) document.body.classList.add('compact-mode'); else document.body.classList.remove('compact-mode');
+            if (s.animations === false || s.animations === 0) document.body.classList.add('no-animations'); else document.body.classList.remove('no-animations');
+            // store settings for persistence across reloads
             localStorage.setItem('voo_profile_settings', JSON.stringify(s));
         }
 
