@@ -78,38 +78,58 @@ app.post("/ussd", async (req, res) => {
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
 // Defensive: some versions of admin-dashboard manage their own server and do not
 // export an express router. Only call app.use when a middleware/router is exported.
-// Defensive: Log resolved path and check file existence before requiring admin-dashboard
+// Defensive: Try multiple candidate paths for admin-dashboard and inspect file contents
 const fs = require('fs');
-const path = require('path');
-const adminDashboardPath = path.resolve(process.cwd(), 'backend/src/admin-dashboard.js');
-console.log('[DEBUG] CWD:', process.cwd());
-console.log('[DEBUG] Attempting to require admin-dashboard from:', adminDashboardPath);
-try {
-  const dirList = fs.readdirSync(path.dirname(adminDashboardPath));
-  console.log('[DEBUG] Files in backend/src:', dirList);
-} catch (e) {
-  console.warn('[WARN] Could not list backend/src directory:', e && e.message);
-}
-if (!fs.existsSync(adminDashboardPath)) {
-  console.error('[ERROR] admin-dashboard.js not found at', adminDashboardPath);
-} else {
-  try {
-        // Read the file first to detect if it's actually an HTML file or a JS file
-        try {
-          const sample = fs.readFileSync(adminDashboardPath, { encoding: 'utf8' });
-          const preview = sample.slice(0, 200).replace(/\n/g, '\\n');
-          console.log('[DEBUG] admin-dashboard.js preview:', preview);
-          if (preview.trim().startsWith('<')) {
-            console.warn('[WARN] admin-dashboard.js appears to start with < — it may be an HTML file served instead of JS');
-          }
-        } catch (readErr) {
-          console.warn('[WARN] Could not read admin-dashboard.js preview:', readErr && readErr.message);
-        }
+const candidatePaths = [
+  path.resolve(process.cwd(), 'backend/src/admin-dashboard.js'),
+  path.resolve(__dirname, '../backend/src/admin-dashboard.js'),
+  path.resolve(process.cwd(), 'backend/admin-dashboard.js'),
+  path.resolve(process.cwd(), 'admin-dashboard.js')
+];
 
-    const adminDashboard = require(adminDashboardPath);
+console.log('[DEBUG] CWD:', process.cwd());
+let chosenPath = null;
+for (const p of candidatePaths) {
+  try {
+    const exists = fs.existsSync(p);
+    console.log('[DEBUG] Checking candidate:', p, 'exists=', exists);
+    if (!exists) continue;
+    try {
+      const stat = fs.statSync(p);
+      console.log('[DEBUG] stat for', p, ':', { size: stat.size, mtime: stat.mtime });
+    } catch (sErr) {
+      console.warn('[WARN] Could not stat', p, sErr && sErr.message);
+    }
+
+    try {
+      const sample = fs.readFileSync(p, { encoding: 'utf8' });
+      const preview = sample.slice(0, 200).replace(/\n/g, '\\n');
+      console.log('[DEBUG] preview for', p, ':', preview);
+      const starts = preview.trim().charAt(0);
+      console.log('[DEBUG] first char for', p, '->', starts);
+      if (starts !== '<') {
+        chosenPath = p;
+        break;
+      } else {
+        console.warn('[WARN] Candidate looks like HTML (starts with <):', p);
+      }
+    } catch (rErr) {
+      console.warn('[WARN] Could not read preview for', p, rErr && rErr.message);
+    }
+  } catch (errCheck) {
+    console.warn('[WARN] Error inspecting candidate', p, errCheck && errCheck.message);
+  }
+}
+
+if (!chosenPath) {
+  console.error('[ERROR] No suitable admin-dashboard.js candidate found. Candidates inspected:', candidatePaths);
+} else {
+  console.log('[DEBUG] Requiring admin-dashboard from chosen path:', chosenPath);
+  try {
+    const adminDashboard = require(chosenPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
       app.use(adminDashboard);
-      console.log('[DEBUG] admin-dashboard mounted successfully.');
+      console.log('[DEBUG] admin-dashboard mounted successfully from', chosenPath);
     } else {
       console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
     }
@@ -117,8 +137,8 @@ if (!fs.existsSync(adminDashboardPath)) {
       app.locals.connectDB = adminDashboard.connectDB;
     }
   } catch (e) {
-    console.error('⚠️ Failed to require admin-dashboard module:', e && e.message);
-        if (e && e.stack) console.error(e.stack);
+    console.error('⚠️ Failed to require admin-dashboard module from', chosenPath, 'error:', e && e.message);
+    if (e && e.stack) console.error(e.stack);
   }
 }
 
