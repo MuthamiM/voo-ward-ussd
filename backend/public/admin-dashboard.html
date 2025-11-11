@@ -2188,9 +2188,65 @@
             const c = document.getElementById('chatbot-messages');
             const el = document.createElement('div');
             el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
-            el.textContent = text;
+            // allow simple HTML for buttons
+            el.innerHTML = text.replace(/</g,'&lt;');
             c.appendChild(el);
+
+            // If bot message, attach quick-action buttons when applicable
+            if (who === 'bot') {
+                attachActionButtons(el, text);
+            }
+
             c.scrollTop = c.scrollHeight;
+        }
+
+        function attachActionButtons(containerEl, text) {
+            const t = (text || '').toLowerCase();
+            const actions = [];
+            if (t.includes('resolve')) actions.push({ label: 'Open Issues', fn: () => openTab('issues') });
+            if (t.includes('export')) actions.push({ label: 'Export Issues CSV', fn: () => exportData('issues') });
+            if (t.includes('ussd') || t.includes('parsed_text') || t.includes('parsed')) actions.push({ label: 'Open USSD', fn: () => openTab('ussd') });
+            if (t.includes('password')) actions.push({ label: 'Change Password', fn: () => showChangePasswordModal() });
+
+            if (!actions.length) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.style.marginTop = '8px';
+            wrapper.style.display = 'flex';
+            wrapper.style.gap = '8px';
+
+            actions.forEach(a => {
+                const b = document.createElement('button');
+                b.className = 'btn-sm';
+                b.textContent = a.label;
+                b.onclick = (ev) => { ev.stopPropagation(); a.fn(); };
+                wrapper.appendChild(b);
+            });
+
+            containerEl.appendChild(wrapper);
+        }
+
+        function openTab(tab) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            // Remove active class from tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Show selected content
+            const content = document.getElementById(tab + '-content');
+            if (content) content.style.display = 'block';
+
+            // Try to set the corresponding tab button active
+            const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
+            if (btn) btn.classList.add('active');
+
+            // Load data for selected tab
+            if (tab === 'issues') loadIssues();
+            else if (tab === 'bursaries') loadBursaries();
+            else if (tab === 'constituents') loadConstituents();
+            else if (tab === 'announcements') loadAnnouncements();
+            else if (tab === 'ussd') loadUssd();
+            else if (tab === 'users') loadUsers();
         }
 
         async function sendChatbotMessage() {
