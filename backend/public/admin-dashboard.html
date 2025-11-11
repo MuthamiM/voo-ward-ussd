@@ -1373,6 +1373,21 @@
             border-radius: 2px;
         }
     </style>
+    <style>
+        /* Toasts */
+        #toasts { position: fixed; top: 18px; right: 18px; z-index: 9999; display:flex; flex-direction: column; gap:8px; }
+        .toast { min-width: 220px; max-width: 380px; background: white; padding: 12px 14px; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-size: 14px; color: #111827; }
+        .toast.info { border-left: 4px solid var(--info); }
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+
+        /* Modal (simple) */
+        .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
+        .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
+        .modal-header { font-weight: 700; margin-bottom: 8px; }
+        .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
+        .modal.show { display:block; }
+    </style>
 </head>
 <body>
     <!-- LOGIN PAGE -->
@@ -1428,6 +1443,7 @@
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()">Logout</button>
+                    <button class="btn-sm btn-info" style="margin-left:8px;" onclick="showNotificationsModal()">Notifications</button>
                     <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
                 </div>
             </div>
@@ -1873,7 +1889,7 @@
                     return;
                 }
                 closeChangePasswordModal();
-                alert('Password changed successfully! Please use your new password next time.');
+                showToast('Password changed successfully! Please use your new password next time.', 'success');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -2048,7 +2064,7 @@
                             try { loadUssd(); } catch(e) { /* ignore */ }
                             try { loadConstituents(); } catch(e) { /* ignore */ }
                         } catch (e) {
-                            alert('Save failed: '+e.message);
+                            showToast('Save failed: '+e.message, 'error');
                             btn.disabled = false;
                             btn.textContent = originalText;
                         } finally {
@@ -2070,31 +2086,93 @@
         }
 
         // Resolve selected issues (collect selected ticket ids and call bulk endpoint)
-        async function resolveSelected() {
+        function resolveSelected() {
             const selected = Array.from(document.querySelectorAll('.issue-select:checked')).map(i => i.dataset.issueId).filter(Boolean);
-            if (!selected.length) return alert('No issues selected');
+            if (!selected.length) return showToast('No issues selected', 'error');
+            showBulkResolveModal(selected);
+        }
 
-            if (!confirm(`Resolve ${selected.length} selected issue(s)? This will notify reporters.`)) return;
+        // ---- Modal & Toast helpers ----
+        function showToast(msg, type='info', timeout=4000) {
+            const container = document.getElementById('toasts');
+            if (!container) return alert(msg);
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.textContent = msg;
+            container.appendChild(t);
+            setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>{ try{ container.removeChild(t); }catch(e){} },300); }, timeout);
+        }
 
-            const note = prompt('Optional action note to attach to all selected issues (leave blank for none)');
+        function showBulkResolveModal(selected) {
+            const mb = document.getElementById('bulkResolveModal');
+            const countEl = document.getElementById('bulkResolveCount');
+            const hidden = document.getElementById('bulkResolveSelected');
+            countEl.textContent = selected.length;
+            hidden.value = JSON.stringify(selected);
+            document.getElementById('bulkResolveNote').value = '';
+            mb.style.display = 'flex';
+        }
 
+        function hideBulkResolveModal() {
+            const mb = document.getElementById('bulkResolveModal');
+            mb.style.display = 'none';
+        }
+
+        async function confirmBulkResolve() {
+            const hidden = document.getElementById('bulkResolveSelected');
+            let selected = [];
+            try { selected = JSON.parse(hidden.value || '[]'); } catch(e){ selected = []; }
+            if (!selected.length) { hideBulkResolveModal(); return showToast('No issues selected', 'error'); }
+            const note = document.getElementById('bulkResolveNote').value || undefined;
             try {
-                const resp = await apiRequest('/api/admin/issues/bulk-resolve', {
-                    method: 'POST',
-                    body: JSON.stringify({ issueIds: selected, status: 'resolved', action_note: note })
-                });
+                const resp = await apiRequest('/api/admin/issues/bulk-resolve', { method: 'POST', body: JSON.stringify({ issueIds: selected, status: 'resolved', action_note: note }) });
                 const data = await resp.json();
-                if (!resp.ok) {
-                    throw new Error(data.error || 'Bulk resolve failed');
-                }
-
-                alert(`Bulk resolve complete: ${data.updated} updated, ${data.failed} failed`);
-                // Refresh views
+                if (!resp.ok) throw new Error(data.error || 'Bulk resolve failed');
+                hideBulkResolveModal();
+                showToast(`Bulk resolved: ${data.updated} updated, ${data.failed} failed`, 'success');
                 try { loadIssues(); } catch(e) {}
                 try { loadUssd(); } catch(e) {}
                 try { loadConstituents(); } catch(e) {}
             } catch (e) {
-                alert('Bulk resolve failed: ' + e.message);
+                showToast('Bulk resolve failed: ' + e.message, 'error');
+            }
+        }
+
+        // Notifications modal helpers
+        function showNotificationsModal() {
+            document.getElementById('notificationsModal').style.display = 'flex';
+            loadFailedNotifications();
+        }
+
+        async function loadFailedNotifications() {
+            const tbody = document.getElementById('notifications-tbody');
+            tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
+            try {
+                const res = await apiRequest('/api/admin/notifications?status=queued');
+                const items = await res.json();
+                if (!items.length) return tbody.innerHTML = '<tr><td colspan="4">No queued notifications</td></tr>';
+                tbody.innerHTML = items.map(n => `
+                    <tr>
+                        <td>${n.phone}</td>
+                        <td style="max-width:300px;">${(n.message||'').slice(0,200)}</td>
+                        <td>${n.status}</td>
+                        <td><button class="btn-sm btn-primary" onclick="retryNotification('${n._id}')">Retry</button></td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="4">Error: ${e.message}</td></tr>`;
+            }
+        }
+
+        async function retryNotification(id) {
+            try {
+                const res = await apiRequest('/api/admin/notifications/retry', { method: 'POST', body: JSON.stringify({ ids: [id] }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Retry failed');
+                showToast('Retry attempted', 'info');
+                loadFailedNotifications();
+            } catch (e) {
+                showToast('Retry failed: ' + e.message, 'error');
             }
         }
 
@@ -2298,7 +2376,7 @@
                 closeCreateAnnouncementModal();
                 loadAnnouncements();
                 loadStats();
-                alert('Announcement published successfully!');
+                showToast('Announcement published successfully!', 'success');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -2378,7 +2456,7 @@
                 
                 closeAddUserModal();
                 loadUsers();
-                alert('User created successfully!');
+                showToast('User created successfully!', 'success');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -2397,14 +2475,14 @@
                 const data = await res.json();
                 
                 if (!res.ok) {
-                    alert(data.error || 'Failed to delete user');
+                    showToast(data.error || 'Failed to delete user', 'error');
                     return;
                 }
-                
+
                 loadUsers();
-                alert('User deleted successfully!');
+                showToast('User deleted successfully!', 'success');
             } catch (err) {
-                alert('Error: ' + err.message);
+                showToast('Error: ' + err.message, 'error');
             }
         }
 
@@ -2468,5 +2546,38 @@
             }
         }, 30000);
     </script>
+    <!-- Toast container -->
+    <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Bulk Resolve Modal -->
+    <div id="bulkResolveModal" class="modal-backdrop" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">Resolve selected issues</div>
+            <div>You're about to resolve <strong id="bulkResolveCount">0</strong> issue(s). This will notify reporters.</div>
+            <div style="margin-top:8px;"><label for="bulkResolveNote">Optional action note</label><textarea id="bulkResolveNote" rows="3" style="width:100%;margin-top:6px;"></textarea></div>
+            <input type="hidden" id="bulkResolveSelected" />
+            <div class="modal-footer">
+                <button class="btn-sm" onclick="hideBulkResolveModal()">Cancel</button>
+                <button class="btn-sm btn-primary" onclick="confirmBulkResolve()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Modal -->
+    <div id="notificationsModal" class="modal-backdrop" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">Notifications</div>
+            <div style="margin-bottom:8px;">Failed / Queued notifications (most recent). <button class="btn-sm btn-primary" onclick="loadFailedNotifications()">Refresh</button></div>
+            <div style="max-height:300px; overflow:auto;">
+                <table style="width:100%; border-collapse: collapse;">
+                    <thead><tr><th>Phone</th><th>Message</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody id="notifications-tbody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm" onclick="document.getElementById('notificationsModal').style.display='none'">Close</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
