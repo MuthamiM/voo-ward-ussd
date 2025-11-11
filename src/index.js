@@ -76,13 +76,29 @@ app.post("/ussd", async (req, res) => {
 
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
-const adminDashboard = require('../backend/src/admin-dashboard');
 // Defensive: some versions of admin-dashboard manage their own server and do not
 // export an express router. Only call app.use when a middleware/router is exported.
-if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
-  app.use(adminDashboard);
+// Defensive: Log resolved path and check file existence before requiring admin-dashboard
+const fs = require('fs');
+const adminDashboardPath = require('path').resolve(__dirname, '../backend/src/admin-dashboard.js');
+console.log('[DEBUG] Attempting to require admin-dashboard from:', adminDashboardPath);
+if (!fs.existsSync(adminDashboardPath)) {
+  console.error('[ERROR] admin-dashboard.js not found at', adminDashboardPath);
 } else {
-  console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
+  try {
+    const adminDashboard = require(adminDashboardPath);
+    if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
+      app.use(adminDashboard);
+      console.log('[DEBUG] admin-dashboard mounted successfully.');
+    } else {
+      console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
+    }
+    if (adminDashboard && adminDashboard.connectDB) {
+      app.locals.connectDB = adminDashboard.connectDB;
+    }
+  } catch (e) {
+    console.error('⚠️ Failed to require admin-dashboard module:', e && e.message);
+  }
 }
 
 // Expose DB connector for other routers (ussd handler) if provided
