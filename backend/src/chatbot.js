@@ -1,18 +1,26 @@
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
-// Load fallback knowledge base from JSON for easier editing
-let KB = [];
-try {
-  KB = require('./chatbot_kb.json');
-} catch (e) {
-  console.warn('Chatbot KB not found or invalid, falling back to inline rules');
+const fs = require('fs');
+const KB_PATH = path = require('path').join(__dirname, 'chatbot_kb.json');
+
+// Helper to load KB fresh each call to reflect admin edits
+function loadKB() {
+  try {
+    if (!fs.existsSync(KB_PATH)) return [];
+    const raw = fs.readFileSync(KB_PATH, 'utf8');
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to load KB', e && e.message);
+    return [];
+  }
 }
 
 function fallbackReply(text) {
   const t = (text || '').toLowerCase();
   if (!t) return 'Hi — tell me what you need help with. Try: "resolve issues", "export issues", "change password".';
 
+  const KB = loadKB();
   if (Array.isArray(KB) && KB.length) {
     for (const entry of KB) {
       if (!entry.keys || !entry.reply) continue;

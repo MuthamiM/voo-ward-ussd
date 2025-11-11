@@ -1470,13 +1470,14 @@
                     </div>
                 </div>
                 
-                <div class="navbar-user">
+                        <div class="navbar-user">
                     <div class="user-info">
-                        <span class="user-info-name" id="userFullName">Loading...</span>
+                        <span class="user-info-name" id="userFullName" style="cursor:pointer;" onclick="showProfileModal()">Loading...</span>
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
-                    <button class="btn-logout" onclick="logout()">Logout</button>
+                    <button id="editHelpBtn" class="btn-sm btn-info" style="margin-left:8px; display:none;" onclick="showKbEditor()">Edit Help</button>
                     <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
                 </div>
             </div>
         </nav>
@@ -1500,6 +1501,9 @@
                         <div class="content-header">
                             <h2 class="content-title">Reported Issues</h2>
                             <div class="content-actions">
+                                <input id="issuesSearch" placeholder="Search ticket/phone/message" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
+                                <button class="btn-sm" onclick="applyIssuesSearch()">Search</button>
+                                <button class="btn-sm" onclick="clearIssuesSearch()">Clear</button>
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
                                     Export CSV
                                 </button>
@@ -1815,6 +1819,9 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
+                    // hide chatbot when logged out
+                    const cb = document.getElementById('chatbotBtn');
+                    if (cb) cb.style.display = 'none';
                 });
             }
         }
@@ -1833,6 +1840,12 @@
             // Load initial data
             loadStats();
             loadIssues();
+            // show chatbot button when dashboard is visible
+            const cb = document.getElementById('chatbotBtn');
+            if (cb) cb.style.display = 'block';
+            // show edit help button only for MCA
+            const eh = document.getElementById('editHelpBtn');
+            if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
         }
 
         function setupDashboard() {
@@ -2008,7 +2021,17 @@
 
             try {
                 const res = await apiRequest('/api/admin/issues');
-                const issues = await res.json();
+                let issues = await res.json();
+
+                // apply client-side filter from issuesSearch
+                const q = (document.getElementById('issuesSearch') && document.getElementById('issuesSearch').value || '').trim().toLowerCase();
+                if (q) {
+                    issues = issues.filter(it => {
+                        return (it.ticket || '').toString().toLowerCase().includes(q)
+                        || (it.phone_number || '').toString().toLowerCase().includes(q)
+                        || (it.message || '').toString().toLowerCase().includes(q);
+                    });
+                }
 
                 if (issues.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
@@ -2109,6 +2132,26 @@
             } catch (err) {
                 tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }
+        }
+
+        function applyIssuesSearch() { loadIssues(); }
+        function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
+
+        // Open a specific ticket row and highlight it
+        function openTicket(ticket) {
+            // reload issues then try to find the row
+            loadIssues();
+            setTimeout(() => {
+                const rows = document.querySelectorAll('#issues-tbody tr');
+                for (const r of rows) {
+                    if (r.innerText && r.innerText.indexOf(ticket) !== -1) {
+                        r.classList.add('row-updated');
+                        r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => r.classList.remove('row-updated'), 3000);
+                        break;
+                    }
+                }
+            }, 400);
         }
 
         // Toggle select all checkbox
@@ -2247,6 +2290,68 @@
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
+        }
+
+        // Profile modal helpers
+        function showProfileModal() {
+            if (!currentUser) return showToast('Not logged in', 'error');
+            document.getElementById('profileFullName').value = currentUser.fullName || '';
+            document.getElementById('profilePhone').value = currentUser.phone_number || '';
+            document.getElementById('profileModal').style.display = 'flex';
+        }
+
+        function hideProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
+
+        async function saveProfile() {
+            const fullName = document.getElementById('profileFullName').value.trim();
+            const phone_number = document.getElementById('profilePhone').value.trim();
+            try {
+                const res = await apiRequest('/api/admin/profile', { method: 'POST', body: JSON.stringify({ fullName, phone_number }) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Save failed');
+                // update local currentUser
+                currentUser = data.user;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('userFullName').textContent = currentUser.fullName;
+                showToast('Profile updated', 'success');
+                hideProfileModal();
+            } catch (e) {
+                showToast('Profile save failed: ' + e.message, 'error');
+            }
+        }
+
+        // KB editor helpers
+        function showKbEditor() {
+            document.getElementById('kbEditorModal').style.display = 'flex';
+            loadKbEditor();
+        }
+
+        function hideKbEditor() { document.getElementById('kbEditorModal').style.display = 'none'; }
+
+        async function loadKbEditor() {
+            try {
+                const res = await apiRequest('/api/admin/chatbot-kb');
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to load KB');
+                document.getElementById('kbEditorArea').value = JSON.stringify(data, null, 2);
+            } catch (e) {
+                showToast('Failed to load KB: ' + e.message, 'error');
+            }
+        }
+
+        async function saveKbEditor() {
+            try {
+                const txt = document.getElementById('kbEditorArea').value;
+                let parsed;
+                try { parsed = JSON.parse(txt); } catch (e) { throw new Error('Invalid JSON'); }
+                const res = await apiRequest('/api/admin/chatbot-kb', { method: 'POST', body: JSON.stringify(parsed) });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to save KB');
+                showToast('KB saved', 'success');
+                hideKbEditor();
+            } catch (e) {
+                showToast('KB save failed: ' + e.message, 'error');
+            }
         }
 
         async function sendChatbotMessage() {
@@ -2626,6 +2731,9 @@
                 currentUser = JSON.parse(storedUser);
                 showDashboard();
             }
+            // hide chatbot by default until user is logged in
+            const cb = document.getElementById('chatbotBtn');
+            if (cb) cb.style.display = 'none';
         });
 
         // Auto-refresh data every 30 seconds
@@ -2643,6 +2751,38 @@
     </script>
     <!-- Toast container -->
     <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Profile Modal -->
+    <div id="profileModal" class="modal-backdrop" style="display:none;">
+        <div class="modal">
+            <div class="modal-header">Your Profile</div>
+            <div style="margin-top:8px;">
+                <label>Full name</label>
+                <input id="profileFullName" style="width:100%; padding:8px; margin-top:6px;" />
+            </div>
+            <div style="margin-top:8px;">
+                <label>Phone number</label>
+                <input id="profilePhone" style="width:100%; padding:8px; margin-top:6px;" />
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm" onclick="hideProfileModal()">Cancel</button>
+                <button class="btn-sm btn-primary" onclick="saveProfile()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KB Editor Modal (MCA only) -->
+    <div id="kbEditorModal" class="modal-backdrop" style="display:none;">
+        <div class="modal" style="max-width:800px; width:92%;">
+            <div class="modal-header">Edit Help Knowledge Base (JSON)</div>
+            <div style="margin-top:8px;"><textarea id="kbEditorArea" rows="12" style="width:100%; font-family: monospace;"></textarea></div>
+            <div style="margin-top:8px; font-size:13px; color:#666;">Note: this must be valid JSON array of objects: [{"keys":["key1"],"reply":"text"}, ...]</div>
+            <div class="modal-footer">
+                <button class="btn-sm" onclick="hideKbEditor()">Close</button>
+                <button class="btn-sm btn-primary" onclick="saveKbEditor()">Save KB</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Bulk Resolve Modal -->
     <div id="bulkResolveModal" class="modal-backdrop" style="display:none;">
