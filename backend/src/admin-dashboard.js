@@ -646,6 +646,91 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   }
 });
 
+// Bulk-resolve (or bulk update status) for multiple issues (MCA only)
+app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { issueIds, status, action_note } = req.body || {};
+    if (!Array.isArray(issueIds) || issueIds.length === 0) {
+      return res.status(400).json({ error: 'issueIds (array) is required' });
+    }
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    // sanitize inputs
+    const targetStatus = (status || 'resolved').toString();
+    const note = typeof action_note === 'string' ? action_note : undefined;
+
+    const results = [];
+
+    // Process in small batches to avoid timeouts
+    const BATCH = 50;
+    for (let i = 0; i < issueIds.length; i += BATCH) {
+      const batch = issueIds.slice(i, i + BATCH);
+      // For each ticket id in batch, attempt update
+      await Promise.all(batch.map(async (ticket) => {
+        try {
+          const update = { status: targetStatus, updated_at: new Date() };
+          if (note) {
+            update.action_note = note;
+            update.action_by = req.user?.username || 'unknown';
+            update.action_at = new Date();
+          }
+
+          const r = await database.collection('issues').updateOne({ ticket: ticket }, { $set: update });
+          if (r.matchedCount === 0) {
+            results.push({ id: ticket, ok: false, error: 'not_found' });
+            return;
+          }
+
+          const updated = await database.collection('issues').findOne({ ticket: ticket });
+
+          // Post-update hooks: when resolving, update USSD interactions and notify reporter
+          try {
+            const newStatus = (targetStatus || '').toString().toLowerCase();
+            if (newStatus === 'resolved') {
+              if (updated && updated.phone_number) {
+                try {
+                  await database.collection('ussd_interactions').updateMany(
+                    { phone_number: updated.phone_number },
+                    { $set: { issue_status: targetStatus, related_ticket: ticket, updated_at: new Date() } }
+                  );
+                } catch (uErr) {
+                  console.warn('Failed to update USSD interactions for issue', ticket, uErr && uErr.message);
+                }
+
+                const notifyMsg = `Your report (${ticket}) has been marked as ${targetStatus}. Thank you.`;
+                try {
+                  await sendNotificationToPhone(database, updated.phone_number, notifyMsg);
+                } catch (notifyErr) {
+                  console.warn('Notification send failed for issue', ticket, notifyErr && notifyErr.message);
+                }
+              } else {
+                console.warn('No phone number available on updated issue', ticket);
+              }
+            }
+          } catch (hookErr) {
+            console.warn('Post-update hook error for issue', ticket, hookErr && hookErr.message);
+          }
+
+          results.push({ id: ticket, ok: true, issue: updated });
+        } catch (errInner) {
+          console.warn('Error updating issue in bulk', ticket, errInner && errInner.message);
+          results.push({ id: ticket, ok: false, error: errInner && errInner.message });
+        }
+      }));
+    }
+
+    const succeeded = results.filter(r => r.ok).length;
+    const failed = results.length - succeeded;
+
+    res.json({ success: true, updated: succeeded, failed, results });
+  } catch (err) {
+    console.error('Bulk resolve error:', err && err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update bursary status (MCA only)
 app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {

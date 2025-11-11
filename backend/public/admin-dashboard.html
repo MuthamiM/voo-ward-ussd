@@ -57,6 +57,16 @@
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Status select animations and colors */
+        .issue-status-select {
+            transition: background-color 300ms ease, transform 150ms ease;
+            padding: 6px; border-radius: 8px; border: 1px solid #e6e9ef; background: #fff;
+        }
+        .issue-status-select.status-pending { background: #fff7ed; }
+        .issue-status-select.status-in_progress { background: #eef2ff; }
+        .issue-status-select.status-resolved { background: #ecfdf5; }
+        .issue-status-select:focus { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
         * {
             margin: 0;
             padding: 0;
@@ -1445,12 +1455,14 @@
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
                                     Export CSV
                                 </button>
+                                <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
                         </div>
                         <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
+                                        <th><input type="checkbox" id="select-all-issues" onchange="toggleSelectAllIssues(this)"></th>
                                         <th>Ticket</th>
                                         <th>Reporter Name</th>
                                         <th>Phone</th>
@@ -1944,14 +1956,14 @@
         // ========================================
         async function loadIssues() {
             const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="8" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
 
             try {
                 const res = await apiRequest('/api/admin/issues');
                 const issues = await res.json();
 
                 if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
                     return;
                 }
 
@@ -1959,6 +1971,7 @@
                     const status = (issue.status || 'pending').replace(' ', '_');
                     return `
                     <tr>
+                        <td><input type="checkbox" class="issue-select" data-issue-id="${issue.ticket}"></td>
                         <td><strong>${issue.ticket}</strong></td>
                         <td><strong>${issue.reporter_name || 'Unknown'}</strong></td>
                         <td>${issue.phone_number || ''}</td>
@@ -1980,6 +1993,19 @@
                 `;
                 }).join('');
 
+                // Apply status classes to selects for color/animation
+                document.querySelectorAll('.issue-status-select').forEach(s => {
+                    const v = s.value || '';
+                    s.classList.remove('status-pending','status-in_progress','status-resolved');
+                    s.classList.add('status-' + (v.replace(/\s+/g,'_')));
+                    // update on change to animate
+                    s.addEventListener('change', (ev)=>{
+                        s.classList.remove('status-pending','status-in_progress','status-resolved');
+                        const nv = s.value || '';
+                        s.classList.add('status-' + (nv.replace(/\s+/g,'_')));
+                    });
+                });
+
                 // attach save handlers
                 document.querySelectorAll('.save-action').forEach(btn => {
                     btn.addEventListener('click', async (ev) => {
@@ -1997,7 +2023,7 @@
                         spinner.className = 'spinner-inline';
                         btn.appendChild(spinner);
 
-                        try {
+                            try {
                             const r = await apiRequest(`/api/admin/issues/${id}`, {
                                 method: 'PATCH',
                                 body: JSON.stringify({ status: sel.value, action_note: note })
@@ -2017,8 +2043,10 @@
                                 row.classList.remove('row-updated');
                             }, 900);
 
-                            // Optionally refresh stats in background
+                            // Refresh stats and related views in background
                             try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
+                            try { loadUssd(); } catch(e) { /* ignore */ }
+                            try { loadConstituents(); } catch(e) { /* ignore */ }
                         } catch (e) {
                             alert('Save failed: '+e.message);
                             btn.disabled = false;
@@ -2031,7 +2059,42 @@
                 });
 
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+            }
+        }
+
+        // Toggle select all checkbox
+        function toggleSelectAllIssues(cb) {
+            const checked = !!cb.checked;
+            document.querySelectorAll('.issue-select').forEach(i => { i.checked = checked; });
+        }
+
+        // Resolve selected issues (collect selected ticket ids and call bulk endpoint)
+        async function resolveSelected() {
+            const selected = Array.from(document.querySelectorAll('.issue-select:checked')).map(i => i.dataset.issueId).filter(Boolean);
+            if (!selected.length) return alert('No issues selected');
+
+            if (!confirm(`Resolve ${selected.length} selected issue(s)? This will notify reporters.`)) return;
+
+            const note = prompt('Optional action note to attach to all selected issues (leave blank for none)');
+
+            try {
+                const resp = await apiRequest('/api/admin/issues/bulk-resolve', {
+                    method: 'POST',
+                    body: JSON.stringify({ issueIds: selected, status: 'resolved', action_note: note })
+                });
+                const data = await resp.json();
+                if (!resp.ok) {
+                    throw new Error(data.error || 'Bulk resolve failed');
+                }
+
+                alert(`Bulk resolve complete: ${data.updated} updated, ${data.failed} failed`);
+                // Refresh views
+                try { loadIssues(); } catch(e) {}
+                try { loadUssd(); } catch(e) {}
+                try { loadConstituents(); } catch(e) {}
+            } catch (e) {
+                alert('Bulk resolve failed: ' + e.message);
             }
         }
 
