@@ -71,7 +71,7 @@ export default function App() {
       const now = Date.now();
       if (now - lastActivity > INACTIVITY_TIMEOUT) {
         handleLogout();
-        alert("You have been logged out due to inactivity (45 minutes).");
+        showToast("You have been logged out due to inactivity (45 minutes).", 'info');
       }
     };
 
@@ -392,19 +392,18 @@ export default function App() {
     
     // Only MCA (super_admin or mca) can delete users
     if (currentUser.role !== 'super_admin' && currentUser.role !== 'mca') {
-      alert("Only the MCA (Super Admin) can delete user accounts.");
+      showToast("Only the MCA (Super Admin) can delete user accounts.", 'error');
       return;
     }
     
     // MCA cannot delete themselves
     if (userId === currentUser.id) {
-      alert("You cannot delete your own account.");
+      showToast("You cannot delete your own account.", 'error');
       return;
     }
-    
-    if (!confirm(`Are you sure you want to delete ${userToDelete.name}?`)) {
-      return;
-    }
+
+    const confirmed = await confirmDialog(`Are you sure you want to delete ${userToDelete.name}?`);
+    if (!confirmed) return;
     
     try {
       const res = await fetch(`${API_BASE}/admin/users/${userId}`, {
@@ -413,14 +412,129 @@ export default function App() {
       });
       if (res.ok) {
         setUsers(users.filter(u => u.id !== userId));
+        showToast('User deleted', 'success');
       } else {
         const error = await res.json();
-        alert(error.error || "Failed to delete user");
+        showToast(error.error || "Failed to delete user", 'error');
       }
     } catch (e) {
-      alert("Error deleting user");
+      showToast("Error deleting user", 'error');
     }
   };
+
+  // Lightweight toast helper (DOM-based) to avoid adding a dependency
+  function showToast(message, type = 'info', ttl = 5000) {
+    try {
+      const containerId = 'vk-toast-container';
+      let container = document.getElementById(containerId);
+      if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+        container.style.position = 'fixed';
+        container.style.right = '20px';
+        container.style.top = '20px';
+        container.style.zIndex = 99999;
+        document.body.appendChild(container);
+      }
+
+      const el = document.createElement('div');
+      el.textContent = message;
+      el.style.marginTop = '8px';
+      el.style.padding = '10px 14px';
+      el.style.borderRadius = '6px';
+      el.style.color = '#fff';
+      el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
+      el.style.fontSize = '13px';
+      el.style.maxWidth = '320px';
+      el.style.wordBreak = 'break-word';
+
+      switch (type) {
+        case 'success': el.style.background = '#16a34a'; break;
+        case 'error': el.style.background = '#dc2626'; break;
+        case 'warn': el.style.background = '#f59e0b'; el.style.color = '#111827'; break;
+        default: el.style.background = '#2563eb'; break;
+      }
+
+      container.appendChild(el);
+
+      setTimeout(() => {
+        try { container.removeChild(el); } catch (e) {}
+      }, ttl);
+    } catch (e) {
+      // Fallback to console
+      if (type === 'error') console.error(message);
+      else if (type === 'warn') console.warn(message);
+      else console.log(message);
+    }
+  }
+
+  // Promise-based confirm dialog (DOM) to avoid blocking confirm()
+  function confirmDialog(message) {
+    return new Promise((resolve) => {
+      try {
+        const id = `vk-confirm-${Date.now()}`;
+        const overlay = document.createElement('div');
+        overlay.id = id;
+        overlay.style.position = 'fixed';
+        overlay.style.left = 0;
+        overlay.style.top = 0;
+        overlay.style.right = 0;
+        overlay.style.bottom = 0;
+        overlay.style.background = 'rgba(0,0,0,0.4)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.zIndex = 100000;
+
+        const box = document.createElement('div');
+        box.style.background = '#fff';
+        box.style.padding = '18px';
+        box.style.borderRadius = '8px';
+        box.style.boxShadow = '0 6px 24px rgba(0,0,0,0.16)';
+        box.style.maxWidth = '420px';
+        box.style.width = '90%';
+
+        const msg = document.createElement('div');
+        msg.textContent = message;
+        msg.style.marginBottom = '12px';
+
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.justifyContent = 'flex-end';
+        controls.style.gap = '8px';
+
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'Cancel';
+        noBtn.style.padding = '8px 12px';
+
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'Yes';
+        yesBtn.style.padding = '8px 12px';
+        yesBtn.style.background = '#dc2626';
+        yesBtn.style.color = '#fff';
+        yesBtn.style.border = 'none';
+        yesBtn.style.borderRadius = '6px';
+
+        controls.appendChild(noBtn);
+        controls.appendChild(yesBtn);
+        box.appendChild(msg);
+        box.appendChild(controls);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        function cleanup(result) {
+          try { document.body.removeChild(overlay); } catch (e) {}
+          resolve(result);
+        }
+
+        noBtn.addEventListener('click', () => cleanup(false));
+        yesBtn.addEventListener('click', () => cleanup(true));
+      } catch (e) {
+        // If something goes wrong, fallback to window.confirm (rare)
+        resolve(window.confirm(message));
+      }
+    });
+  }
 
   if (!token) {
     return (

@@ -1385,12 +1385,17 @@
         .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
         .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
         .modal-header { font-weight: 700; margin-bottom: 8px; }
-        .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
-        .modal.show { display:block; }
-        /* Chat rows */
-        .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
-        .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
-        .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
+    .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
+    .modal.show { display:block; }
+    /* Chat rows */
+    .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
+    .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
+    .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
+    /* Chatbot floating button and modal positioning */
+    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11000; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 20px rgba(0,0,0,0.18); cursor:pointer; font-size:18px; }
+    .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
+    .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
 </head>
 <body>
@@ -1427,11 +1432,20 @@
             </form>
         </div>
     </div>
-        <!-- Chatbot Modal -->
-        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end;">
-            <div class="modal" style="width:380px; max-width:92%; margin:0 16px 24px auto;">
+        <!-- Floating Chatbot Button -->
+        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()">?</button>
+
+        <!-- Chatbot Modal (anchored bottom-right) -->
+        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
+            <div class="modal chatbot-modal" style="margin:0;">
                 <div class="modal-header">Help Chat</div>
-                <div id="chatbot-messages" style="max-height:300px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
+                <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
+                </div>
+                <div class="chatbot-suggestions">
+                    <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
+                    <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
+                    <button onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
+                    <button onclick="sendSuggestion('Export issues CSV')">Export issues</button>
                 </div>
                 <div style="margin-top:8px; display:flex; gap:8px;">
                     <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
@@ -1462,7 +1476,6 @@
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
                     <button class="btn-logout" onclick="logout()">Logout</button>
-                    <button class="btn-sm btn-info" style="margin-left:8px;" onclick="showChatbot()">Help</button>
                     <button class="btn-sm btn-warning" style="margin-left:12px;" onclick="showChangePasswordModal()">Change Password</button>
                 </div>
             </div>
@@ -2194,6 +2207,12 @@
             } catch (e) {
                 appendChatMessage('bot', 'Error contacting help service: ' + e.message);
             }
+        }
+
+        function sendSuggestion(text) {
+            const input = document.getElementById('chatbot-input');
+            input.value = text;
+            sendChatbotMessage();
         }
 
         // ========================================
