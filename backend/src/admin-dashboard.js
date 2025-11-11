@@ -649,25 +649,37 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
 // Bulk-resolve (or bulk update status) for multiple issues (MCA only)
 app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, res) => {
   try {
-    const { issueIds, status, action_note } = req.body || {};
+    let { issueIds, status, action_note } = req.body || {};
     if (!Array.isArray(issueIds) || issueIds.length === 0) {
       return res.status(400).json({ error: 'issueIds (array) is required' });
     }
 
+    // Sanitize input: ensure strings, trim, dedupe
+    issueIds = issueIds
+      .map(i => (typeof i === 'string' ? i.trim() : ''))
+      .filter(Boolean);
+    issueIds = Array.from(new Set(issueIds));
+
+    // Cap maximum items to prevent abuse (production-safe default)
+    const MAX_BATCH = 200;
+    if (issueIds.length === 0) return res.status(400).json({ error: 'No valid issueIds provided' });
+    if (issueIds.length > MAX_BATCH) return res.status(400).json({ error: `Too many issueIds; max ${MAX_BATCH}` });
+
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
 
-    // sanitize inputs
     const targetStatus = (status || 'resolved').toString();
     const note = typeof action_note === 'string' ? action_note : undefined;
 
     const results = [];
+    const phonesToNotify = new Map(); // phone -> array of tickets
 
-    // Process in small batches to avoid timeouts
+    // Process in batches to avoid long-running single operations
     const BATCH = 50;
     for (let i = 0; i < issueIds.length; i += BATCH) {
       const batch = issueIds.slice(i, i + BATCH);
-      // For each ticket id in batch, attempt update
+
+      // For each ticket in this batch, update and collect phone numbers
       await Promise.all(batch.map(async (ticket) => {
         try {
           const update = { status: targetStatus, updated_at: new Date() };
@@ -685,32 +697,12 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
 
           const updated = await database.collection('issues').findOne({ ticket: ticket });
 
-          // Post-update hooks: when resolving, update USSD interactions and notify reporter
-          try {
-            const newStatus = (targetStatus || '').toString().toLowerCase();
-            if (newStatus === 'resolved') {
-              if (updated && updated.phone_number) {
-                try {
-                  await database.collection('ussd_interactions').updateMany(
-                    { phone_number: updated.phone_number },
-                    { $set: { issue_status: targetStatus, related_ticket: ticket, updated_at: new Date() } }
-                  );
-                } catch (uErr) {
-                  console.warn('Failed to update USSD interactions for issue', ticket, uErr && uErr.message);
-                }
-
-                const notifyMsg = `Your report (${ticket}) has been marked as ${targetStatus}. Thank you.`;
-                try {
-                  await sendNotificationToPhone(database, updated.phone_number, notifyMsg);
-                } catch (notifyErr) {
-                  console.warn('Notification send failed for issue', ticket, notifyErr && notifyErr.message);
-                }
-              } else {
-                console.warn('No phone number available on updated issue', ticket);
-              }
-            }
-          } catch (hookErr) {
-            console.warn('Post-update hook error for issue', ticket, hookErr && hookErr.message);
+          // collect phone for later aggregated notification
+          if (updated && updated.phone_number) {
+            const phone = updated.phone_number;
+            const arr = phonesToNotify.get(phone) || [];
+            arr.push(ticket);
+            phonesToNotify.set(phone, arr);
           }
 
           results.push({ id: ticket, ok: true, issue: updated });
@@ -721,9 +713,37 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
       }));
     }
 
+    // After updating issues, update USSD interactions and send aggregated notifications per phone
+    const phoneEntries = Array.from(phonesToNotify.entries());
+    for (const [phone, tickets] of phoneEntries) {
+      try {
+        // Update USSD interactions once per phone
+        try {
+          await database.collection('ussd_interactions').updateMany(
+            { phone_number: phone },
+            { $set: { issue_status: targetStatus, related_tickets: tickets.join(','), updated_at: new Date() } }
+          );
+        } catch (uErr) {
+          console.warn('Failed to update USSD interactions for phone', phone, uErr && uErr.message);
+        }
+
+        // Send or queue one notification per phone summarizing the tickets
+        const notifyMsg = tickets.length === 1
+          ? `Your report (${tickets[0]}) has been marked as ${targetStatus}. Thank you.`
+          : `Your ${tickets.length} reports (${tickets.slice(0,5).join(',')}${tickets.length>5? ',...':''}) have been marked as ${targetStatus}. Thank you.`;
+
+        try {
+          await sendNotificationToPhone(database, phone, notifyMsg);
+        } catch (notifyErr) {
+          console.warn('Notification send failed for phone', phone, notifyErr && notifyErr.message);
+        }
+      } catch (e) {
+        console.warn('Error in post-update processing for phone', phone, e && e.message);
+      }
+    }
+
     const succeeded = results.filter(r => r.ok).length;
     const failed = results.length - succeeded;
-
     res.json({ success: true, updated: succeeded, failed, results });
   } catch (err) {
     console.error('Bulk resolve error:', err && err.message);
