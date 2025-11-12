@@ -1927,9 +1927,12 @@
         async function apiRequest(endpoint, options = {}) {
             options.headers = {
                 ...options.headers,
-                'Authorization': 'Bearer ' + authToken,
                 'Content-Type': 'application/json'
             };
+            // only include Authorization header when we actually have a token
+            if (authToken) {
+                options.headers['Authorization'] = 'Bearer ' + authToken;
+            }
             
             const res = await fetch(API_BASE + endpoint, options);
             
