@@ -70,7 +70,8 @@ function generateSessionToken() {
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
   
-  if (!token) {
+  // treat explicit 'null' or 'undefined' string values as missing token
+  if (!token || token === 'null' || token === 'undefined') {
     return res.status(401).json({ error: "Authentication required" });
   }
   
