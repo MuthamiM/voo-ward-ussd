@@ -84,6 +84,22 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Simple rate limiter for auth endpoints to prevent brute force and noisy 401s
+let rateLimit;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  console.warn('express-rate-limit not installed; login rate limiting disabled');
+}
+
+const loginLimiter = rateLimit ? rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // limit each IP to 10 login requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again in a minute' }
+}) : (req, res, next) => next();
+
 // Middleware: Verify MCA role
 function requireMCA(req, res, next) {
   if (req.user.role !== "MCA") {
@@ -184,7 +200,7 @@ app.get("/health", (req, res) => {
 // ============================================
 
 // Login
-app.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -207,6 +223,7 @@ app.post("/api/auth/login", async (req, res) => {
     });
 
     if (!user) {
+      console.warn(`Failed login attempt for unknown user '${username}' from ${req.ip}`);
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
@@ -237,6 +254,7 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     if (!passwordMatches) {
+      console.warn(`Failed login attempt for user '${username}' from ${req.ip}`);
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
