@@ -121,7 +121,8 @@ async function generateReply(message, user) {
     console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
   }
   if (!OPENAI_API_KEY) {
-    return fallbackReply(text);
+    // Enforce OpenAI usage only. If key not configured, return clear guidance to operator.
+    return 'Chatbot is not configured: set OPENAI_API_KEY on the server to enable assistant responses.';
   }
 
   try {
@@ -150,10 +151,10 @@ async function generateReply(message, user) {
     }
 
     // fallback on unexpected response
-    return fallbackReply(text);
+    return 'The help service returned an unexpected response. Please check server logs.';
   } catch (e) {
     console.error('Chatbot LLM error', e && e.message);
-    return fallbackReply(text);
+    return 'Chatbot encountered an internal error while contacting the language service.';
   }
 }
 

@@ -243,6 +243,21 @@ if (rateLimit) {
   console.log('Login limiter: in-process fallback active');
 }
 
+// Chat rate limiter (protect chatbot from abuse). Per-IP window by default.
+let chatLimiter;
+if (rateLimit) {
+  chatLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30, // limit each IP to 30 chat requests per minute
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many chat requests, please slow down' }
+  });
+} else {
+  // Simple no-op fallback (allow all) to avoid blocking when module not present
+  chatLimiter = (req, res, next) => next();
+}
+
 // Middleware: Verify MCA role
 function requireMCA(req, res, next) {
   if (req.user.role !== "MCA") {
@@ -297,6 +312,14 @@ async function connectDB() {
       const url = new URL(MONGO_URI);
       const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
       db = client.db(pathDb);
+      // Ensure important indexes exist to optimize reaper and related queries
+      try {
+        const issuesCol = db.collection('issues');
+        await issuesCol.createIndex({ scheduled_delete_at: 1, deleted: 1 });
+        console.log('Ensured index on issues.scheduled_delete_at and issues.deleted');
+      } catch (ixErr) {
+        console.warn('Could not ensure indexes for issues collection:', ixErr && ixErr.message);
+      }
     }
     
     console.log("✅ Connected to MongoDB Atlas");
@@ -327,8 +350,16 @@ function startIssueReaper() {
           try {
             const status = (doc.status || '').toString().toLowerCase();
             if (status === 'resolved') {
-              await database.collection('issues').deleteOne({ _id: doc._id });
-              console.log('Reaper: deleted scheduled resolved issue', doc.ticket || doc._id);
+              // Soft-delete: mark deleted=true so we retain audit trail
+              try {
+                await database.collection('issues').updateOne(
+                  { _id: doc._id },
+                  { $set: { deleted: true, deleted_at: new Date(), deleted_by: 'system' }, $unset: { scheduled_delete_at: "" } }
+                );
+                console.log('Reaper: soft-deleted scheduled resolved issue', doc.ticket || doc._id);
+              } catch (softErr) {
+                console.warn('Reaper: failed to soft-delete', doc.ticket || doc._id, softErr && softErr.message);
+              }
             } else {
               await database.collection('issues').updateOne({ _id: doc._id }, { $unset: { scheduled_delete_at: "" } });
               console.log('Reaper: cleared scheduled_delete_at for', doc.ticket || doc._id, 'status', status);
@@ -680,8 +711,9 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
+    // Exclude soft-deleted issues from exports
     const issues = await database.collection("issues")
-      .find({})
+      .find({ deleted: { $ne: true } })
       .sort({ created_at: -1 })
       .toArray();
     
@@ -806,8 +838,16 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
                   if (!fresh) return console.log('Scheduled delete: issue already removed', id);
                   const s = (fresh.status || '').toString().toLowerCase();
                   if (s === 'resolved') {
-                    await database.collection('issues').deleteOne({ ticket: id });
-                    console.log('Scheduled delete: removed resolved issue', id);
+                    // Soft-delete instead of hard delete to keep an audit trail
+                    try {
+                      await database.collection('issues').updateOne(
+                        { ticket: id },
+                        { $set: { deleted: true, deleted_at: new Date(), deleted_by: req.user?.username || 'system' }, $unset: { scheduled_delete_at: "" } }
+                      );
+                      console.log('Scheduled delete: soft-deleted resolved issue', id);
+                    } catch (sdErr) {
+                      console.warn('Scheduled soft-delete failed for', id, sdErr && sdErr.message);
+                    }
                   } else {
                     console.log('Scheduled delete skipped for', id, 'status is', s);
                     // clear scheduled_delete_at to indicate it was skipped
@@ -906,8 +946,16 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
                   if (!fresh) return console.log('Scheduled delete: issue already removed', ticket);
                   const s = (fresh.status || '').toString().toLowerCase();
                   if (s === 'resolved') {
-                    await database.collection('issues').deleteOne({ ticket: ticket });
-                    console.log('Scheduled delete: removed resolved issue', ticket);
+                    // Soft-delete instead of hard delete to keep an audit trail
+                    try {
+                      await database.collection('issues').updateOne(
+                        { ticket: ticket },
+                        { $set: { deleted: true, deleted_at: new Date(), deleted_by: req.user?.username || 'system' }, $unset: { scheduled_delete_at: "" } }
+                      );
+                      console.log('Scheduled delete: soft-deleted resolved issue', ticket);
+                    } catch (sdErr) {
+                      console.warn('Scheduled soft-delete failed for', ticket, sdErr && sdErr.message);
+                    }
                   } else {
                     console.log('Scheduled delete skipped for', ticket, 'status is', s);
                     try { await database.collection('issues').updateOne({ ticket: ticket }, { $unset: { scheduled_delete_at: "" } }); } catch (ee) { /* ignore */ }
@@ -1078,16 +1126,17 @@ app.get("/api/admin/stats", async (req, res) => {
     }
     
     const [
-      totalConstituents,
-      totalIssues,
-      openIssues,
+  totalConstituents,
+  totalIssues,
+  openIssues,
       totalBursaries,
       pendingBursaries,
       totalAnnouncements
     ] = await Promise.all([
-      database.collection("constituents").countDocuments(),
-      database.collection("issues").countDocuments(),
-      database.collection("issues").countDocuments({ status: "open" }),
+  database.collection("constituents").countDocuments(),
+  // exclude soft-deleted issues from counts
+  database.collection("issues").countDocuments({ deleted: { $ne: true } }),
+  database.collection("issues").countDocuments({ status: "open", deleted: { $ne: true } }),
       database.collection("bursary_applications").countDocuments(),
       database.collection("bursary_applications").countDocuments({ status: "Pending" }),
       database.collection("announcements").countDocuments()
@@ -1118,7 +1167,8 @@ app.get("/api/admin/stats", async (req, res) => {
 });
 
 // Simple chatbot/help endpoint to guide admins in using the dashboard
-app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+// Protect chat endpoint with a rate limiter to prevent abuse
+app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
   try {
     const { message } = req.body || {};
     // Log user message and bot reply to chat_messages collection (if DB available)
@@ -1420,6 +1470,42 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Error exporting issues:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: purge soft-deleted issues (permanent removal). MCA only.
+app.post('/api/admin/issues/purge', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { ticket, older_than_minutes, all, confirm } = req.body || {};
+    if (!confirm) return res.status(400).json({ error: 'Confirm required. Set { confirm: true } to proceed.' });
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    if (ticket) {
+      const r = await database.collection('issues').deleteOne({ ticket: ticket, deleted: true });
+      await database.collection('admin_audit').insertOne({ action: 'purge-issue', ticket, performed_by: req.user?.username || 'unknown', count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    if (older_than_minutes && Number(older_than_minutes) > 0) {
+      const mins = Number(older_than_minutes);
+      const cutoff = new Date(Date.now() - mins * 60 * 1000);
+      const r = await database.collection('issues').deleteMany({ deleted: true, deleted_at: { $lte: cutoff } });
+      await database.collection('admin_audit').insertOne({ action: 'purge-issues-older', performed_by: req.user?.username || 'unknown', older_than_minutes: mins, count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    if (all) {
+      const r = await database.collection('issues').deleteMany({ deleted: true });
+      await database.collection('admin_audit').insertOne({ action: 'purge-all-deleted-issues', performed_by: req.user?.username || 'unknown', count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    return res.status(400).json({ error: 'Provide ticket or older_than_minutes or all with confirm:true' });
+  } catch (e) {
+    console.error('Purge issues error', e && e.message);
+    res.status(500).json({ error: 'failed to purge issues' });
   }
 });
 
