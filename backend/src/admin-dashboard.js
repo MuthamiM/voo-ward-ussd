@@ -1,64 +1,242 @@
-// Minimal admin-dashboard router (single-file authoritative version)
-const express = require('express');
-const { MongoClient } = require('mongodb');
-require('dotenv').config();
+const express = require("express");
+const path = require("path");
+const { MongoClient, ObjectId } = require("mongodb");
+const crypto = require("crypto");
+// bcrypt for secure password hashing and migration from legacy SHA-256
+const bcrypt = require('bcryptjs');
 
-const router = express.Router();
-router.use(express.json());
+// Load environment variables
+require("dotenv").config();
+const chatbotSvc = require('./chatbot');
 
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// CORS - allow frontend to connect
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
+
+const fs = require('fs');
+const multer = require('multer');
+let sharp;
+try { sharp = require('sharp'); } catch (e) { console.warn('sharp not available; image resizing disabled'); }
+// Optional S3 support using AWS SDK v3 (@aws-sdk/client-s3)
+let s3Client;
+let S3_ENABLED = false;
+try {
+  const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+  if (process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    const region = process.env.S3_REGION || 'us-east-1';
+    s3Client = new S3Client({ region });
+    // attach command constructors so later code can reference them when needed
+    s3Client._PutObjectCommand = PutObjectCommand;
+    s3Client._DeleteObjectCommand = DeleteObjectCommand;
+    S3_ENABLED = true;
+    console.log('S3 (v3): enabled for avatar uploads');
+  }
+} catch (e) {
+  // @aws-sdk/client-s3 not installed or not configured
+}
+
+
+// Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
 
+// Helper: Hash password
+function hashPassword(password) {
+  return crypto.createHash("sha256").update(password).digest("hex");
+}
+
+// Helper: detect bcrypt hash
+function isBcryptHash(s) {
+  return typeof s === 'string' && (s.startsWith('$2a$') || s.startsWith('$2b$') || s.startsWith('$2y$') || s.startsWith('$2$'));
+}
+
+// Helper: hash with bcrypt
+function bcryptHash(password) {
+  return bcrypt.hashSync(password, 10);
+}
+
+// Helper: Generate session token
+function generateSessionToken() {
+  return crypto.randomBytes(32).toString("hex");
+}
+
+// Middleware: Verify authentication
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  
+  // treat explicit 'null' or 'undefined' string values as missing token
+  if (!token || token === 'null' || token === 'undefined') {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+  
+  const session = sessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "Invalid or expired session" });
+  }
+  
+  req.user = session.user;
+  next();
+}
+
+// Simple rate limiter for auth endpoints to prevent brute force and noisy 401s
+let rateLimit;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  console.warn('express-rate-limit not installed; falling back to in-process limiter');
+}
+
+// If express-rate-limit is available, use it. Otherwise, use a simple in-memory limiter.
+let loginLimiter;
+if (rateLimit) {
+  loginLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // limit each IP to 10 login requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts, please try again in a minute' }
+  });
+  console.log('Login limiter: express-rate-limit active');
+} else {
+  // Simple fallback limiter: counts attempts per IP with expiry.
+  const attempts = new Map(); // ip -> { count, firstTs }
+  const WINDOW_MS = 60 * 1000;
+  const MAX_ATTEMPTS = 10;
+
+  // periodic cleanup to avoid memory growth
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, info] of attempts.entries()) {
+      if (now - info.firstTs > WINDOW_MS * 5) attempts.delete(ip);
+    }
+  }, WINDOW_MS * 2).unref();
+
+  loginLimiter = (req, res, next) => {
+    try {
+      const ip = (req.ip || req.connection?.remoteAddress || 'unknown').toString();
+      const now = Date.now();
+      const info = attempts.get(ip) || { count: 0, firstTs: now };
+      if (now - info.firstTs > WINDOW_MS) {
+        info.count = 1;
+        info.firstTs = now;
+      } else {
+        info.count += 1;
+      }
+      attempts.set(ip, info);
+      if (info.count > MAX_ATTEMPTS) {
+        return res.status(429).json({ error: 'Too many login attempts, please try again in a minute' });
+      }
+    } catch (e) {
+      // on error, allow request through to avoid locking everyone out
+      console.warn('Fallback limiter error', e && e.message);
+    }
+    return next();
+  };
+  console.log('Login limiter: in-process fallback active');
+}
+
+// Middleware: Verify MCA role
+function requireMCA(req, res, next) {
+  if (req.user.role !== "MCA") {
+    return res.status(403).json({ error: "Access denied. MCA role required." });
+  }
+  next();
+}
+
+// MongoDB connection
+const { ServerApiVersion } = require("mongodb");
+let client;
+let db;
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+
 async function connectDB() {
-  const uri = process.env.MONGO_URI;
-  if (!uri) return null;
+  if (db) return db;
+  
+  if (!MONGO_URI) {
+    console.error("❌ MONGO_URI not set in .env file");
+    return null;
+  }
+  
   try {
-    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-    await client.connect();
-    const db = client.db(process.env.MONGO_DB || 'voo');
-    db._client = client;
+    if (!client) {
+      client = new MongoClient(MONGO_URI, {
+        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+        tls: true,
+        retryWrites: true,
+        connectTimeoutMS: 10000,
+        serverSelectionTimeoutMS: 8000,
+      });
+    }
+    
+    if (!db) {
+      await client.connect();
+      // Extract database name from URI
+      const url = new URL(MONGO_URI);
+      const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
+      db = client.db(pathDb);
+    }
+    
+    console.log("✅ Connected to MongoDB Atlas");
     return db;
-  } catch (e) {
-    console.warn('Admin dashboard: MongoDB connect failed:', e && e.message);
+  } catch (err) {
+    console.error("❌ MongoDB connection failed:", err.message);
+    console.log("💡 Tip: Check if MONGO_URI is correct in .env file");
     return null;
   }
 }
 
-module.exports = router;
-module.exports.connectDB = connectDB;
+// Prepare upload directory for profile avatars
+const UPLOADS_DIR = path.join(__dirname, '../public/uploads/avatars');
+try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 
-router.get('/health', (req, res) => res.json({ ok: true, service: 'admin-dashboard', ts: new Date().toISOString() }));
-
-router.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body || {};
-  const okUser = process.env.ADMIN_USER || 'admin';
-  const okPass = process.env.ADMIN_PASS || 'admin123';
-  if (username === okUser && password === okPass) {
-    const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
-    sessions.set(token, { user: { username: okUser, fullAccess: true }, createdAt: Date.now() });
-    return res.json({ token, fullAccess: true });
+// Multer storage for avatars
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: function (req, file, cb) {
+    // filename: userId-timestamp.ext
+    const uid = req.user ? (req.user.id || req.user.username || 'anon') : 'anon';
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const name = `${uid}-${Date.now()}${ext}`;
+    cb(null, name);
   }
-  return res.status(401).json({ error: 'Invalid credentials' });
 });
 
-router.get('/api/admin/stats', async (req, res) => {
-  const stats = { constituents: { total: 0 }, issues: { total: 0 }, bursaries: { total: 0 }, announcements: { total: 0 } };
-  try {
-    const db = await connectDB();
-    if (db) {
-      stats.constituents.total = await db.collection('constituents').countDocuments();
-      stats.issues.total = await db.collection('issues').countDocuments();
-      stats.bursaries.total = await db.collection('bursaries').countDocuments();
-      stats.announcements.total = await db.collection('announcements').countDocuments();
-      try { if (db._client) await db._client.close(); } catch (e) {}
-    }
-  } catch (e) { console.warn('admin/stats failed:', e && e.message); }
-  res.json(stats);
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: function (req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Only JPEG, PNG or WEBP images are allowed'));
+    cb(null, true);
+  }
 });
 
-router.post('/api/auth/logout', (req, res) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (token) sessions.delete(token);
-  res.json({ ok: true });
+// Notifications have been disabled per operator request.
+// keep a no-op helper to avoid removing all call sites; it will log the intent and return a neutral result.
+async function sendNotificationToPhone(/* db, phone, message */) {
+  console.log('Notifications disabled: sendNotificationToPhone called - notifications removed from this deployment.');
+  return { ok: false, queued: false };
+}
+
+// Health check
+app.get("/health", (req, res) => {
+  res.json({ 
+    ok: true, 
+    service: "voo-admin-dashboard", 
+    ts: new Date().toISOString(),
+    db: db ? "connected" : "disconnected"
+  });
 });
 
 // ============================================
@@ -1238,7 +1416,6 @@ app.get('/old', (req, res) => {
   res.redirect('/admin-dashboard.html');
 });
 
-<<<<<<< Updated upstream
 // Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
@@ -1253,574 +1430,6 @@ async function startServer() {
     console.log(` MongoDB Connected: Ready to view data`);
     
     // Initialize admin user
-=======
-// OLD HTML CODE REMOVED - Now served from file
-router.get("/old", (req, res) => {
-  res.send(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOO Ward Admin Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 { font-size: 2em; margin-bottom: 10px; }
-        .header p { opacity: 0.9; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card h3 { color: #667eea; font-size: 2.5em; margin-bottom: 5px; }
-        .stat-card p { color: #666; font-size: 0.9em; }
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-            padding: 0 30px;
-        }
-        .tab {
-            padding: 15px 25px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 16px;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            font-weight: bold;
-        }
-        .tab:hover { color: #667eea; }
-        .content { padding: 30px; }
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-        tr:hover { background: #f8f9fa; }
-        .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-        .badge.open { background: #ffc107; color: #000; }
-        .badge.in_progress { background: #17a2b8; color: white; }
-        .badge.resolved { background: #28a745; color: white; }
-        .badge.pending { background: #ffc107; color: #000; }
-        .badge.approved { background: #28a745; color: white; }
-        .badge.rejected { background: #dc3545; color: white; }
-        .export-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-        }
-        .export-btn:hover { background: #218838; }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2em;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .empty {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-    <div class="header">
-      <h1> VOO Kyamatu Ward Admin Dashboard</h1>
-      <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
-      <div style="position: absolute; right: 20px; top: 22px;">
-        <button id="login-btn" class="export-btn">Login</button>
-        <button id="logout-btn" class="export-btn" style="display:none; background:#dc3545;">Logout</button>
-      </div>
-    </div>
-    <!-- Login modal -->
-    <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-      <div style="background:white; padding:20px; width:320px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.2); margin:auto;">
-        <h3 style="margin-bottom:10px;">Admin Login</h3>
-        <form id="login-form">
-          <div style="margin-bottom:8px;"><input id="login-username" placeholder="Username" style="width:100%; padding:8px;" /></div>
-          <div style="margin-bottom:12px;"><input id="login-password" type="password" placeholder="Password" style="width:100%; padding:8px;" /></div>
-          <div style="text-align:right;"><button id="login-submit" class="export-btn" type="submit">Sign in</button> <button id="login-cancel" type="button" style="margin-left:8px;" class="export-btn">Cancel</button></div>
-        </form>
-      </div>
-    </div>
-        
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3 id="stat-constituents">-</h3>
-                <p>Total Constituents</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-issues">-</h3>
-                <p>Reported Issues</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-bursaries">-</h3>
-                <p>Bursary Applications</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-announcements">-</h3>
-                <p>Active Announcements</p>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
-            <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
-            <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
-            <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
-        </div>
-        
-        <div class="content">
-            <div id="issues-content">
-                <button class="export-btn requires-admin" onclick="exportData('issues')">📥 Export Issues CSV</button>
-                <div class="table-container">
-                    <table id="issues-table">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Category</th>
-                                <th>Message</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="issues-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="bursaries-content" style="display:none;">
-                <button class="export-btn requires-admin" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
-                <div class="table-container">
-                    <table id="bursaries-table">
-                        <thead>
-                            <tr>
-                                <th>Ref Code</th>
-                                <th>Student Name</th>
-                                <th>School/Institution</th>
-                                <th>Amount Requested</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bursaries-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="constituents-content" style="display:none;">
-                <button class="export-btn requires-admin" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
-                <div class="table-container">
-                    <table id="constituents-table">
-                        <thead>
-                            <tr>
-                                <th>Phone Number</th>
-                                <th>National ID</th>
-                                <th>Full Name</th>
-                                <th>Location</th>
-                                <th>Village</th>
-                                <th>Registered At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="constituents-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="announcements-content" style="display:none;">
-                <div class="table-container">
-                    <table id="announcements-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Body</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="announcements-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = window.location.origin;
-        
-    // Authentication token stored in localStorage
-    let TOKEN = localStorage.getItem('token') || null;
-
-    function authHeaders() {
-      return TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {};
-    }
-
-    async function fetchWithAuth(url, opts = {}) {
-      opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
-      return fetch(url, opts);
-    }
-
-    // Login/logout helpers (modal-based)
-    function showLogin() {
-      // use flex to allow centering via align-items/justify-content
-      document.getElementById('login-modal').style.display = 'flex';
-      document.getElementById('login-username').focus();
-    }
-
-    async function submitLogin(ev) {
-      ev.preventDefault();
-      const user = document.getElementById('login-username').value.trim();
-      const pass = document.getElementById('login-password').value;
-      if (!user || !pass) {
-        if (typeof showToast === 'function') showToast('Enter username and password', 'error'); else console.warn('Enter username and password');
-        return;
-      }
-      try {
-        const res = await fetch(API_BASE + '/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user, password: pass })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (typeof showToast === 'function') showToast('Login failed: ' + (data.error || JSON.stringify(data)), 'error'); else console.warn('Login failed: ' + (data.error || JSON.stringify(data)));
-          return;
-        }
-        TOKEN = data.token;
-        localStorage.setItem('token', TOKEN);
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'inline-block';
-        document.getElementById('login-modal').style.display = 'none';
-        await fetchMe();
-        loadStats(); loadIssues();
-  } catch (err) { if (typeof showToast === 'function') showToast('Login error: ' + err.message, 'error'); else console.warn('Login error: ' + err.message); }
-    }
-
-    async function doLogout() {
-      const token = TOKEN;
-      TOKEN = null;
-      localStorage.removeItem('token');
-      document.getElementById('login-btn').style.display = 'inline-block';
-      document.getElementById('logout-btn').style.display = 'none';
-      applyAccess(false);
-      if (token) {
-        try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (e) {}
-      }
-    }
-
-    async function fetchMe() {
-      if (!TOKEN) return applyAccess(false);
-      try {
-        const res = await fetch(API_BASE + '/api/auth/me', { headers: authHeaders() });
-        if (!res.ok) return applyAccess(false);
-        const data = await res.json();
-        applyAccess(data.fullAccess === true);
-      } catch (err) {
-        console.error('me fetch error', err);
-        applyAccess(false);
-      }
-    }
-
-    function applyAccess(fullAccess) {
-      document.querySelectorAll('.requires-admin').forEach(el => {
-        el.style.display = fullAccess ? 'inline-block' : 'none';
-      });
-      // Hide bursaries tab for non-admins
-      if (!fullAccess) {
-        const bursTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.toLowerCase().includes('bursaries'));
-        if (bursTab) bursTab.style.display = 'none';
-      }
-    }
-
-    // Load statistics
-    async function loadStats() {
-            try {
-                const res = await fetch(API_BASE + '/api/admin/stats');
-                const data = await res.json();
-                document.getElementById('stat-constituents').textContent = data.constituents.total;
-                document.getElementById('stat-issues').textContent = data.issues.total;
-                document.getElementById('stat-bursaries').textContent = data.bursaries.total;
-                document.getElementById('stat-announcements').textContent = data.announcements.total;
-            } catch (err) {
-                console.error('Error loading stats:', err);
-            }
-        }
-        
-        // Load issues
-        async function loadIssues() {
-            const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/issues');
-                const issues = await res.json();
-                
-                if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No issues reported yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = issues.map(issue => \`
-                    <tr>
-                        <td><strong>\${issue.ticket}</strong></td>
-                        <td>\${issue.category}</td>
-                        <td>\${issue.message}</td>
-                        <td>\${issue.phone_number}</td>
-                        <td><span class="badge \${issue.status}">\${issue.status}</span></td>
-                        <td>\${new Date(issue.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading issues: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load bursaries
-        async function loadBursaries() {
-            const tbody = document.getElementById('bursaries-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/bursaries');
-                const bursaries = await res.json();
-                
-                if (bursaries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty">No bursary applications yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = bursaries.map(b => \`
-                    <tr>
-                        <td><strong>\${b.ref_code}</strong></td>
-                        <td>\${b.student_name}</td>
-                        <td>\${b.institution}</td>
-                        <td>KES \${b.amount_requested.toLocaleString()}</td>
-                        <td>\${b.phone_number}</td>
-                        <td><span class="badge \${b.status.toLowerCase()}">\${b.status}</span></td>
-                        <td>\${new Date(b.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading bursaries: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load constituents
-        async function loadConstituents() {
-            const tbody = document.getElementById('constituents-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/constituents');
-                const constituents = await res.json();
-                
-                if (constituents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No constituents registered yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = constituents.map(c => \`
-                    <tr>
-                        <td>\${c.phone_number}</td>
-                        <td>\${c.national_id}</td>
-                        <td><strong>\${c.full_name}</strong></td>
-                        <td>\${c.location}</td>
-                        <td>\${c.village}</td>
-                        <td>\${new Date(c.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading constituents: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load announcements
-        async function loadAnnouncements() {
-            const tbody = document.getElementById('announcements-tbody');
-            tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/announcements');
-                const announcements = await res.json();
-                
-                if (announcements.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No announcements yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = announcements.map(a => \`
-                    <tr>
-                        <td><strong>\${a.title}</strong></td>
-                        <td>\${a.body}</td>
-                        <td>\${new Date(a.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="3" class="error">Error loading announcements: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Show tab
-        function showTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
-            
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            
-            // Show selected content
-            document.getElementById(tab + '-content').style.display = 'block';
-            
-            // Add active class to tab
-            event.target.classList.add('active');
-            
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-        }
-        
-    // Export data (fetch with auth and download)
-    async function exportData(type) {
-      try {
-        const res = await fetchWithAuth(API_BASE + '/api/admin/export/' + type);
-        if (!res.ok) {
-          if (typeof showToast === 'function') showToast('Export failed: ' + res.statusText, 'error'); else console.warn('Export failed: ' + res.statusText);
-          return;
-        }
-        const text = await res.text();
-        const blob = new Blob([text], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = type + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        if (typeof showToast === 'function') showToast('Export error: ' + err.message, 'error'); else console.warn('Export error: ' + err.message);
-      }
-    }
-        
-    // Initialize
-    document.getElementById('login-btn').addEventListener('click', showLogin);
-    document.getElementById('logout-btn').addEventListener('click', doLogout);
-    // Wire up modal form submit and cancel
-    document.getElementById('login-form').addEventListener('submit', submitLogin);
-    document.getElementById('login-cancel').addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('login-modal').style.display = 'none';
-    });
-    // Close modal when clicking outside the dialog
-    document.getElementById('login-modal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('login-modal')) {
-        document.getElementById('login-modal').style.display = 'none';
-      }
-    });
-    // reflect stored token UI
-    if (TOKEN) {
-      document.getElementById('login-btn').style.display = 'none';
-      document.getElementById('logout-btn').style.display = 'inline-block';
-    }
-    fetchMe();
-    loadStats();
-    loadIssues();
-        
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadStats();
-            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
-            if (activeTab.includes('issues')) loadIssues();
-            else if (activeTab.includes('bursaries')) loadBursaries();
-            else if (activeTab.includes('constituents')) loadConstituents();
-            else if (activeTab.includes('announcements')) loadAnnouncements();
-        }, 30000);
-    </script>
-</body>
-</html>
-  `);
-});
-
-
-// Export router for use in main server
-// Expose connectDB for other modules (e.g. USSD handler) and export router
-router.connectDB = connectDB;
-// Bootstrap default admin on module load (best-effort)
-(async function bootstrapAdmin() {
-  try {
-    // initializeAdmin will connect to DB and create the default admin if none exists
->>>>>>> Stashed changes
     await initializeAdmin();
   } else {
     console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
@@ -1834,55 +1443,32 @@ router.connectDB = connectDB;
   });
 }
 
-// Expose router and connectDB.
-module.exports = router;
-module.exports.connectDB = connectDB;
-
-// --- Minimal API endpoints ---
-// Health
-router.get('/health', (req, res) => res.json({ ok: true, service: 'admin-dashboard', ts: new Date().toISOString() }));
-
-// Basic admin login (demo): supports username/password from env or defaults.
-router.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body || {};
-  const okUser = process.env.ADMIN_USER || 'admin';
-  const okPass = process.env.ADMIN_PASS || 'admin123';
-  if (username === okUser && password === okPass) {
-    const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
-    sessions.set(token, { user: { username: okUser, fullAccess: true }, createdAt: Date.now() });
-    return res.json({ token, fullAccess: true });
-  }
-  return res.status(401).json({ error: 'Invalid credentials' });
-});
-
-// Simple admin stats endpoint (placeholder)
-router.get('/api/admin/stats', async (req, res) => {
-  // Try to present reasonable default structure even without DB
-  const stats = { constituents: { total: 0 }, issues: { total: 0 }, bursaries: { total: 0 }, announcements: { total: 0 } };
-  try {
-    const db = await connectDB();
-    if (db) {
-      stats.constituents.total = await db.collection('constituents').countDocuments();
-      stats.issues.total = await db.collection('issues').countDocuments();
-      stats.bursaries.total = await db.collection('bursaries').countDocuments();
-      stats.announcements.total = await db.collection('announcements').countDocuments();
-      // close client if we created it here
-      try { if (db._client) await db._client.close(); } catch (e) {}
+// If this file is executed directly (node admin-dashboard.js) start its own server.
+if (require.main === module) {
+  startServer().catch(err => {
+    console.error('Failed to start admin-dashboard server:', err && err.message);
+    process.exit(1);
+  });
+} else {
+  // Export the Express app so a parent application can mount it (e.g. app.use('/admin', adminApp))
+  module.exports = app;
+  // expose connectDB for parent apps that may want to reuse the DB connection
+  try { module.exports.connectDB = connectDB; } catch (e) { /* noop */ }
+  // Also attempt a best-effort DB connect + admin init when required (non-blocking)
+  (async () => {
+    try {
+      const database = await connectDB();
+      if (database) await initializeAdmin();
+    } catch (e) {
+      console.warn('Admin dashboard module init warning:', e && e.message);
     }
-  } catch (e) {
-    console.warn('admin/stats failed:', e && e.message);
-  }
-  res.json(stats);
-});
+  })();
 
-// A simple logout endpoint
-router.post('/api/auth/logout', (req, res) => {
-  const token = (req.headers.authorization || '').replace('Bearer ', '');
-  if (token) sessions.delete(token);
-  res.json({ ok: true });
-});
-
-// Keep the module lightweight; other admin features can be re-added safely in separate PRs.
+  // Internal endpoint: reset admin password (requires ADMIN_RESET_TOKEN header)
+  // Use only when ADMIN_RESET_TOKEN is set in environment and you provide the token in the request.
+  app.post('/internal/reset-admin', async (req, res) => {
+    try {
+      const token = req.headers['x-admin-reset-token'] || '';
       if (!process.env.ADMIN_RESET_TOKEN || token !== process.env.ADMIN_RESET_TOKEN) {
         return res.status(403).json({ error: 'Forbidden' });
       }

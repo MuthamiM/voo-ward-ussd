@@ -180,13 +180,7 @@ Dial *XXX# docs/
 
     api.md                   # Endpoint reference
 
-Step 1: Language Selection    ops.md                   # Deployment & backup
-
-   1. English    DPIA.md                  # Data protection checklist
-
-   2. Swahili
-
-   3. Kamba README.md
+Step 1: Language Selection    1. English    2. Swahili    3. Kamba README.md
 
 \\\
 
@@ -323,6 +317,52 @@ curl https://your-admin-url.onrender.com/health
 | [RENDER-DEPLOYMENT.md](backend/RENDER-DEPLOYMENT.md) | Render.com deployment |
 | [SAFARICOM-APPLICATION.md](SAFARICOM-APPLICATION.md) | Service application |
 | [TECHNICAL-INTEGRATION.md](TECHNICAL-INTEGRATION.md) | Integration guide |
+
+## 🔑 Admin Password Recovery & Login Troubleshooting
+
+If you cannot log in to the admin dashboard, follow these steps:
+
+### 1. Ensure MongoDB Connection
+
+Set your MongoDB URI in your environment before starting the server:
+
+```powershell
+$env:MONGO_URI = "<your-mongodb-uri>"
+```
+
+### 2. Reset the Admin Password
+
+Use the provided script to reset the admin user password:
+
+```powershell
+$env:MONGO_URI = "<your-mongodb-uri>"
+$env:ADMIN_PASS = "yournewpassword"  # Optional, default is admin123
+node .\backend\scripts\reset-admin.js
+```
+
+This will create or update the `admin` user with the password you specify.
+
+### 3. Start the Main Server
+
+Always start the main server, not the dashboard directly:
+
+```powershell
+node src/index.js
+```
+
+The dashboard will be available at: [http://localhost:4000/admin-dashboard.html](http://localhost:4000/admin-dashboard.html)
+
+### 4. Change Password from Dashboard
+
+After login, use the "Change Password" button in the dashboard navbar to set a new password securely.
+
+### 5. Common Issues
+
+- **404 on /api/admin/**: Make sure you are running only `src/index.js` and not `admin-dashboard.js` directly.
+- **MONGO_URI not set**: Set your MongoDB URI as shown above.
+- **Password not working**: Reset using the script, then log in and change it from the dashboard.
+
+---
 
 ## 🛠️ Development
 
