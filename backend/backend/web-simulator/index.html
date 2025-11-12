@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USSD Simulator - Kyamatu Ward</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="phone-frame">
+            <div class="phone-header">
+                <div class="status-bar">
+                    <span class="signal">📶</span>
+                    <span class="time" id="time">12:00</span>
+                    <span class="battery">🔋 85%</span>
+                </div>
+                <div class="ussd-title">USSD Session</div>
+            </div>
+            
+            <div class="ussd-screen" id="ussd-screen">
+                <div id="ussd-content">
+                    <p>🚀 Welcome to Kyamatu Ward Free USSD Simulator</p>
+                    <p>Enter your phone number and press START to begin</p>
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input 
+                    type="tel" 
+                    id="phone-input" 
+                    placeholder="254712345678"
+                    maxlength="12"
+                />
+                <input 
+                    type="text" 
+                    id="response-input" 
+                    placeholder="Enter your choice..."
+                    disabled
+                />
+            </div>
+            
+            <div class="keypad">
+                <button class="key" onclick="pressKey('1')">1</button>
+                <button class="key" onclick="pressKey('2')">2</button>
+                <button class="key" onclick="pressKey('3')">3</button>
+                <button class="key" onclick="pressKey('4')">4</button>
+                <button class="key" onclick="pressKey('5')">5</button>
+                <button class="key" onclick="pressKey('6')">6</button>
+                <button class="key" onclick="pressKey('7')">7</button>
+                <button class="key" onclick="pressKey('8')">8</button>
+                <button class="key" onclick="pressKey('9')">9</button>
+                <button class="key special" onclick="pressKey('*')">*</button>
+                <button class="key" onclick="pressKey('0')">0</button>
+                <button class="key special" onclick="pressKey('#')">#</button>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn start-btn" onclick="startSession()">START</button>
+                <button class="action-btn send-btn" onclick="sendResponse()" disabled>SEND</button>
+                <button class="action-btn end-btn" onclick="endSession()">END</button>
+            </div>
+            
+            <div class="session-info">
+                <span id="session-status">⚪ Not Connected</span>
+            </div>
+        </div>
+        
+        <div class="info-panel">
+            <h2>📱 Web USSD Simulator</h2>
+            <p><strong>100% Free Alternative</strong> - No Africa's Talking needed!</p>
+            
+            <h3>How to Use:</h3>
+            <ol>
+                <li>Enter phone number (254...)</li>
+                <li>Click <strong>START</strong></li>
+                <li>Select language (1, 2, or 3)</li>
+                <li>Navigate menus using keypad</li>
+                <li>Click <strong>SEND</strong> after each choice</li>
+            </ol>
+            
+            <h3>Features:</h3>
+            <ul>
+                <li>✅ 3 Languages (English/Swahili/Kamba)</li>
+                <li>✅ Issue Reporting</li>
+                <li>✅ Announcements</li>
+                <li>✅ Bursary Applications</li>
+                <li>✅ Projects Info</li>
+            </ul>
+            
+            <h3>Backend Status:</h3>
+            <div id="backend-status" class="status-indicator">
+                <span id="backend-light" class="light">🔴</span>
+                <span id="backend-text">Checking...</span>
+            </div>
+        </div>
+    </div>
+    
+    <script src="simulator.js"></script>
+</body>
+</html>

@@ -33,40 +33,6 @@
             --gray-900: #18181b;
         }
 
-        /* Smooth update animation for rows when status changes */
-        .row-updated {
-            animation: highlight-row 1s ease forwards;
-        }
-
-        @keyframes highlight-row {
-            0% { background: rgba(124,58,237,0.12); }
-            100% { background: transparent; }
-        }
-
-        /* Small button spinner */
-        .btn .spinner-inline {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,0.6);
-            border-top-color: rgba(255,255,255,0.95);
-            border-radius: 50%;
-            margin-left: 8px;
-            vertical-align: middle;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Status select animations and colors */
-        .issue-status-select {
-            transition: background-color 300ms ease, transform 150ms ease;
-            padding: 6px; border-radius: 8px; border: 1px solid #e6e9ef; background: #fff;
-        }
-        .issue-status-select.status-pending { background: #fff7ed; }
-        .issue-status-select.status-in_progress { background: #eef2ff; }
-        .issue-status-select.status-resolved { background: #ecfdf5; }
-        .issue-status-select:focus { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
         * {
             margin: 0;
             padding: 0;
@@ -1373,55 +1339,6 @@
             border-radius: 2px;
         }
     </style>
-    <style>
-        /* Toasts */
-        #toasts { position: fixed; top: 18px; right: 18px; z-index: 9999; display:flex; flex-direction: column; gap:8px; }
-        .toast { min-width: 220px; max-width: 380px; background: white; padding: 12px 14px; border-radius: 8px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-size: 14px; color: #111827; }
-        .toast.info { border-left: 4px solid var(--info); }
-        .toast.success { border-left: 4px solid var(--success); }
-        .toast.error { border-left: 4px solid var(--danger); }
-
-        /* Modal (simple) */
-        .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
-            .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
-        /* Profile avatar & settings */
-        #profileAvatar { width:42px; height:42px; border-radius:50%; display:block; }
-        .profile-row { display:flex; gap:12px; align-items:center; }
-        .settings-switch { display:flex; align-items:center; gap:8px; }
-        .settings-switch input[type="checkbox"] { width:18px; height:18px; }
-        /* Smaller change password modal */
-        #changePasswordModal .modal-content { max-width:420px; width:92%; padding:14px; }
-        /* Dark theme variant */
-        body.dark-theme { background: #0b1220; color: #e6eef8; }
-        body.dark-theme .container { background: #071026; }
-        body.dark-theme .navbar { background: rgba(10,10,12,0.9); color: #e6eef8; }
-        /* Compact mode reduces paddings for dense tables/cards */
-        body.compact-mode table td, body.compact-mode table th { padding: 8px !important; }
-        body.compact-mode .stat-card { padding: 12px !important; }
-        /* Disable animations when requested */
-        body.no-animations *, body.no-animations *::before, body.no-animations *::after { transition-duration: 0s !important; animation-duration: 0s !important; }
-        .modal-header { font-weight: 700; margin-bottom: 8px; }
-    .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
-    .modal.show { display:block; }
-    /* Chat rows */
-    .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
-    .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
-    .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
-    /* Chatbot floating button and modal positioning */
-    /* global floating chatbot removed (inline Issues-panel help used instead) */
-    .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
-    /* Floating chatbot button (viewport fixed bottom-right) */
-    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11001; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform: translateY(6px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
-    .chatbot-button svg { display:block; }
-    .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
-    /* Ensure tab content can be the positioning context for inline widgets */
-    .tab-content { position: relative; }
-    /* Inline chatbot button placed inside a tab (shown near the issues table) */
-    .chatbot-inline-button { position: absolute; right: 18px; bottom: 68px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(10px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
-    .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
-    .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-    .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
-    </style>
 </head>
 <body>
     <!-- LOGIN PAGE -->
@@ -1455,40 +1372,8 @@
                 
                 <button type="submit" class="btn btn-primary">Sign In</button>
             </form>
-            <div style="margin-top:10px; text-align:center;">
-                <button type="button" class="btn btn-link" style="font-size:12px; color:#6b7280;" onclick="promptResetAdmin()">Emergency admin reset</button>
-            </div>
         </div>
     </div>
-        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
-        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot">
-            <!-- Bot SVG icon -->
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
-            </svg>
-        </button>
-
-        <!-- Chatbot Modal (anchored bottom-right) -->
-        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
-            <div class="modal chatbot-modal" style="margin:0;">
-                <div class="modal-header">Help Chat</div>
-                <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
-                </div>
-                <div class="chatbot-suggestions">
-                    <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
-                    <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
-                    <button onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
-                    <button onclick="sendSuggestion('Export issues CSV')">Export issues</button>
-                </div>
-                <div style="margin-top:8px; display:flex; gap:8px;">
-                    <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
-                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
-                </div>
-            </div>
-        </div>
 
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
@@ -1503,23 +1388,13 @@
                     </div>
                 </div>
                 
-                        <div class="navbar-user">
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <button id="editHelpBtn" class="btn-sm btn-info" style="display:none;" onclick="showKbEditor()">Edit Help</button>
-                                <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
-                                <button class="btn-logout" onclick="logout()">Logout</button>
-                            </div>
-                            <!-- Profile avatar on the far right -->
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div style="text-align:right; margin-right:6px;">
-                                    <div id="userFullName" style="font-weight:700; cursor:pointer;" onclick="showProfileModal()">Loading...</div>
-                                    <div id="userRole" style="font-size:12px; color:#6b7280;">...</div>
-                                </div>
-                                <button id="profileAvatarBtn" onclick="showProfileModal()" title="Your profile" style="border: none; background: transparent; padding:0; cursor:pointer;">
-                                    <img id="profileAvatar" src="/images/avatar-placeholder.svg" alt="avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.14);background:linear-gradient(135deg,#7c3aed,#a78bfa);"/>
-                                </button>
-                            </div>
-                        </div>
+                <div class="navbar-user">
+                    <div class="user-info">
+                        <span class="user-info-name" id="userFullName">Loading...</span>
+                        <span class="user-info-role" id="userRole">...</span>
+                    </div>
+                    <button class="btn-logout" onclick="logout()">Logout</button>
+                </div>
             </div>
         </nav>
 
@@ -1542,27 +1417,21 @@
                         <div class="content-header">
                             <h2 class="content-title">Reported Issues</h2>
                             <div class="content-actions">
-                                <input id="issuesSearch" placeholder="Search ticket/phone/message" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
-                                <button class="btn-sm" onclick="applyIssuesSearch()">Search</button>
-                                <button class="btn-sm" onclick="clearIssuesSearch()">Clear</button>
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
                                     Export CSV
                                 </button>
-                                <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
                         </div>
                         <div class="table-container">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th><input type="checkbox" id="select-all-issues" onchange="toggleSelectAllIssues(this)"></th>
                                         <th>Ticket</th>
                                         <th>Reporter Name</th>
                                         <th>Phone</th>
                                         <th>Message</th>
                                         <th>Location</th>
                                         <th>Status</th>
-                                        <th>Action Note</th>
                                         <th>Created At</th>
                                         <th>Actions</th>
                                     </tr>
@@ -1570,8 +1439,6 @@
                                 <tbody id="issues-tbody"></tbody>
                             </table>
                         </div>
-                        <!-- Inline chatbot trigger anchored to the issues panel (appears bottom-right of the panel) -->
-                        <button id="chatbotInlineBtn" class="chatbot-inline-button" title="Help" onclick="showChatbot()">?</button>
                     </div>
 
                     <!-- Bursaries Tab -->
@@ -1655,32 +1522,6 @@
                         </div>
                     </div>
 
-                    <!-- USSD Interactions (MCA only) -->
-                    <div id="ussd-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">USSD Interactions</h2>
-                            <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('ussd')">Export CSV</button>
-                            </div>
-                        </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Phone</th>
-                                        <th>Raw Text</th>
-                                        <th>Parsed</th>
-                                        <th>Response</th>
-                                        <th>Ref Code</th>
-                                        <th>IP</th>
-                                        <th>Created At</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ussd-tbody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
                     <!-- User Management Tab (MCA only) -->
                     <div id="users-content" class="tab-content" style="display:none;">
                         <div class="content-header">
@@ -1711,36 +1552,7 @@
         </div>
     </div>
 
-    <!-- Change Password Modal -->
-    <div class="modal" id="changePasswordModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Change Password</h3>
-            </div>
-            <div class="modal-body">
-                <div id="changePasswordError"></div>
-                <form id="changePasswordForm">
-                    <div class="form-group">
-                        <label for="currentPassword">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" required autocomplete="current-password" style="color: #1f2937;">
-                    </div>
-                    <div class="form-group">
-                        <label for="newPassword1">New Password</label>
-                        <input type="password" id="newPassword1" class="form-input" required autocomplete="new-password" style="color: #1f2937;">
-                    </div>
-                    <div class="form-group">
-                        <label for="newPassword2">Confirm New Password</label>
-                        <input type="password" id="newPassword2" class="form-input" required autocomplete="new-password" style="color: #1f2937;">
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-sm btn-secondary" onclick="closeChangePasswordModal()">Cancel</button>
-                <button class="btn-sm btn-info" onclick="changePassword()">Change Password</button>
-            </div>
-        </div>
-    </div>
-            <!-- Add User Modal -->
+    <!-- Add User Modal -->
     <div class="modal" id="addUserModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1763,9 +1575,8 @@
                     </div>
                     <div class="form-group">
                         <label for="newRole">Role</label>
-                            <select id="newRole" class="form-input" required style="color: #1f2937;">
+                        <select id="newRole" class="form-input" required style="color: #1f2937;">
                             <option value="PA">PA (Personal Assistant)</option>
-                            <option value="CLERK">CLERK (Clerk)</option>
                             <option value="MCA">MCA (Admin)</option>
                         </select>
                     </div>
@@ -1809,6 +1620,196 @@
         let currentUser = null;
         let authToken = null;
 
+        // Small toast helper to replace blocking alert() calls
+        function showToast(message, type = 'info', ttl = 4500) {
+            try {
+                const id = 'vk-html-toast';
+                let container = document.getElementById(id);
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = id;
+                    container.style.position = 'fixed';
+                    container.style.right = '18px';
+                    container.style.top = '18px';
+                    container.style.zIndex = 99999;
+                    document.body.appendChild(container);
+                }
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.padding = '8px 12px';
+                el.style.marginTop = '8px';
+                el.style.borderRadius = '6px';
+                el.style.color = '#fff';
+                el.style.fontSize = '13px';
+                el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
+                el.style.maxWidth = '360px';
+                el.style.wordBreak = 'break-word';
+                el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+                container.appendChild(el);
+                setTimeout(() => { try { container.removeChild(el); } catch (e) {} }, ttl);
+            } catch (e) { console.log(message); }
+        }
+
+        // Promise-based confirm dialog (non-blocking) to replace window.confirm
+        function confirmDialog(message) {
+            return new Promise((resolve) => {
+                try {
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.left = 0;
+                    overlay.style.top = 0;
+                    overlay.style.right = 0;
+                    overlay.style.bottom = 0;
+                    overlay.style.background = 'rgba(0,0,0,0.45)';
+                    overlay.style.display = 'flex';
+                    overlay.style.alignItems = 'center';
+                    overlay.style.justifyContent = 'center';
+                    overlay.style.zIndex = 100000;
+
+                    const box = document.createElement('div');
+                    box.style.background = '#fff';
+                    box.style.padding = '16px';
+                    box.style.borderRadius = '8px';
+                    box.style.maxWidth = '480px';
+                    box.style.width = '90%';
+                    box.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
+
+                    const msg = document.createElement('div');
+                    msg.textContent = message;
+                    msg.style.marginBottom = '12px';
+
+                    const controls = document.createElement('div');
+                    controls.style.display = 'flex';
+                    controls.style.justifyContent = 'flex-end';
+                    controls.style.gap = '8px';
+
+                    const noBtn = document.createElement('button');
+                    noBtn.textContent = 'Cancel';
+                    noBtn.style.padding = '8px 12px';
+
+                    const yesBtn = document.createElement('button');
+                    yesBtn.textContent = 'Yes';
+                    yesBtn.style.padding = '8px 12px';
+                    yesBtn.style.background = '#dc2626';
+                    yesBtn.style.color = '#fff';
+                    yesBtn.style.border = 'none';
+                    yesBtn.style.borderRadius = '6px';
+
+                    controls.appendChild(noBtn);
+                    controls.appendChild(yesBtn);
+                    box.appendChild(msg);
+                    box.appendChild(controls);
+                    overlay.appendChild(box);
+                    document.body.appendChild(overlay);
+
+                    function cleanup(result) {
+                        try { document.body.removeChild(overlay); } catch (e) {}
+                        resolve(result);
+                    }
+
+                    noBtn.addEventListener('click', () => cleanup(false));
+                    yesBtn.addEventListener('click', () => cleanup(true));
+                } catch (e) {
+                    resolve(window.confirm(message));
+                }
+            });
+        }
+
+        // Small toast helper to replace blocking alert() calls
+        function showToast(message, type = 'info', ttl = 4500) {
+            try {
+                const id = 'vk-html-toast';
+                let container = document.getElementById(id);
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = id;
+                    container.style.position = 'fixed';
+                    container.style.right = '18px';
+                    container.style.top = '18px';
+                    container.style.zIndex = 99999;
+                    document.body.appendChild(container);
+                }
+                const el = document.createElement('div');
+                el.textContent = message;
+                el.style.padding = '8px 12px';
+                el.style.marginTop = '8px';
+                el.style.borderRadius = '6px';
+                el.style.color = '#fff';
+                el.style.fontSize = '13px';
+                el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
+                el.style.maxWidth = '360px';
+                el.style.wordBreak = 'break-word';
+                el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
+                container.appendChild(el);
+                setTimeout(() => { try { container.removeChild(el); } catch (e) {} }, ttl);
+            } catch (e) { console.log(message); }
+        }
+
+        // Promise-based confirm dialog (non-blocking) to replace window.confirm
+        function confirmDialog(message) {
+            return new Promise((resolve) => {
+                try {
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.left = 0;
+                    overlay.style.top = 0;
+                    overlay.style.right = 0;
+                    overlay.style.bottom = 0;
+                    overlay.style.background = 'rgba(0,0,0,0.45)';
+                    overlay.style.display = 'flex';
+                    overlay.style.alignItems = 'center';
+                    overlay.style.justifyContent = 'center';
+                    overlay.style.zIndex = 100000;
+
+                    const box = document.createElement('div');
+                    box.style.background = '#fff';
+                    box.style.padding = '16px';
+                    box.style.borderRadius = '8px';
+                    box.style.maxWidth = '480px';
+                    box.style.width = '90%';
+                    box.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
+
+                    const msg = document.createElement('div');
+                    msg.textContent = message;
+                    msg.style.marginBottom = '12px';
+
+                    const controls = document.createElement('div');
+                    controls.style.display = 'flex';
+                    controls.style.justifyContent = 'flex-end';
+                    controls.style.gap = '8px';
+
+                    const noBtn = document.createElement('button');
+                    noBtn.textContent = 'Cancel';
+                    noBtn.style.padding = '8px 12px';
+
+                    const yesBtn = document.createElement('button');
+                    yesBtn.textContent = 'Yes';
+                    yesBtn.style.padding = '8px 12px';
+                    yesBtn.style.background = '#dc2626';
+                    yesBtn.style.color = '#fff';
+                    yesBtn.style.border = 'none';
+                    yesBtn.style.borderRadius = '6px';
+
+                    controls.appendChild(noBtn);
+                    controls.appendChild(yesBtn);
+                    box.appendChild(msg);
+                    box.appendChild(controls);
+                    overlay.appendChild(box);
+                    document.body.appendChild(overlay);
+
+                    function cleanup(result) {
+                        try { document.body.removeChild(overlay); } catch (e) {}
+                        resolve(result);
+                    }
+
+                    noBtn.addEventListener('click', () => cleanup(false));
+                    yesBtn.addEventListener('click', () => cleanup(true));
+                } catch (e) {
+                    resolve(window.confirm(message));
+                }
+            });
+        }
+
         // ========================================
         // AUTHENTICATION
         // ========================================
@@ -1840,14 +1841,7 @@
                 currentUser = data.user;
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
-                // Apply server-stored settings (if any) so UI matches saved preferences
-                try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
-
-                // Update avatar to prefer thumb/webp variants when available
-                const pav = document.getElementById('profileAvatar');
-                if (pav) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
-
+                
                 // Show dashboard
                 showDashboard();
             } catch (err) {
@@ -1855,47 +1849,28 @@
             }
         });
 
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                fetch(API_BASE + '/api/auth/logout', {
+        async function logout() {
+            const confirmed = await confirmDialog('Are you sure you want to logout?');
+            if (!confirmed) return;
+
+            try {
+                await fetch(API_BASE + '/api/auth/logout', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + authToken }
-                }).finally(() => {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                    authToken = null;
-                    currentUser = null;
-                    document.getElementById('loginPage').style.display = 'flex';
-                    document.getElementById('dashboardPage').style.display = 'none';
-                    document.getElementById('username').value = '';
-                    document.getElementById('password').value = '';
-                    // hide chatbot when logged out
-                    const cb = document.getElementById('chatbotBtn');
-                    if (cb) cb.style.display = 'none';
-                    const cib = document.getElementById('chatbotInlineBtn');
-                    if (cib) cib.classList.remove('visible');
-                    const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
-            }
-        }
-
-        // Prompt for ADMIN_RESET_TOKEN and call internal reset endpoint
-        async function promptResetAdmin() {
-            const token = prompt('Enter ADMIN_RESET_TOKEN (supplied in environment) to reset admin password:');
-            if (!token) return;
-            try {
-                const res = await fetch(API_BASE + '/internal/reset-admin', {
-                    method: 'POST',
-                    headers: { 'x-admin-reset-token': token }
-                });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok) {
-                    showToast(data.message || 'Admin reset successful', 'success');
-                } else {
-                    showToast(data.error || 'Admin reset failed', 'error');
-                }
             } catch (e) {
-                showToast('Error contacting server: ' + e.message, 'error');
+                // continue with local cleanup even if API call fails
+                console.warn('Logout API call failed', e);
+            } finally {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                authToken = null;
+                currentUser = null;
+                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('dashboardPage').style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                showToast('Logged out', 'info');
             }
         }
 
@@ -1906,9 +1881,6 @@
             // Update user info
             document.getElementById('userFullName').textContent = currentUser.fullName;
             document.getElementById('userRole').textContent = currentUser.role;
-            // set avatar if present (or placeholder)
-            const pav = document.getElementById('profileAvatar');
-            if (pav) pav.src = currentUser.photo_url || '/images/avatar-placeholder.svg';
             
             // Setup dashboard based on role
             setupDashboard();
@@ -1916,28 +1888,21 @@
             // Load initial data
             loadStats();
             loadIssues();
-            // show inline chatbot in issues panel by default (issues tab is the default)
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) cib.classList.add('visible');
-            // show edit help button only for MCA
-            const eh = document.getElementById('editHelpBtn');
-            if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
         }
 
         function setupDashboard() {
             const tabsNav = document.getElementById('tabsNav');
             
             if (currentUser.role === 'MCA') {
-                    // MCA sees everything
-                    tabsNav.innerHTML = `
-                        <button class="tab active" onclick="showTab('issues')">Issues</button>
-                        <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
-                        <button class="tab" onclick="showTab('constituents')">Constituents</button>
-                        <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                        <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
-                        <button class="tab" onclick="showTab('users')">User Management</button>
-                    `;
-                } else {
+                // MCA sees everything
+                tabsNav.innerHTML = `
+                    <button class="tab active" onclick="showTab('issues')">Issues</button>
+                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
+                    <button class="tab" onclick="showTab('constituents')">Constituents</button>
+                    <button class="tab" onclick="showTab('announcements')">Announcements</button>
+                    <button class="tab" onclick="showTab('users')">User Management</button>
+                `;
+            } else {
                 // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
                 tabsNav.innerHTML = `
                     <button class="tab active" onclick="showTab('issues')">Issues</button>
@@ -1950,12 +1915,9 @@
         async function apiRequest(endpoint, options = {}) {
             options.headers = {
                 ...options.headers,
+                'Authorization': 'Bearer ' + authToken,
                 'Content-Type': 'application/json'
             };
-            // only include Authorization header when we actually have a token
-            if (authToken) {
-                options.headers['Authorization'] = 'Bearer ' + authToken;
-            }
             
             const res = await fetch(API_BASE + endpoint, options);
             
@@ -1966,57 +1928,6 @@
             }
             
             return res;
-        }
-
-        // ========================================
-        // PASSWORD CHANGE
-        // ========================================
-        function showChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.add('show');
-            document.getElementById('changePasswordError').innerHTML = '';
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword1').value = '';
-            document.getElementById('newPassword2').value = '';
-        }
-
-        function closeChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.remove('show');
-            document.getElementById('changePasswordError').innerHTML = '';
-        }
-
-        async function changePassword() {
-            const current = document.getElementById('currentPassword').value;
-            const new1 = document.getElementById('newPassword1').value;
-            const new2 = document.getElementById('newPassword2').value;
-            const errorDiv = document.getElementById('changePasswordError');
-            errorDiv.innerHTML = '';
-            if (!current || !new1 || !new2) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">All fields are required</div>';
-                return;
-            }
-            if (new1 !== new2) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">New passwords do not match</div>';
-                return;
-            }
-            if (new1.length < 6) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">New password must be at least 6 characters</div>';
-                return;
-            }
-            try {
-                const res = await apiRequest('/api/auth/change-password', {
-                    method: 'POST',
-                    body: JSON.stringify({ current_password: current, new_password: new1 })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to change password'}</div>`;
-                    return;
-                }
-                closeChangePasswordModal();
-                showToast('Password changed successfully! Please use your new password next time.', 'success');
-            } catch (err) {
-                errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-            }
         }
 
         // ========================================
@@ -2096,513 +2007,60 @@
         // ========================================
         async function loadIssues() {
             const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="10" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
-
+            tbody.innerHTML = '<tr><td colspan="8" class="loading-state"><div class="spinner"></div><div>Loading issues...</div></td></tr>';
+            
             try {
                 const res = await apiRequest('/api/admin/issues');
-                let issues = await res.json();
-
-                // apply client-side filter from issuesSearch
-                const q = (document.getElementById('issuesSearch') && document.getElementById('issuesSearch').value || '').trim().toLowerCase();
-                if (q) {
-                    issues = issues.filter(it => {
-                        return (it.ticket || '').toString().toLowerCase().includes(q)
-                        || (it.phone_number || '').toString().toLowerCase().includes(q)
-                        || (it.message || '').toString().toLowerCase().includes(q);
-                    });
-                }
-
+                const issues = await res.json();
+                
                 if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="10" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" class="empty-state"><div class="empty-state-text">No issues reported yet</div></td></tr>';
                     return;
                 }
-
+                
                 tbody.innerHTML = issues.map(issue => {
-                    const status = (issue.status || 'pending').replace(' ', '_');
+                    const statusBadgeClass = issue.status === 'resolved' ? 'approved' : 
+                                            issue.status === 'in-progress' ? 'pending' : 'open';
                     return `
                     <tr>
-                        <td><input type="checkbox" class="issue-select" data-issue-id="${issue.ticket}"></td>
                         <td><strong>${issue.ticket}</strong></td>
                         <td><strong>${issue.reporter_name || 'Unknown'}</strong></td>
-                        <td>${issue.phone_number || ''}</td>
-                        <td>${issue.message || ''}</td>
+                        <td>${issue.phone_number}</td>
+                        <td>${issue.message}</td>
                         <td>${issue.location || 'Not specified'}</td>
+                        <td><span class="badge ${statusBadgeClass}">${issue.status}</span></td>
+                        <td>${new Date(issue.created_at).toLocaleString()}</td>
                         <td>
-                            <select data-issue-id="${issue.ticket}" class="issue-status-select" style="padding:6px;border-radius:8px;border:1px solid #e6e9ef;background:#fff;">
+                            <select onchange="updateIssueStatus('${issue._id}', this.value)" style="padding: 6px 10px; border-radius: 8px; border: 2px solid #e2e8f0; background: white; color: #1f2937; font-weight: 600; cursor: pointer; font-size: 13px;">
                                 <option value="pending" ${issue.status === 'pending' ? 'selected' : ''}>Pending</option>
-                                <option value="in_progress" ${issue.status === 'in_progress' || issue.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="in-progress" ${issue.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
                                 <option value="resolved" ${issue.status === 'resolved' ? 'selected' : ''}>Resolved</option>
                             </select>
                         </td>
-                        <td>
-                            <textarea data-action-note-for="${issue.ticket}" class="action-note" placeholder="Add action note (optional)">${issue.action_note || ''}</textarea>
-                        </td>
-                        <td>${new Date(issue.created_at).toLocaleString()}</td>
-                        <td class="actions-col"><button class="btn btn-sm btn-info save-action" data-issue-id="${issue.ticket}">Save</button></td>
                     </tr>
                 `;
                 }).join('');
-
-                // Apply status classes to selects for color/animation
-                document.querySelectorAll('.issue-status-select').forEach(s => {
-                    const v = s.value || '';
-                    s.classList.remove('status-pending','status-in_progress','status-resolved');
-                    s.classList.add('status-' + (v.replace(/\s+/g,'_')));
-                    // update on change to animate
-                    s.addEventListener('change', (ev)=>{
-                        s.classList.remove('status-pending','status-in_progress','status-resolved');
-                        const nv = s.value || '';
-                        s.classList.add('status-' + (nv.replace(/\s+/g,'_')));
-                    });
-                });
-
-                // attach save handlers
-                document.querySelectorAll('.save-action').forEach(btn => {
-                    btn.addEventListener('click', async (ev) => {
-                        const id = btn.dataset.issueId;
-                        const sel = document.querySelector(`select[data-issue-id="${id}"]`);
-                        const noteEl = document.querySelector(`textarea[data-action-note-for="${id}"]`);
-                        const note = noteEl.value;
-                        const row = btn.closest('tr');
-
-                        // UX: show inline saving state
-                        btn.disabled = true;
-                        const originalText = btn.textContent;
-                        btn.textContent = 'Saving';
-                        const spinner = document.createElement('span');
-                        spinner.className = 'spinner-inline';
-                        btn.appendChild(spinner);
-
-                            try {
-                            const r = await apiRequest(`/api/admin/issues/${id}`, {
-                                method: 'PATCH',
-                                body: JSON.stringify({ status: sel.value, action_note: note })
-                            });
-                            if (!r.ok) {
-                                const err = await r.json();
-                                throw new Error(err.error || 'save failed');
-                            }
-
-                            // Success UX: animate row, show saved state
-                            row.classList.add('row-updated');
-                            btn.textContent = 'Saved';
-                            setTimeout(() => {
-                                btn.textContent = originalText;
-                                btn.disabled = false;
-                                // remove animation class after it finishes
-                                row.classList.remove('row-updated');
-                            }, 900);
-
-                            // Refresh stats and related views in background
-                            try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
-                            try { loadUssd(); } catch(e) { /* ignore */ }
-                            try { loadConstituents(); } catch(e) { /* ignore */ }
-                        } catch (e) {
-                            showToast('Save failed: '+e.message, 'error');
-                            btn.disabled = false;
-                            btn.textContent = originalText;
-                        } finally {
-                            // clean up spinner if still present
-                            if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
-                        }
-                    });
-                });
-
             } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
             }
         }
 
-        function applyIssuesSearch() { loadIssues(); }
-        function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
-
-        // Open a specific ticket row and highlight it
-        function openTicket(ticket) {
-            // reload issues then try to find the row
-            loadIssues();
-            setTimeout(() => {
-                const rows = document.querySelectorAll('#issues-tbody tr');
-                for (const r of rows) {
-                    if (r.innerText && r.innerText.indexOf(ticket) !== -1) {
-                        r.classList.add('row-updated');
-                        r.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => r.classList.remove('row-updated'), 3000);
-                        break;
-                    }
-                }
-            }, 400);
-        }
-
-        // Toggle select all checkbox
-        function toggleSelectAllIssues(cb) {
-            const checked = !!cb.checked;
-            document.querySelectorAll('.issue-select').forEach(i => { i.checked = checked; });
-        }
-
-        // Resolve selected issues (collect selected ticket ids and call bulk endpoint)
-        function resolveSelected() {
-            const selected = Array.from(document.querySelectorAll('.issue-select:checked')).map(i => i.dataset.issueId).filter(Boolean);
-            if (!selected.length) return showToast('No issues selected', 'error');
-            showBulkResolveModal(selected);
-        }
-
-        // ---- Modal & Toast helpers ----
-        function showToast(msg, type='info', timeout=4000) {
-            const container = document.getElementById('toasts');
-            if (!container) { console.warn(msg); return; }
-            const t = document.createElement('div');
-            t.className = `toast ${type}`;
-            t.textContent = msg;
-            container.appendChild(t);
-            // play sound cue for success/error if enabled in settings
+        async function updateIssueStatus(issueId, newStatus) {
             try {
-                const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
-                if (s.sounds) {
-                    playSound(type === 'success' ? 'success' : (type === 'error' ? 'error' : 'info'));
-                }
-            } catch (e) { /* ignore */ }
-            setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>{ try{ container.removeChild(t); }catch(e){} },300); }, timeout);
-        }
+                const res = await apiRequest(`/api/admin/issues/${issueId}/status`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: newStatus })
+                });
 
-        function playSound(kind) {
-            try {
-                // simple WebAudio beep
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const o = ctx.createOscillator();
-                const g = ctx.createGain();
-                o.type = kind === 'error' ? 'sawtooth' : 'sine';
-                o.frequency.value = kind === 'success' ? 880 : (kind === 'error' ? 220 : 440);
-                o.connect(g); g.connect(ctx.destination);
-                g.gain.setValueAtTime(0.0001, ctx.currentTime);
-                g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                o.start();
-                setTimeout(() => { g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.05); o.stop(); try{ ctx.close(); } catch(e){} }, 220);
-            } catch (e) { /* audio might be blocked */ }
-        }
-
-        function showBulkResolveModal(selected) {
-            const mb = document.getElementById('bulkResolveModal');
-            const countEl = document.getElementById('bulkResolveCount');
-            const hidden = document.getElementById('bulkResolveSelected');
-            countEl.textContent = selected.length;
-            hidden.value = JSON.stringify(selected);
-            document.getElementById('bulkResolveNote').value = '';
-            mb.style.display = 'flex';
-        }
-
-        function hideBulkResolveModal() {
-            const mb = document.getElementById('bulkResolveModal');
-            mb.style.display = 'none';
-        }
-
-        async function confirmBulkResolve() {
-            const hidden = document.getElementById('bulkResolveSelected');
-            let selected = [];
-            try { selected = JSON.parse(hidden.value || '[]'); } catch(e){ selected = []; }
-            if (!selected.length) { hideBulkResolveModal(); return showToast('No issues selected', 'error'); }
-            const note = document.getElementById('bulkResolveNote').value || undefined;
-            try {
-                const resp = await apiRequest('/api/admin/issues/bulk-resolve', { method: 'POST', body: JSON.stringify({ issueIds: selected, status: 'resolved', action_note: note }) });
-                const data = await resp.json();
-                if (!resp.ok) throw new Error(data.error || 'Bulk resolve failed');
-                hideBulkResolveModal();
-                showToast(`Bulk resolved: ${data.updated} updated, ${data.failed} failed`, 'success');
-                try { loadIssues(); } catch(e) {}
-                try { loadUssd(); } catch(e) {}
-                try { loadConstituents(); } catch(e) {}
-            } catch (e) {
-                showToast('Bulk resolve failed: ' + e.message, 'error');
-            }
-        }
-
-        // In-dashboard chatbot helper
-        function showChatbot() {
-            document.getElementById('chatbotModal').style.display = 'flex';
-            const convo = document.getElementById('chatbot-messages');
-            if (!convo.children.length) {
-                appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
-            }
-            document.getElementById('chatbot-input').focus();
-        }
-
-        function hideChatbot() {
-            document.getElementById('chatbotModal').style.display = 'none';
-        }
-
-        function appendChatMessage(who, text) {
-            const c = document.getElementById('chatbot-messages');
-            const el = document.createElement('div');
-            el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
-            // allow simple HTML for buttons
-            el.innerHTML = text.replace(/</g,'&lt;');
-            c.appendChild(el);
-
-            // If bot message, attach quick-action buttons when applicable
-            if (who === 'bot') {
-                attachActionButtons(el, text);
-            }
-
-            c.scrollTop = c.scrollHeight;
-        }
-
-        function attachActionButtons(containerEl, text) {
-            const t = (text || '').toLowerCase();
-            const actions = [];
-            if (t.includes('resolve')) actions.push({ label: 'Open Issues', fn: () => openTab('issues') });
-            if (t.includes('export')) actions.push({ label: 'Export Issues CSV', fn: () => exportData('issues') });
-            if (t.includes('ussd') || t.includes('parsed_text') || t.includes('parsed')) actions.push({ label: 'Open USSD', fn: () => openTab('ussd') });
-            if (t.includes('password')) actions.push({ label: 'Change Password', fn: () => showChangePasswordModal() });
-
-            if (!actions.length) return;
-
-            const wrapper = document.createElement('div');
-            wrapper.style.marginTop = '8px';
-            wrapper.style.display = 'flex';
-            wrapper.style.gap = '8px';
-
-            actions.forEach(a => {
-                const b = document.createElement('button');
-                b.className = 'btn-sm';
-                b.textContent = a.label;
-                b.onclick = (ev) => { ev.stopPropagation(); a.fn(); };
-                wrapper.appendChild(b);
-            });
-
-            containerEl.appendChild(wrapper);
-        }
-
-        function openTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-            // Show selected content
-            const content = document.getElementById(tab + '-content');
-            if (content) content.style.display = 'block';
-
-            // Try to set the corresponding tab button active
-            const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
-            if (btn) btn.classList.add('active');
-
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-            else if (tab === 'ussd') loadUssd();
-            else if (tab === 'users') loadUsers();
-        }
-
-        // Profile modal helpers
-        // Profile modal helpers (enhanced)
-        function showProfileModal() {
-            if (!currentUser) return showToast('Not logged in', 'error');
-            document.getElementById('profileFullName').value = currentUser.fullName || '';
-            document.getElementById('profilePhone').value = currentUser.phone_number || '';
-            // avatar preview
-            const avatar = document.getElementById('profilePhotoPreview');
-            if (avatar) {
-                if (currentUser.photo_url) avatar.src = currentUser.photo_url;
-                else avatar.src = '';
-            }
-            // load settings from localStorage (or user payload)
-            const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
-            document.getElementById('setting_dark_theme').checked = !!s.darkTheme;
-            document.getElementById('setting_compact_mode').checked = !!s.compactMode;
-            document.getElementById('setting_animations').checked = (s.animations !== false);
-            document.getElementById('setting_sounds').checked = !!s.sounds;
-
-            document.getElementById('profileModal').style.display = 'flex';
-        }
-
-        function hideProfileModal() { document.getElementById('profileModal').style.display = 'none'; }
-
-        async function saveProfile() {
-            const fullName = document.getElementById('profileFullName').value.trim();
-            const phone_number = document.getElementById('profilePhone').value.trim();
-            const photoInput = document.getElementById('profilePhotoInput');
-            const settings = {
-                darkTheme: !!document.getElementById('setting_dark_theme').checked,
-                compactMode: !!document.getElementById('setting_compact_mode').checked,
-                animations: !!document.getElementById('setting_animations').checked,
-                sounds: !!document.getElementById('setting_sounds').checked
-            };
-
-            try {
-                let res;
-                if (photoInput && photoInput.files && photoInput.files.length) {
-                    // use FormData for file upload
-                    const fd = new FormData();
-                    fd.append('fullName', fullName);
-                    fd.append('phone_number', phone_number);
-                    fd.append('settings', JSON.stringify(settings));
-                    fd.append('photo', photoInput.files[0]);
-
-                    res = await fetch(API_BASE + '/api/admin/profile', {
-                        method: 'POST',
-                        headers: { 'Authorization': 'Bearer ' + authToken },
-                        body: fd
-                    });
-                } else {
-                    res = await apiRequest('/api/admin/profile', { method: 'POST', body: JSON.stringify({ fullName, phone_number, settings }) });
+                if (!res.ok) {
+                    throw new Error('Failed to update status');
                 }
 
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Save failed');
-
-                // update local currentUser and UI
-                currentUser = data.user || { ...currentUser, fullName, phone_number };
-                if (data.user && data.user.photo_url) currentUser.photo_url = data.user.photo_url;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('userFullName').textContent = currentUser.fullName;
-                if (currentUser.photo_url) document.getElementById('profileAvatar').src = currentUser.photo_url;
-
-                // persist settings and apply
-                localStorage.setItem('voo_profile_settings', JSON.stringify(settings));
-                applyProfileSettings(settings);
-
-                showToast('Profile updated', 'success');
-                hideProfileModal();
-            } catch (e) {
-                showToast('Profile save failed: ' + e.message, 'error');
+                loadIssues();
+                loadStats();
+            } catch (err) {
+                if (typeof showToast === 'function') showToast('Error updating status: ' + err.message, 'error'); else console.error('Error updating status:', err);
             }
-        }
-
-        function handleProfilePhotoPreview() {
-            const input = document.getElementById('profilePhotoInput');
-            const preview = document.getElementById('profilePhotoPreview');
-            if (!input || !preview) return;
-            const f = input.files && input.files[0];
-            if (!f) { preview.src = currentUser?.photo_url || ''; return; }
-            const reader = new FileReader();
-            reader.onload = (ev) => preview.src = ev.target.result;
-            reader.readAsDataURL(f);
-        }
-
-        async function deleteAvatar() {
-            if (!confirm('Remove your profile photo?')) return;
-            try {
-                const res = await fetch(API_BASE + '/api/admin/profile/photo', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + authToken } });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to remove photo');
-                // update UI
-                currentUser.photo_url = null; currentUser.photo_thumb = null; currentUser.photo_webp = null; currentUser.photo_thumb_webp = null;
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                document.getElementById('profileAvatar').src = '/images/avatar-placeholder.svg';
-                document.getElementById('profilePhotoPreview').src = '/images/avatar-placeholder.svg';
-                showToast('Profile photo removed', 'success');
-            } catch (e) {
-                showToast('Failed to remove photo: ' + e.message, 'error');
-            }
-        }
-
-        function applyProfileSettings(s) {
-            if (!s) s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
-            if (s.darkTheme) document.body.classList.add('dark-theme'); else document.body.classList.remove('dark-theme');
-            if (s.compactMode) document.body.classList.add('compact-mode'); else document.body.classList.remove('compact-mode');
-            if (s.animations === false || s.animations === 0) document.body.classList.add('no-animations'); else document.body.classList.remove('no-animations');
-            // store settings for persistence across reloads
-            localStorage.setItem('voo_profile_settings', JSON.stringify(s));
-        }
-
-        // toggle helpers for settings
-        function toggleSetting(id) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            const s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
-            if (id === 'setting_dark_theme') s.darkTheme = el.checked;
-            if (id === 'setting_compact_mode') s.compactMode = el.checked;
-            if (id === 'setting_animations') s.animations = el.checked;
-            if (id === 'setting_sounds') s.sounds = el.checked;
-            localStorage.setItem('voo_profile_settings', JSON.stringify(s));
-            applyProfileSettings(s);
-        }
-
-        // KB editor helpers
-        function showKbEditor() {
-            document.getElementById('kbEditorModal').style.display = 'flex';
-            loadKbEditor();
-        }
-
-        function hideKbEditor() { document.getElementById('kbEditorModal').style.display = 'none'; }
-
-        async function loadKbEditor() {
-            try {
-                const res = await apiRequest('/api/admin/chatbot-kb');
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to load KB');
-                document.getElementById('kbEditorArea').value = JSON.stringify(data, null, 2);
-            } catch (e) {
-                showToast('Failed to load KB: ' + e.message, 'error');
-            }
-        }
-
-        async function saveKbEditor() {
-            try {
-                const txt = document.getElementById('kbEditorArea').value;
-                let parsed;
-                try { parsed = JSON.parse(txt); } catch (e) { throw new Error('Invalid JSON'); }
-                const res = await apiRequest('/api/admin/chatbot-kb', { method: 'POST', body: JSON.stringify(parsed) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to save KB');
-                showToast('KB saved', 'success');
-                hideKbEditor();
-            } catch (e) {
-                showToast('KB save failed: ' + e.message, 'error');
-            }
-        }
-
-        async function sendChatbotMessage() {
-            const input = document.getElementById('chatbot-input');
-            const text = (input.value || '').trim();
-            if (!text) return;
-            appendChatMessage('user', text);
-            input.value = '';
-            try {
-                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text }) });
-                const data = await res.json();
-                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply);
-                else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
-            } catch (e) {
-                appendChatMessage('bot', 'Error contacting help service: ' + e.message);
-            }
-        }
-
-        function sendSuggestion(text) {
-            const input = document.getElementById('chatbot-input');
-            input.value = text;
-            sendChatbotMessage();
-        }
-
-        // ========================================
-        // USSD INTERACTIONS
-        // ========================================
-        async function loadUssd() {
-            // ensure there's a ussd table in the DOM
-            let tbody = document.getElementById('ussd-tbody');
-            if(!tbody){ console.warn('USSD table not present'); return; }
-            tbody.innerHTML = '<tr><td colspan="7" class="loading-state"><div class="spinner"></div><div>Loading USSD interactions...</div></td></tr>';
-            try{
-                const res = await apiRequest('/api/admin/ussd');
-                const items = await res.json();
-                if(!items.length) return tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><div class="empty-state-text">No USSD interactions yet</div></td></tr>';
-                tbody.innerHTML = items.map(i=>{
-                    const phone = (i.phone_number || '').toString();
-                    const text = (i.text || '').toString().replace(/</g,'&lt;');
-                    let parsed = '';
-                    if (i.parsed_text) {
-                        try { parsed = typeof i.parsed_text === 'string' ? i.parsed_text : JSON.stringify(i.parsed_text); }
-                        catch (e) { parsed = String(i.parsed_text); }
-                        parsed = parsed.replace(/</g,'&lt;');
-                    }
-                    const response = (i.response || '').toString().replace(/</g,'&lt;');
-                    const ref = (i.ref_code || '').toString().replace(/</g,'&lt;');
-                    const ip = (i.ip || '').toString();
-                    const created = i.created_at ? new Date(i.created_at).toLocaleString() : '';
-                    return `<tr><td>${phone}</td><td>${text}</td><td>${parsed}</td><td>${response}</td><td>${ref}</td><td>${ip}</td><td>${created}</td></tr>`;
-                }).join('');
-            }catch(e){ tbody.innerHTML = `<tr><td colspan="7" class="empty-state"><div class="empty-state-text">Error: ${e.message}</div></td></tr>`; }
         }
 
         // ========================================
@@ -2775,7 +2233,7 @@
                 closeCreateAnnouncementModal();
                 loadAnnouncements();
                 loadStats();
-                showToast('Announcement published successfully!', 'success');
+                if (typeof showToast === 'function') showToast('Announcement published successfully!', 'success'); else console.log('Announcement published successfully!');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -2801,7 +2259,7 @@
                     <tr>
                         <td>${u.username}</td>
                         <td><strong>${u.full_name}</strong></td>
-                        <td><span class="badge ${u.role === 'MCA' ? 'approved' : (u.role === 'PA' ? 'pending' : 'badge-info')}">${u.role}</span></td>
+                        <td><span class="badge ${u.role === 'MCA' ? 'approved' : 'pending'}">${u.role}</span></td>
                         <td>${new Date(u.created_at).toLocaleString()}</td>
                         <td>
                             ${u._id !== currentUser.id ? `<button class="btn-sm btn-danger" onclick="deleteUser('${u._id}')">Delete</button>` : '<span style="color: #9ca3af;">Current User</span>'}
@@ -2855,33 +2313,32 @@
                 
                 closeAddUserModal();
                 loadUsers();
-                showToast('User created successfully!', 'success');
+                if (typeof showToast === 'function') showToast('User created successfully!', 'success'); else console.log('User created successfully!');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
         }
 
         async function deleteUser(userId) {
-            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                return;
-            }
-            
+            const confirmed = await confirmDialog('Are you sure you want to delete this user? This action cannot be undone.');
+            if (!confirmed) return;
+
             try {
                 const res = await apiRequest(`/api/auth/users/${userId}`, {
                     method: 'DELETE'
                 });
-                
+
                 const data = await res.json();
-                
+
                 if (!res.ok) {
-                    showToast(data.error || 'Failed to delete user', 'error');
+                    if (typeof showToast === 'function') showToast(data.error || 'Failed to delete user', 'error'); else console.warn(data.error || 'Failed to delete user');
                     return;
                 }
 
                 loadUsers();
-                showToast('User deleted successfully!', 'success');
+                if (typeof showToast === 'function') showToast('User deleted successfully!', 'success'); else console.log('User deleted successfully!');
             } catch (err) {
-                showToast('Error: ' + err.message, 'error');
+                if (typeof showToast === 'function') showToast('Error: ' + err.message, 'error'); else console.warn('Error: ' + err.message);
             }
         }
 
@@ -2906,15 +2363,7 @@
             else if (tab === 'bursaries') loadBursaries();
             else if (tab === 'constituents') loadConstituents();
             else if (tab === 'announcements') loadAnnouncements();
-            else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
-
-            // toggle inline chatbot visibility depending on selected tab
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) {
-                if (tab === 'issues') cib.classList.add('visible');
-                else cib.classList.remove('visible');
-            }
         }
 
         // ========================================
@@ -2935,17 +2384,8 @@
             if (storedToken && storedUser) {
                 authToken = storedToken;
                 currentUser = JSON.parse(storedUser);
-                try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
-                // ensure avatar uses server-saved thumb/webp when available
-                const pav = document.getElementById('profileAvatar');
-                if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
                 showDashboard();
             }
-            // hide chatbot by default until user is logged in
-            const cb = document.getElementById('chatbotBtn');
-            if (cb) cb.style.display = 'none';
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) cib.classList.remove('visible');
         });
 
         // Auto-refresh data every 30 seconds
@@ -2961,73 +2401,5 @@
             }
         }, 30000);
     </script>
-    <!-- Toast container -->
-    <div id="toasts" aria-live="polite" aria-atomic="true"></div>
-
-    <!-- Profile Modal -->
-    <div id="profileModal" class="modal-backdrop" style="display:none;">
-        <div class="modal" style="max-width:520px; width:92%;">
-            <div class="modal-header">Your Profile</div>
-            <div style="display:flex; gap:12px; align-items:center; margin-top:8px;">
-                <div style="width:100px; text-align:center;">
-                    <img id="profilePhotoPreview" src="" alt="avatar preview" style="width:88px;height:88px;border-radius:12px;object-fit:cover;border:2px solid rgba(0,0,0,0.06); background:#fff;" />
-                    <div style="margin-top:8px; font-size:12px; color:#6b7280;">Profile photo</div>
-                    <div style="margin-top:6px;"><button class="btn-sm btn-danger" onclick="deleteAvatar()">Remove photo</button></div>
-                </div>
-                <div style="flex:1;">
-                    <div style="margin-bottom:8px;"><label>Full name</label><input id="profileFullName" style="width:100%; padding:8px; margin-top:6px;" /></div>
-                    <div style="margin-bottom:8px;"><label>Phone number</label><input id="profilePhone" style="width:100%; padding:8px; margin-top:6px;" /></div>
-                    <div style="margin-bottom:8px;">
-                        <label>Upload photo</label>
-                        <input id="profilePhotoInput" type="file" accept="image/*" style="display:block;margin-top:6px;" onchange="handleProfilePhotoPreview()" />
-                    </div>
-                </div>
-            </div>
-
-            <hr style="margin:12px 0;" />
-
-            <div>
-                <div style="font-weight:700; margin-bottom:8px;">Profile settings</div>
-                <div style="display:flex; flex-direction:column; gap:8px;">
-                    <label class="settings-switch"><input id="setting_dark_theme" type="checkbox" onchange="toggleSetting('setting_dark_theme')" /> Enable dark theme</label>
-                    <label class="settings-switch"><input id="setting_compact_mode" type="checkbox" onchange="toggleSetting('setting_compact_mode')" /> Compact table mode</label>
-                    <label class="settings-switch"><input id="setting_animations" type="checkbox" onchange="toggleSetting('setting_animations')" /> Enable UI animations</label>
-                    <label class="settings-switch"><input id="setting_sounds" type="checkbox" onchange="toggleSetting('setting_sounds')" /> Enable sound cues</label>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn-sm" onclick="hideProfileModal()">Cancel</button>
-                <button class="btn-sm btn-primary" onclick="saveProfile()">Save profile & settings</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- KB Editor Modal (MCA only) -->
-    <div id="kbEditorModal" class="modal-backdrop" style="display:none;">
-        <div class="modal" style="max-width:800px; width:92%;">
-            <div class="modal-header">Edit Help Knowledge Base (JSON)</div>
-            <div style="margin-top:8px;"><textarea id="kbEditorArea" rows="12" style="width:100%; font-family: monospace;"></textarea></div>
-            <div style="margin-top:8px; font-size:13px; color:#666;">Note: this must be valid JSON array of objects: [{"keys":["key1"],"reply":"text"}, ...]</div>
-            <div class="modal-footer">
-                <button class="btn-sm" onclick="hideKbEditor()">Close</button>
-                <button class="btn-sm btn-primary" onclick="saveKbEditor()">Save KB</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bulk Resolve Modal -->
-    <div id="bulkResolveModal" class="modal-backdrop" style="display:none;">
-        <div class="modal">
-            <div class="modal-header">Resolve selected issues</div>
-            <div>You're about to resolve <strong id="bulkResolveCount">0</strong> issue(s). This will mark them resolved.</div>
-            <div style="margin-top:8px;"><label for="bulkResolveNote">Optional action note</label><textarea id="bulkResolveNote" rows="3" style="width:100%;margin-top:6px;"></textarea></div>
-            <input type="hidden" id="bulkResolveSelected" />
-            <div class="modal-footer">
-                <button class="btn-sm" onclick="hideBulkResolveModal()">Cancel</button>
-                <button class="btn-sm btn-primary" onclick="confirmBulkResolve()">Confirm</button>
-            </div>
-        </div>
-    </div>
 </body>
 </html>

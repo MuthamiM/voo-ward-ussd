@@ -157,7 +157,7 @@ KYAMATU WARD
 To add more valid locations, edit this line in `backend/src/routes/ussd.js`:
 
 ```javascript
-const validLocations = ['KYAMATU', 'KIKIMA', 'MBONDONI', 'NGULUNI', 'KITHYOKO', 'MUTITUNI', 'NEW_LOCATION'];
+const validLocations = ['KYAMATU', 'KIKIMA', 'MBONDONI', 'NGULUNI  ', 'KITHYOKO', 'MUTITUNI', 'NEW_LOCATION'];
 ```
 
 ### 10. REPORTING

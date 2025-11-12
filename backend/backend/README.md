@@ -1,218 +1,310 @@
-# 🏛️ VOO Kyamatu Ward - USSD Service
+﻿# 🏛️ VOO Kyamatu Ward - USSD Service Platform# 🔒 Voo Kyamatu Ward Development Platform
 
-Production-ready USSD backend for Kyamatu Ward citizen services.
 
-## 📋 Overview
 
-This service provides USSD access (*XXX#) for ward citizens to:
-- Register as constituents
-- Report issues (roads, water, security, health)
-- Apply for bursaries
-- View announcements
-- Access ward projects information
+Production USSD platform for Kyamatu Ward citizen services deployed on Render.com.Production-grade USSD + SMS + Offline Admin with **Enterprise Security** for rural ward development.
 
-## 🚀 Deployed Services
 
-| Service | URL | Purpose |
-|---------|-----|---------|
-| **USSD API** | https://voo-ward-ussd.onrender.com/ussd | Safaricom callback |
-| **Admin Dashboard** | Deploy separately | MCA portal (view issues, bursaries) |
 
-## 🛠️ Technology Stack
+## 🚀 Live Services## 🛡️ SECURITY STATUS: MAXIMUM PROTECTION
 
-- **Framework:** Express.js 5
+- **🔐 AES-256-GCM Encryption** for all PII data
+
+| Service | URL | Status |- **🛡️ Progressive Rate Limiting** with IP blocking  
+
+|---------|-----|--------|- **📋 GDPR + Kenya DPA Compliance** with automated reporting
+
+| **USSD API** | https://voo-ward-ussd.onrender.com/ussd | ✅ LIVE |- **🔍 Real-time Security Monitoring** with audit logging
+
+| **Admin Dashboard** | Deploy separately | ⏳ Deploy guide below |- **⚡ Advanced Input Validation** against injection attacks
+
+
+
+## 📋 What This Platform Provides## Architecture
+
+
+
+Citizens can access ward services via USSD (*XXX#):### Components
+
+- 📝 Register as ward constituents
+
+- 📋 Report issues (roads, water, security, health)- **Backend**: Fastify (Node.js 20) on port 4000
+
+- 🎓 Apply for education bursaries  - USSD handler (*340*75#)
+
+- 📢 View ward announcements  - JWT admin API
+
+- 🏗️ Check ongoing projects  - PostgreSQL integration
+
+  - Structured logging (pino)
+
+MCA can manage via Admin Dashboard:  
+
+- View all reported issues- **Frontend**: React 18 + Vite 5 on port 5173
+
+- Review bursary applications (with school details)  - Offline-capable PWA
+
+- Manage announcements  - Admin dashboard
+
+- Export data as CSV  - Service Worker cache
+
+
+
+## 🛠️ Technology- **Databases**
+
+  - **Cloud**: PostgreSQL 14+ (primary)
+
+- **Backend:** Express.js 5 (Node.js)  - **Edge**: SQLite WAL (Raspberry Pi, offline-first)
+
 - **Database:** MongoDB Atlas
-- **Hosting:** Render.com (free tier)
-- **Language Support:** English, Swahili, Kamba
 
-## 📦 Project Structure
+- **Hosting:** Render.com (free tier, upgradeable)### Sync Strategy
 
-```
-backend/
-├── src/
-│   ├── index.js                 # USSD API server (production)
-│   ├── admin-dashboard.js       # MCA Admin Dashboard (production)
-│   ├── lib/
-│   │   ├── mongo.js            # MongoDB client
-│   │   ├── crypto.js           # Password hashing
-│   │   ├── logger.js           # Logging utilities
-│   │   └── validators.js       # Input validation
-│   └── middleware/              # Security & rate limiting
-├── package.json                 # Dependencies (Express + MongoDB)
-├── .env.example                 # Environment template
-└── README.md                    # This file
-```
+- **Languages:** English, Swahili, Kamba
 
-## 🔧 Local Development
+- Edge SQLite maintains full data copy with WAL mode
 
-### Prerequisites
-- Node.js 18+ 
-- MongoDB Atlas account (or local MongoDB)
+## 📦 Repository Structure- 5-minute sync job exports NDJSON to cloud
 
-### Setup
+- Cloud upserts by unique keys (last-write-wins)
 
-1. Clone repository:
-```bash
-git clone https://github.com/MusaMuthami1/voo-ward-ussd.git
+```- Offline queue preserved; no data loss
+
+voo-ward-ussd/
+
+├── backend/                       # Production backend## Quick Start
+
+│   ├── src/
+
+│   │   ├── index.js              # USSD API (Safaricom callback)### Backend
+
+│   │   ├── admin-dashboard.js    # MCA Admin Portal
+
+│   │   ├── lib/                  # MongoDB, logging, validation\\\ash
+
+│   │   └── middleware/           # Security, rate limitingcd backend
+
+│   ├── package.json              # Express + MongoDB onlynpm install
+
+│   ├── .env.example              # Environment templatenpm run migrate:cloud        # Init PostgreSQL
+
+│   └── README.md                 # Technical documentationnpm run start                # Start on :4000
+
+│\\\
+
+├── SAFARICOM-APPLICATION.md      # Service application form
+
+├── SAFARICOM-REQUEST-LETTER.MD   # Formal request letter### Frontend
+
+├── TECHNICAL-INTEGRATION.md      # Integration specs for Safaricom
+
+├── ADMIN-DASHBOARD-DEPLOY.md     # MCA dashboard deployment\\\ash
+
+├── PRODUCTION-CLEAN.md           # Cleanup summarycd frontend
+
+└── README.md                     # This filenpm install
+
+```npm run dev                  # Start on :5173
+
+\\\
+
+## 🚀 Quick Start
+
+### Health Check
+
+### Run Locally
+
+\\\ash
+
+```bashcurl <http://localhost:4000/health>
+
+# Clone repository
+
+git clone https://github.com/MusaMuthami1/voo-ward-ussd.git# { ok: true, ussd: '*340*75#' }
+
 cd voo-ward-ussd/backend
-```
 
-2. Install dependencies:
-```bash
-npm install
-```
+\\\
 
-3. Create `.env` file:
-```bash
-cp .env.example .env
-# Edit .env and add your MONGO_URI
-```
+# Install dependencies
 
-4. Start USSD server:
-```bash
-npm start
-# Server runs on http://localhost:4000
-```
+npm install## Directory Structure
 
-5. Start Admin Dashboard (optional):
-```bash
-npm run admin
-# Dashboard runs on http://localhost:5000
-```
 
-## 🌐 Deployment
 
-### USSD API (Render.com)
+# Create .env file\\\
 
-**Already Deployed:** https://voo-ward-ussd.onrender.com/ussd
+cp .env.example .env.
 
-**Configuration:**
-- Build Command: `npm ci`
-- Start Command: `npm start`
-- Environment Variables:
-  - `MONGO_URI` = Your MongoDB connection string
-  - `NODE_ENV` = `production`
-  - `PORT` = `4000` (auto-set by Render)
+# Edit .env and add MONGO_URI backend/
 
-### Admin Dashboard (Render.com)
+    src/
 
-**To Deploy:**
+# Start USSD server       index.js             # Fastify server
 
-1. Go to https://dashboard.render.com
-2. Create new Web Service
-3. Connect GitHub repo: `MusaMuthami1/voo-ward-ussd`
-4. Configure:
-   - **Root Directory:** `backend`
-   - **Build Command:** `npm ci`
-   - **Start Command:** `npm run admin`
-   - **Environment Variables:**
-     - `MONGO_URI` = Your MongoDB connection string
-     - `NODE_ENV` = `production`
-     - `ADMIN_PORT` = `10000`
+npm start       lib/                 # Utilities (logger, crypto, db, validators)
 
-## 📊 Admin Dashboard Features
+# Runs on http://localhost:4000       routes/              # USSD, admin, sync endpoints
 
-- 📋 View all reported issues (category, message, status)
-- 🎓 View bursary applications (student name, school, amount)
-- 👥 View registered constituents
-- 📢 Manage announcements
-- 📥 Export data as CSV
+    migrations/              # SQL migrations (cloud + edge)
 
-## 🔌 API Endpoints
+# Or start Admin Dashboard    bin/                     # CLI tools
 
-### USSD API
+npm run admin    package.json
 
-**POST /ussd**
-- Safaricom callback endpoint
-- Receives: `sessionId`, `phoneNumber`, `text`
-- Returns: USSD menu responses
+# Runs on http://localhost:5000    Makefile
 
-**GET /health**
-- Health check endpoint
-- Returns: `{ ok: true, service: "voo-kyamatu-ussd" }`
+```    .env
 
-### Admin Dashboard API
 
-**GET /api/admin/issues**
-- List all reported issues
 
-**GET /api/admin/bursaries**
-- List all bursary applications
+### Deploy to Production frontend/
 
-**GET /api/admin/constituents**
-- List all registered constituents
+    src/
 
-**GET /api/admin/stats**
-- Dashboard statistics
+See deployment guides:       App.jsx              # Admin dashboard
 
-**GET /api/admin/export/issues**
-- Export issues as CSV
+- **USSD API:** Already deployed to https://voo-ward-ussd.onrender.com       main.jsx
 
-## 📱 USSD Flow
+- **Admin Dashboard:** See [ADMIN-DASHBOARD-DEPLOY.md](ADMIN-DASHBOARD-DEPLOY.md)       index.css
+
+    index.html
+
+## 📱 USSD Flow    vite.config.js
+
+    package.json
 
 ```
-*XXX# → Language Selection
-   ├── 1. English
-   ├── 2. Swahili
-   └── 3. Kamba
 
-→ Main Menu
-   ├── 1. Register as Constituent
-   ├── 2. Report an Issue
-   │   ├── 1. Roads
-   │   ├── 2. Water
-   │   ├── 3. Security
-   │   ├── 4. Health
-   │   └── 5. Other
-   ├── 3. Announcements
-   └── 4. Projects
+Dial *XXX# docs/
+
+    api.md                   # Endpoint reference
+
+Step 1: Language Selection    ops.md                   # Deployment & backup
+
+   1. English    DPIA.md                  # Data protection checklist
+
+   2. Swahili
+
+   3. Kamba README.md
+
+\\\
+
+Step 2: Main Menu
+
+   1. Register as Constituent## Production Checklist
+
+   2. Report an Issue
+
+      → Roads, Water, Security, Health, Other- [ ] Set JWT_KEY in /etc/voo-ward/jwt_key (root-owned, 0400)
+
+   3. View Announcements- [ ] Set AT_API_KEY in /etc/voo-ward/at_api_key
+
+   4. Projects- [ ] Configure PostgreSQL: DB_URL=/etc/voo-ward/db_url
+
+```- [ ] Install systemd service: \make install-systemd\
+
+- [ ] Enable nightly backups: \in/backup-cloud\
+
+## 🔌 Integration- [ ] Set up edge sync timer: \systemctl enable voo-ward-sync.timer\
+
+- [ ] CORS restricted to 127.0.0.1 (admin) or ward LAN
+
+### For Safaricom- [ ] Rate limiting: 10 USSD/SMS per phone per minute
+
+
+
+**Callback URL:** `https://voo-ward-ussd.onrender.com/ussd`## 🔒 Enterprise Security Features
+
+
+
+**Request Format:**### Implemented Security Enhancements (November 2025)
+
+```http- **AES-256-GCM Encryption**: Field-level PII encryption at rest
+
+POST /ussd HTTP/1.1- **Progressive Rate Limiting**: Multi-tier protection (USSD: 10/10s, Admin: 20/20s, Global: 100/1s)
+
+Content-Type: application/x-www-form-urlencoded- **IP Blocking**: Automatic 24-hour blocks after 10 failed attempts
+
+- **Enhanced Authentication**: bcrypt cost 14, JWT 8-hour expiration
+
+sessionId=SESSION123&phoneNumber=254712345678&text=1*2- **Input Validation**: SQL injection and XSS protection with pattern detection
+
+```- **Audit Logging**: Comprehensive security event tracking with severity levels
+
+- **Privacy Protection**: GDPR Article 25 compliance with data subject rights
+
+**Response Format:**- **Real-time Monitoring**: Security dashboard with automated threat detection
+
 ```
 
-## 🗄️ Database Collections
+CON Menu text...    # Continue session### Security Testing
 
-### `constituents`
+END Final message   # End session```bash
+
+```# Verify all security features
+
+node backend/test-security.js
+
+**Documentation:**
+
+- [SAFARICOM-APPLICATION.md](SAFARICOM-APPLICATION.md) - Service details# Expected output: MAXIMUM PROTECTION status
+
+- [TECHNICAL-INTEGRATION.md](TECHNICAL-INTEGRATION.md) - Technical specs```
+
+- [SAFARICOM-REQUEST-LETTER.md](SAFARICOM-REQUEST-LETTER.md) - Formal request
+
+### Security Documentation
+
+## 🗄️ Database Schema- **Full Security Guide**: [SECURITY_DOCUMENTATION.md](./SECURITY_DOCUMENTATION.md)
+
+- **Environment Setup**: Production-grade security keys configured
+
+### MongoDB Collections- **Compliance Reports**: Automated GDPR/Kenya DPA reporting available
+
+
+
+**constituents**## Compliance
+
 - Phone number, National ID, Full name
-- Location, Village
-- Registration timestamp
 
-### `issues`
-- Ticket number, Category, Message
-- Phone number, Status
-- Creation timestamp
+- Location, Sub-location, Village- **GDPR/Kenya DPA 2019**: Enhanced with automated compliance reporting and data retention
 
-### `bursary_applications`
-- Reference code, Student name, Institution
-- Amount requested, Status
-- Applicant phone, Creation timestamp
+- Registration timestamp- **Security**: Multi-layer protection with AES-256-GCM, progressive rate limiting, IP blocking
 
-### `announcements`
-- Title, Body, Creation timestamp
+- **Privacy**: Data subject rights implementation (access, rectification, erasure, portability)
 
-## 🔒 Environment Variables
+**issues**- **Auditing**: Enhanced logging with security event tracking and admin change monitoring
 
-Required environment variables (see `.env.example`):
+- Ticket (ISS-001, ISS-002...)- **Availability**: 99.9% SLA via edge caching + cloud sync + security protection
 
-```bash
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/database
-NODE_ENV=production
-PORT=4000
-```
+- Category, Message, Status- **Recovery**: Automated daily backups to encrypted store with security event preservation
 
-## 📄 Dependencies
+- Reporter phone, Timestamp
 
-```json
-{
-  "express": "^5.1.0",
-  "body-parser": "^2.2.0",
-  "morgan": "^1.10.1",
-  "mongodb": "^6.20.0",
-  "dotenv": "^16.3.1"
-}
-```
+## Support
 
-## 🚦 Health Monitoring
+**bursary_applications**
 
-Check service status:
+- Reference code (BUR-001...)Email: <voo-ward-support@example.com>
+
+- Student name, Institution, Amount
+- Status, Applicant phone, Timestamp
+
+**announcements**
+- Title, Body, Timestamp
+
+## 🔒 Security
+
+- HTTPS only (TLS 1.2+)
+- Rate limiting on all endpoints
+- Input validation and sanitization
+- MongoDB connection encryption
+- Environment variables for secrets
+
+## 📊 Monitoring
+
+**Health Checks:**
 ```bash
 # USSD API
 curl https://voo-ward-ussd.onrender.com/health
@@ -221,64 +313,57 @@ curl https://voo-ward-ussd.onrender.com/health
 curl https://your-admin-url.onrender.com/health
 ```
 
-## 📝 Safaricom Integration
-
-**Callback URL:** `https://voo-ward-ussd.onrender.com/ussd`
-
-**Request Format:**
-```
-POST /ussd
-Content-Type: application/x-www-form-urlencoded
-
-sessionId=SESSION123&phoneNumber=254712345678&text=1*2
-```
-
-**Response Format:**
-```
-CON Menu text here...
-```
-or
-```
-END Final message
-```
-
-## 🔧 Troubleshooting
-
-### USSD API not responding
-- Check Render logs
-- Verify MONGO_URI is set correctly
-- Test health endpoint
-
-### Admin Dashboard shows no data
-- Verify MongoDB connection
-- Check collections exist in database
-- Test API endpoints directly
-
-### Deployment failed
-- Check `package.json` for missing dependencies
-- Verify build command: `npm ci`
-- Check environment variables are set
-
 ## 📚 Documentation
 
-- **Production Cleanup:** [PRODUCTION-CLEAN.md](../PRODUCTION-CLEAN.md)
-- **Admin Dashboard:** [ADMIN-DASHBOARD-DEPLOY.md](../ADMIN-DASHBOARD-DEPLOY.md)
-- **Render Deployment:** [RENDER-DEPLOYMENT.md](RENDER-DEPLOYMENT.md)
-- **Safaricom Application:** [SAFARICOM-APPLICATION.md](../SAFARICOM-APPLICATION.md)
-- **Technical Integration:** [TECHNICAL-INTEGRATION.md](../TECHNICAL-INTEGRATION.md)
+| Document | Purpose |
+|----------|---------|
+| [backend/README.md](backend/README.md) | Technical API documentation |
+| [ADMIN-DASHBOARD-DEPLOY.md](ADMIN-DASHBOARD-DEPLOY.md) | Deploy MCA dashboard |
+| [PRODUCTION-CLEAN.md](PRODUCTION-CLEAN.md) | Production cleanup summary |
+| [RENDER-DEPLOYMENT.md](backend/RENDER-DEPLOYMENT.md) | Render.com deployment |
+| [SAFARICOM-APPLICATION.md](SAFARICOM-APPLICATION.md) | Service application |
+| [TECHNICAL-INTEGRATION.md](TECHNICAL-INTEGRATION.md) | Integration guide |
 
-## 🤝 Support
+## 🛠️ Development
 
-For issues or questions:
-- GitHub: https://github.com/MusaMuthami1/voo-ward-ussd
-- Create an issue on GitHub
+**Dependencies:**
+- Node.js 18+
+- MongoDB Atlas account (free tier works)
+
+**Install:**
+```bash
+cd backend
+npm install
+```
+
+**Run:**
+```bash
+npm start        # USSD API on :4000
+npm run admin    # Admin Dashboard on :5000
+```
+
+## 📦 Deployment Status
+
+✅ **USSD API:** Deployed to Render.com  
+✅ **GitHub:** https://github.com/MusaMuthami1/voo-ward-ussd  
+✅ **Production URL:** https://voo-ward-ussd.onrender.com/ussd  
+⏳ **Admin Dashboard:** Ready to deploy (see guide)  
+⏳ **Safaricom Approval:** Pending submission  
+
+## 🤝 Contributing
+
+This is a production government service. For changes:
+1. Test locally first
+2. Commit to GitHub
+3. Render auto-deploys from `main` branch
 
 ## 📜 License
 
-MIT License - See [LICENSE](LICENSE) file
+MIT License - See [LICENSE](LICENSE)
 
 ---
 
-**Production Status:** ✅ Live on Render.com  
-**Last Updated:** November 4, 2025  
-**Version:** 1.0.0
+**Organization:** Kyamatu Ward Administration  
+**GitHub:** MusaMuthami1/voo-ward-ussd  
+**Status:** Production Ready ✅  
+**Last Updated:** November 4, 2025

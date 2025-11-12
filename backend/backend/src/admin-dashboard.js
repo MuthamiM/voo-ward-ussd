@@ -2,86 +2,66 @@ const express = require("express");
 const path = require("path");
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
+// bcrypt for secure password hashing and migration from legacy SHA-256
 const bcrypt = require('bcryptjs');
-// Optional Redis for sessions and rate-limiting. Set REDIS_URL in env to enable.
-let redisClient = null;
-if (process.env.REDIS_URL) {
-  try {
-    const IORedis = require('ioredis');
-    redisClient = new IORedis(process.env.REDIS_URL);
-    console.log('🔌 Redis enabled for sessions/rate-limiter');
-  } catch (e) {
-    console.warn('⚠️ Could not initialize Redis client:', e.message);
-    redisClient = null;
-  }
-}
 
 // Load environment variables
 require("dotenv").config();
+const chatbotSvc = require('./chatbot');
 
-
-const router = express.Router();
+const app = express();
 
 // Middleware
-router.use(express.json());
-router.use(express.urlencoded({ extended: false }));
-// Accept plain text bodies (some USSD gateways post text/plain)
-router.use(express.text({ type: ['text/*', 'application/*+xml'] }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // CORS - allow frontend to connect
-router.use((req, res, next) => {
+app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   next();
 });
 
+const fs = require('fs');
+const multer = require('multer');
+let sharp;
+try { sharp = require('sharp'); } catch (e) { console.warn('sharp not available; image resizing disabled'); }
+// Optional S3 support using AWS SDK v3 (@aws-sdk/client-s3)
+let s3Client;
+let S3_ENABLED = false;
+try {
+  const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+  if (process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    const region = process.env.S3_REGION || 'us-east-1';
+    s3Client = new S3Client({ region });
+    // attach command constructors so later code can reference them when needed
+    s3Client._PutObjectCommand = PutObjectCommand;
+    s3Client._DeleteObjectCommand = DeleteObjectCommand;
+    S3_ENABLED = true;
+    console.log('S3 (v3): enabled for avatar uploads');
+  }
+} catch (e) {
+  // @aws-sdk/client-s3 not installed or not configured
+}
+
+
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
 
-// Rate limiter: in-memory fallback, or Redis-backed when REDIS_URL is set
-const ussdRateLimits = new Map();
-
-async function checkUssdRateLimit(ip, windowMs = 60_000, maxRequests = 6) {
-  if (redisClient) {
-    try {
-      const key = `ussd:rl:${ip}`;
-      const count = await redisClient.incr(key);
-      if (count === 1) await redisClient.pexpire(key, windowMs);
-      return count <= maxRequests;
-    } catch (e) {
-      console.warn('Redis rate-limit error, falling back to memory', e.message);
-    }
-  }
-
-  const now = Date.now();
-  const entry = ussdRateLimits.get(ip) || { timestamps: [] };
-  entry.timestamps = entry.timestamps.filter(ts => now - ts < windowMs);
-  if (entry.timestamps.length >= maxRequests) {
-    ussdRateLimits.set(ip, entry);
-    return false;
-  }
-  entry.timestamps.push(now);
-  ussdRateLimits.set(ip, entry);
-  return true;
-}
-
 // Helper: Hash password
-// Helper: Check if user is the main admin
-function isMainAdmin(user) {
-  return user && user.username === "admin" && user.role === "MCA";
-}
 function hashPassword(password) {
-  // legacy SHA-256 for existing users
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-async function hashPasswordBcrypt(password) {
-  return bcrypt.hash(password, 10);
+// Helper: detect bcrypt hash
+function isBcryptHash(s) {
+  return typeof s === 'string' && (s.startsWith('$2a$') || s.startsWith('$2b$') || s.startsWith('$2y$') || s.startsWith('$2$'));
 }
 
-function isBcryptHash(s) {
-  return typeof s === 'string' && s.startsWith('$2');
+// Helper: hash with bcrypt
+function bcryptHash(password) {
+  return bcrypt.hashSync(password, 10);
 }
 
 // Helper: Generate session token
@@ -90,44 +70,78 @@ function generateSessionToken() {
 }
 
 // Middleware: Verify authentication
-// Session helpers (Redis-backed if enabled)
-async function setSession(token, sessionObj, ttlSeconds = 60 * 60 * 24) {
-  if (redisClient) {
-    await redisClient.set(`sess:${token}`, JSON.stringify(sessionObj), 'EX', ttlSeconds);
-  } else {
-    sessions.set(token, sessionObj);
+function requireAuth(req, res, next) {
+  const token = req.headers.authorization?.replace("Bearer ", "");
+  
+  // treat explicit 'null' or 'undefined' string values as missing token
+  if (!token || token === 'null' || token === 'undefined') {
+    return res.status(401).json({ error: "Authentication required" });
   }
+  
+  const session = sessions.get(token);
+  if (!session) {
+    return res.status(401).json({ error: "Invalid or expired session" });
+  }
+  
+  req.user = session.user;
+  next();
 }
 
-async function getSession(token) {
-  if (!token) return null;
-  if (redisClient) {
-    const s = await redisClient.get(`sess:${token}`);
-    return s ? JSON.parse(s) : null;
-  }
-  return sessions.get(token) || null;
+// Simple rate limiter for auth endpoints to prevent brute force and noisy 401s
+let rateLimit;
+try {
+  rateLimit = require('express-rate-limit');
+} catch (e) {
+  console.warn('express-rate-limit not installed; falling back to in-process limiter');
 }
 
-async function deleteSession(token) {
-  if (redisClient) {
-    await redisClient.del(`sess:${token}`);
-  } else {
-    sessions.delete(token);
-  }
-}
+// If express-rate-limit is available, use it. Otherwise, use a simple in-memory limiter.
+let loginLimiter;
+if (rateLimit) {
+  loginLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // limit each IP to 10 login requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts, please try again in a minute' }
+  });
+  console.log('Login limiter: express-rate-limit active');
+} else {
+  // Simple fallback limiter: counts attempts per IP with expiry.
+  const attempts = new Map(); // ip -> { count, firstTs }
+  const WINDOW_MS = 60 * 1000;
+  const MAX_ATTEMPTS = 10;
 
-async function requireAuth(req, res, next) {
-  try {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) return res.status(401).json({ error: "Authentication required" });
-    const session = await getSession(token);
-    if (!session) return res.status(401).json({ error: "Invalid or expired session" });
-    req.user = session.user;
-    next();
-  } catch (err) {
-    console.error('Auth middleware error', err);
-    return res.status(500).json({ error: 'Authentication error' });
-  }
+  // periodic cleanup to avoid memory growth
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, info] of attempts.entries()) {
+      if (now - info.firstTs > WINDOW_MS * 5) attempts.delete(ip);
+    }
+  }, WINDOW_MS * 2).unref();
+
+  loginLimiter = (req, res, next) => {
+    try {
+      const ip = (req.ip || req.connection?.remoteAddress || 'unknown').toString();
+      const now = Date.now();
+      const info = attempts.get(ip) || { count: 0, firstTs: now };
+      if (now - info.firstTs > WINDOW_MS) {
+        info.count = 1;
+        info.firstTs = now;
+      } else {
+        info.count += 1;
+      }
+      attempts.set(ip, info);
+      if (info.count > MAX_ATTEMPTS) {
+        return res.status(429).json({ error: 'Too many login attempts, please try again in a minute' });
+      }
+    } catch (e) {
+      // on error, allow request through to avoid locking everyone out
+      console.warn('Fallback limiter error', e && e.message);
+    }
+    return next();
+  };
+  console.log('Login limiter: in-process fallback active');
 }
 
 // Middleware: Verify MCA role
@@ -180,8 +194,43 @@ async function connectDB() {
   }
 }
 
+// Prepare upload directory for profile avatars
+const UPLOADS_DIR = path.join(__dirname, '../public/uploads/avatars');
+try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+
+// Multer storage for avatars
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: function (req, file, cb) {
+    // filename: userId-timestamp.ext
+    const uid = req.user ? (req.user.id || req.user.username || 'anon') : 'anon';
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const name = `${uid}-${Date.now()}${ext}`;
+    cb(null, name);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  fileFilter: function (req, file, cb) {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) return cb(new Error('Only JPEG, PNG or WEBP images are allowed'));
+    cb(null, true);
+  }
+});
+
+// Notifications have been disabled per operator request.
+// keep a no-op helper to avoid removing all call sites; it will log the intent and return a neutral result.
+async function sendNotificationToPhone(/* db, phone, message */) {
+  console.log('Notifications disabled: sendNotificationToPhone called - notifications removed from this deployment.');
+  return { ok: false, queued: false };
+}
+
 // Health check
-router.get("/health", (req, res) => {
+app.get("/health", (req, res) => {
   res.json({ 
     ok: true, 
     service: "voo-admin-dashboard", 
@@ -195,7 +244,7 @@ router.get("/health", (req, res) => {
 // ============================================
 
 // Login
-router.post("/api/auth/login", async (req, res) => {
+app.post("/api/auth/login", loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -204,66 +253,76 @@ router.post("/api/auth/login", async (req, res) => {
     }
     
     const database = await connectDB();
+    
+    // When database is not connected, require DB for authentication.
     if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
+      console.error('Database not connected - authentication requires a configured database');
+      return res.status(503).json({ error: 'Database not connected' });
     }
     
+    // PRODUCTION: Use database authentication
     // Find user
-    const user = await database.collection("admin_users").findOne({ 
-      username: username.toLowerCase() 
+    const user = await database.collection("admin_users").findOne({
+      username: username.toLowerCase()
     });
-    
-    if (!user) return res.status(401).json({ error: "Invalid username or password" });
 
-    // Check password: support bcrypt or legacy SHA-256. Migrate SHA users to bcrypt on successful login.
-    let match = false;
+    if (!user) {
+      console.warn(`Failed login attempt for unknown user '${username}' from ${req.ip}`);
+      return res.status(401).json({ error: "Invalid username or password" });
+    }
+
+    // Support both bcrypt (new) and legacy SHA-256 passwords.
+    let passwordMatches = false;
+
     try {
       if (isBcryptHash(user.password)) {
-        match = await bcrypt.compare(password, user.password);
+        passwordMatches = await bcrypt.compare(password, user.password);
       } else {
-        match = (user.password === hashPassword(password));
+        // legacy SHA-256
+        passwordMatches = user.password === hashPassword(password);
+
+        // If legacy matches, migrate to bcrypt to improve security
+        if (passwordMatches) {
+          try {
+            const newHash = await bcrypt.hash(password, 10);
+            await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash } });
+            console.log(`🔁 Migrated password for user ${user.username} to bcrypt`);
+          } catch (migErr) {
+            console.warn('⚠️ Failed to migrate password to bcrypt for user', user.username, migErr && migErr.message);
+          }
+        }
       }
-    } catch (e) {
-      console.error('Password check error', e);
+    } catch (errCompare) {
+      console.error('Password compare error:', errCompare);
+      passwordMatches = false;
     }
 
-    if (!match) return res.status(401).json({ error: "Invalid username or password" });
-
-    // If legacy SHA-256 hash, migrate to bcrypt
-    if (!isBcryptHash(user.password)) {
-      try {
-        const newHash = await hashPasswordBcrypt(password);
-        const database = await connectDB();
-        if (database) {
-          await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash } });
-          console.log(`🔁 Migrated user ${user.username} password to bcrypt`);
-        }
-      } catch (e) {
-        console.warn('Password migration failed for', user.username, e.message);
-      }
+    if (!passwordMatches) {
+      console.warn(`Failed login attempt for user '${username}' from ${req.ip}`);
+      return res.status(401).json({ error: "Invalid username or password" });
     }
 
     // Create session
     const token = generateSessionToken();
-    await setSession(token, {
-      user: {
-        id: user._id.toString(),
-        username: user.username,
-        fullName: user.full_name,
-        role: user.role
-      },
-      createdAt: new Date()
-    });
-    
+    // include photo_url and settings in session so client can apply saved preferences
+    const sessionUser = {
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      photo_url: user.photo_url || null,
+      photo_thumb: user.photo_thumb || null,
+      photo_webp: user.photo_webp || null,
+      photo_thumb_webp: user.photo_thumb_webp || null,
+      settings: user.settings || {}
+    };
+
+    sessions.set(token, { user: sessionUser, createdAt: new Date() });
+
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id.toString(),
-        username: user.username,
-        fullName: user.full_name,
-        role: user.role
-      }
+      user: sessionUser
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -272,60 +331,116 @@ router.post("/api/auth/login", async (req, res) => {
 });
 
 // Logout
-router.post("/api/auth/logout", requireAuth, async (req, res) => {
+app.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  await deleteSession(token);
+  sessions.delete(token);
   res.json({ success: true, message: "Logged out successfully" });
 });
 
 // Get current user
-router.get("/api/auth/me", requireAuth, (req, res) => {
-  res.json({
-    user: req.user,
-    fullAccess: isMainAdmin(req.user)
-  });
+app.get("/api/auth/me", requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
+
+// Change password (authenticated)
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body || {};
+    if (!current_password || !new_password) {
+      return res.status(400).json({ error: 'current_password and new_password are required' });
+    }
+    if (new_password.length < 6) {
+      return res.status(400).json({ error: 'new_password must be at least 6 characters' });
+    }
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const user = await database.collection('admin_users').findOne({ _id: new ObjectId(req.user.id) });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // verify current password against bcrypt or legacy sha256
+    let ok = false;
+    try {
+      if (isBcryptHash(user.password)) {
+        ok = await bcrypt.compare(current_password, user.password);
+      } else {
+        ok = user.password === hashPassword(current_password);
+      }
+    } catch (e) {
+      console.error('Password verify error:', e && e.message);
+      ok = false;
+    }
+
+    if (!ok) return res.status(401).json({ error: 'Current password is incorrect' });
+
+    // set new bcrypt password
+    const newHash = await bcrypt.hash(new_password, 10);
+    await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash, updated_at: new Date() } });
+
+    res.json({ success: true, message: 'Password changed successfully' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Create user (MCA only)
-router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const { username, password, fullName, role } = req.body;
     
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ error: "All fields required" });
     }
-    if (role !== "PA" && role !== "MCA") {
-      return res.status(400).json({ error: "Role must be PA or MCA" });
+    
+    // Allowed roles: MCA (main admin), PA (personal assistant), CLERK
+    const allowedRoles = ['PA', 'MCA', 'CLERK'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ error: `Role must be one of: ${allowedRoles.join(', ')}` });
     }
+    
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    // Enforce limits: only 1 MCA (main admin) and maximum 3 PA users
-    const adminCount = await database.collection("admin_users").countDocuments({ role: "MCA" });
-    const paCount = await database.collection("admin_users").countDocuments({ role: "PA" });
-    if (role === "MCA" && adminCount >= 1) {
-      return res.status(403).json({ error: "Maximum 1 MCA admin allowed" });
-    }
-    if (role === "PA" && paCount >= 3) {
-      return res.status(403).json({ error: "Maximum 3 PA users allowed" });
-    }
+    
     // Check if username exists
-    const existing = await database.collection("admin_users").findOne({ username: username.toLowerCase() });
+    const existing = await database.collection("admin_users").findOne({ 
+      username: username.toLowerCase() 
+    });
+    
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
+
+    // Enforce a maximum number of PAs (Personal Assistants)
+    if (role === 'PA') {
+      const paCount = await database.collection('admin_users').countDocuments({ role: 'PA' });
+      if (paCount >= 3) {
+        return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
+      }
+    }
+    // Enforce only one MCA (main administrator)
+    if (role === 'MCA') {
+      const mcaCount = await database.collection('admin_users').countDocuments({ role: 'MCA' });
+      if (mcaCount >= 1) {
+        return res.status(400).json({ error: 'There is already an MCA user. Only one MCA allowed.' });
+      }
+    }
+    
     // Create user (store bcrypt hash)
-    const pwHash = await hashPasswordBcrypt(password);
     const newUser = {
       username: username.toLowerCase(),
-      password: pwHash,
+      password: bcryptHash(password),
       full_name: fullName,
       role: role,
       created_at: new Date(),
       created_by: req.user.id
     };
+    
     const result = await database.collection("admin_users").insertOne(newUser);
+    
     res.status(201).json({
       success: true,
       user: {
@@ -342,7 +457,7 @@ router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all users (MCA only)
-router.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -362,133 +477,42 @@ router.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Delete user (MCA only)
-router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
+app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-    // Find user to delete
-    const userToDelete = await database.collection("admin_users").findOne({ _id: new ObjectId(id) });
-    if (!userToDelete) {
-      return res.status(404).json({ error: "User not found" });
-    }
-    // Prevent deleting the main admin (username 'admin')
-    if (userToDelete.username === "admin" || userToDelete.immutable) {
-      return res.status(403).json({ error: "Cannot delete the main or immutable admin user" });
-    }
+    
     // Prevent deleting yourself
     if (id === req.user.id) {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
-    const result = await database.collection("admin_users").deleteOne({ _id: new ObjectId(id) });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "User not found" });
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
     }
+    
+    // Prevent deleting the immutable default admin account
+    const target = await database.collection('admin_users').findOne({ _id: new ObjectId(id) });
+    if (!target) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (target.username === 'admin' && target.role === 'MCA') {
+      return res.status(403).json({ error: 'Cannot delete the main MCA admin account' });
+    }
+
+    const result = await database.collection("admin_users").deleteOne({
+      _id: new ObjectId(id)
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(500).json({ error: "Failed to delete user" });
+    }
+    
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
     res.status(500).json({ error: err.message });
-  }
-});
-
-// ------------------------
-// USSD: Bursary tracking
-// Supports Africa's Talking (text, sessionId, phoneNumber) and generic providers
-// Flow (simple):
-// - initial request (text === '' ) -> show menu
-// - user selects 1 -> prompt for ref code
-// - user replies with ref code (or sends 1*REF) -> lookup and return status
-// ------------------------
-router.post('/api/ussd', async (req, res) => {
-  try {
-    // Logging and rate-limiting
-    const ip = (req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.ip || '').toString();
-    const phone = req.body.phoneNumber || req.body.phone || req.body.from || req.body.msisdn || '';
-
-    // Normalize incoming fields - accept common provider fields
-    const rawText = req.body.text ?? req.body.Text ?? req.body.input ?? '';
-    const incoming = (rawText === null || rawText === undefined) ? '' : String(rawText);
-
-    console.info('USSD request', { ip, phone, rawText: incoming });
-
-    // Rate limit per IP
-    if (!(await checkUssdRateLimit(ip))) {
-      console.warn('USSD rate limit exceeded for IP', ip);
-      res.set('Content-Type', 'text/plain');
-      return res.send('END Too many requests. Try again in a minute.');
-    }
-
-    // Robust parsing: treat spaces and multiple separators as '*', remove unwanted chars
-    let text = incoming.trim();
-    // Replace multiple whitespace with '*', convert spaces to '*' for providers that use spaces
-    text = text.replace(/\s+/g, '*');
-    // Normalize repeated '*' and remove trailing/leading separators
-    text = text.replace(/\*+/g, '*').replace(/^\*|\*$/g, '');
-
-    // responder helper (Africa's Talking expects plain text starting with CON or END)
-    const reply = (message, end = false) => {
-      const prefix = end ? 'END ' : 'CON ';
-      res.set('Content-Type', 'text/plain');
-      // Log outgoing
-      console.info('USSD reply', { ip, phone, message: (prefix + message).slice(0, 200) });
-      return res.send(prefix + message);
-    };
-
-    // initial menu (no input)
-    if (!text) {
-      return reply('Welcome to VOO Ward USSD\n1. Check Bursary Status\n0. Exit');
-    }
-
-    // split AT-style '1*REF' flows
-    const parts = text.split('*').filter(p => p !== '');
-
-    // option 1 selected -> ask for ref code
-    if (parts[0] === '1' && parts.length === 1) {
-      return reply('Enter your bursary reference code:');
-    }
-
-    // user provided 1*REF or direct REF
-    if (parts[0] === '1' && parts.length >= 2) {
-      const ref = parts.slice(1).join('*').trim();
-      if (!ref) return reply('Reference code cannot be empty. Enter your bursary reference code:');
-
-      const database = await connectDB();
-      if (!database) return reply('Service unavailable. Please try later.', true);
-
-      const app = await database.collection('bursary_applications').findOne({ ref_code: ref });
-      if (!app) return reply(`No application found for ref ${ref}.`, true);
-
-      const status = app.status || 'Pending';
-      const notes = app.admin_notes ? ` Notes: ${app.admin_notes}` : '';
-      return reply(`Ref ${ref}\nStatus: ${status}.${notes}`, true);
-    }
-
-    // fallback: if user typed a direct ref code
-    if (/^[A-Za-z0-9-]{3,}$/.test(text)) {
-      const ref = text;
-      const database = await connectDB();
-      if (!database) return reply('Service unavailable. Please try later.', true);
-
-      const app = await database.collection('bursary_applications').findOne({ ref_code: ref });
-      if (!app) return reply(`No application found for ref ${ref}.`, true);
-
-      const status = app.status || 'Pending';
-      const notes = app.admin_notes ? ` Notes: ${app.admin_notes}` : '';
-      return reply(`Ref ${ref}\nStatus: ${status}.${notes}`, true);
-    }
-
-    // exit
-    if (text === '0') return reply('Goodbye', true);
-
-    // default
-    return reply('Invalid choice.\n1. Check Bursary Status\n0. Exit');
-  } catch (err) {
-    console.error('USSD error:', err);
-    // ensure we end the session on errors
-    res.set('Content-Type', 'text/plain');
-    return res.send('END Service error. Please try again later.');
   }
 });
 
@@ -497,7 +521,7 @@ router.post('/api/ussd', async (req, res) => {
 // ============================================
 
 // Get all reported issues (PA and MCA can access)
-router.get("/api/admin/issues", requireAuth, async (req, res) => {
+app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -517,7 +541,7 @@ router.get("/api/admin/issues", requireAuth, async (req, res) => {
 });
 
 // Get all bursary applications (MCA only)
-router.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -537,7 +561,7 @@ router.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => 
 });
 
 // Get all constituents (MCA only)
-router.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -557,7 +581,7 @@ router.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) 
 });
 
 // Get all announcements (PA and MCA can access)
-router.get("/api/admin/announcements", requireAuth, async (req, res) => {
+app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -576,35 +600,187 @@ router.get("/api/admin/announcements", requireAuth, async (req, res) => {
   }
 });
 
-// Update issue status (PA and MCA can access)
-router.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
+// Update issue status and action note (PA and MCA can access)
+app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
-    
+    const { status, action_note } = req.body;
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+    // Build update object
+    const update = { status, updated_at: new Date() };
+    if (typeof action_note === 'string') {
+      update.action_note = action_note;
+      update.action_by = req.user?.username || 'unknown';
+      update.action_at = new Date();
+    }
     const result = await database.collection("issues").updateOne(
       { ticket: id },
-      { $set: { status, updated_at: new Date() } }
+      { $set: update }
     );
-    
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Issue not found" });
     }
-    
-    res.json({ success: true, message: `Issue ${id} updated to ${status}` });
+    // Fetch updated issue
+    const updated = await database.collection('issues').findOne({ ticket: id });
+
+    // If status changed to resolved, update USSD interactions and notify reporter(s)
+    try {
+      const newStatus = (status || '').toString().toLowerCase();
+      if (newStatus === 'resolved' || newStatus === 'resolved') {
+        // Update any USSD interactions for the reporter's phone
+        try {
+          if (updated && updated.phone_number) {
+            await database.collection('ussd_interactions').updateMany(
+              { phone_number: updated.phone_number },
+              { $set: { issue_status: status, related_ticket: id, updated_at: new Date() } }
+            );
+          }
+        } catch (uErr) {
+          console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
+        }
+
+        // Notifications are disabled in this deployment. We still update USSD interactions above.
+        if (updated && updated.phone_number) {
+          console.log('Notification suppressed for issue', id, 'phone', updated.phone_number);
+        }
+      }
+    } catch (e) {
+      console.warn('Post-update hooks error for issue', id, e && e.message);
+    }
+
+    res.json({ success: true, message: `Issue ${id} updated`, update, issue: updated });
   } catch (err) {
     console.error("Error updating issue:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
+// Bulk-resolve (or bulk update status) for multiple issues (MCA only)
+app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, res) => {
+  try {
+    let { issueIds, status, action_note } = req.body || {};
+    if (!Array.isArray(issueIds) || issueIds.length === 0) {
+      return res.status(400).json({ error: 'issueIds (array) is required' });
+    }
+
+    // Sanitize input: ensure strings, trim, dedupe
+    issueIds = issueIds
+      .map(i => (typeof i === 'string' ? i.trim() : ''))
+      .filter(Boolean);
+    issueIds = Array.from(new Set(issueIds));
+
+    // Cap maximum items to prevent abuse (production-safe default)
+    const MAX_BATCH = 200;
+    if (issueIds.length === 0) return res.status(400).json({ error: 'No valid issueIds provided' });
+    if (issueIds.length > MAX_BATCH) return res.status(400).json({ error: `Too many issueIds; max ${MAX_BATCH}` });
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const targetStatus = (status || 'resolved').toString();
+    const note = typeof action_note === 'string' ? action_note : undefined;
+
+    const results = [];
+    const phonesToNotify = new Map(); // phone -> array of tickets
+
+    // Process in batches to avoid long-running single operations
+    const BATCH = 50;
+    for (let i = 0; i < issueIds.length; i += BATCH) {
+      const batch = issueIds.slice(i, i + BATCH);
+
+      // For each ticket in this batch, update and collect phone numbers
+      await Promise.all(batch.map(async (ticket) => {
+        try {
+          const update = { status: targetStatus, updated_at: new Date() };
+          if (note) {
+            update.action_note = note;
+            update.action_by = req.user?.username || 'unknown';
+            update.action_at = new Date();
+          }
+
+          const r = await database.collection('issues').updateOne({ ticket: ticket }, { $set: update });
+          if (r.matchedCount === 0) {
+            results.push({ id: ticket, ok: false, error: 'not_found' });
+            return;
+          }
+
+          const updated = await database.collection('issues').findOne({ ticket: ticket });
+
+          // collect phone for later aggregated notification
+          if (updated && updated.phone_number) {
+            const phone = updated.phone_number;
+            const arr = phonesToNotify.get(phone) || [];
+            arr.push(ticket);
+            phonesToNotify.set(phone, arr);
+          }
+
+          results.push({ id: ticket, ok: true, issue: updated });
+        } catch (errInner) {
+          console.warn('Error updating issue in bulk', ticket, errInner && errInner.message);
+          results.push({ id: ticket, ok: false, error: errInner && errInner.message });
+        }
+      }));
+    }
+
+    // After updating issues, update USSD interactions and send aggregated notifications per phone
+    const phoneEntries = Array.from(phonesToNotify.entries());
+    for (const [phone, tickets] of phoneEntries) {
+      try {
+        // Update USSD interactions once per phone
+        try {
+          await database.collection('ussd_interactions').updateMany(
+            { phone_number: phone },
+            { $set: { issue_status: targetStatus, related_tickets: tickets.join(','), updated_at: new Date() } }
+          );
+        } catch (uErr) {
+          console.warn('Failed to update USSD interactions for phone', phone, uErr && uErr.message);
+        }
+
+        // Send or queue one notification per phone summarizing the tickets
+        const notifyMsg = tickets.length === 1
+          ? `Your report (${tickets[0]}) has been marked as ${targetStatus}. Thank you.`
+          : `Your ${tickets.length} reports (${tickets.slice(0,5).join(',')}${tickets.length>5? ',...':''}) have been marked as ${targetStatus}. Thank you.`;
+
+        // Notifications suppressed by configuration - log intent
+        console.log('Notification suppressed for phone', phone, 'tickets', tickets.join(','));
+      } catch (e) {
+        console.warn('Error in post-update processing for phone', phone, e && e.message);
+      }
+    }
+
+    const succeeded = results.filter(r => r.ok).length;
+    const failed = results.length - succeeded;
+    // Record audit entry for this bulk operation
+    try {
+      await database.collection('admin_audit').insertOne({
+        action: 'bulk-resolve',
+        performed_by: req.user?.username || 'unknown',
+        count: succeeded,
+        failed: failed,
+        tickets: issueIds,
+        note: note || null,
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Failed to write audit entry for bulk-resolve', auditErr && auditErr.message);
+    }
+
+    res.json({ success: true, updated: succeeded, failed, results });
+  } catch (err) {
+    console.error('Bulk resolve error:', err && err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Notifications functionality removed: endpoints for listing/retrying notifications were deprecated per configuration.
+// The sending path was already disabled earlier; keeping these endpoints would expose internal queues that are no longer used.
+// If you need a safe administrative endpoint in the future, re-add intentionally with appropriate access controls.
+
 // Update bursary status (MCA only)
-router.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
+app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -641,7 +817,7 @@ router.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, re
 });
 
 // Create announcement (PA and MCA can access)
-router.post("/api/admin/announcements", requireAuth, async (req, res) => {
+app.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
     
@@ -670,7 +846,7 @@ router.post("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Delete announcement
-router.delete("/api/admin/announcements/:id", async (req, res) => {
+app.delete("/api/admin/announcements/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -696,7 +872,7 @@ router.delete("/api/admin/announcements/:id", async (req, res) => {
 });
 
 // Dashboard statistics
-router.get("/api/admin/stats", async (req, res) => {
+app.get("/api/admin/stats", async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -743,8 +919,268 @@ router.get("/api/admin/stats", async (req, res) => {
   }
 });
 
+// Simple chatbot/help endpoint to guide admins in using the dashboard
+app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+  try {
+    const { message } = req.body || {};
+    const reply = await chatbotSvc.generateReply(message, req.user);
+    res.json({ reply });
+  } catch (err) {
+    console.error('Chatbot error', err && err.message);
+    res.status(500).json({ error: 'chatbot error' });
+  }
+});
+
+// Admin: get chatbot KB (for editor UI)
+app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const kbPath = path.join(__dirname, 'chatbot_kb.json');
+    if (!fs.existsSync(kbPath)) return res.json([]);
+    const raw = fs.readFileSync(kbPath, 'utf8');
+    const data = JSON.parse(raw);
+    res.json(data);
+  } catch (e) {
+    console.error('Error reading chatbot KB', e && e.message);
+    res.status(500).json({ error: 'failed to read kb' });
+  }
+});
+
+// Admin: update chatbot KB (replace entire KB)
+app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const kb = req.body;
+    const kbPath = path.join(__dirname, 'chatbot_kb.json');
+    fs.writeFileSync(kbPath, JSON.stringify(kb, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Error writing chatbot KB', e && e.message);
+    res.status(500).json({ error: 'failed to write kb' });
+  }
+});
+
+// Admin: update current user's profile
+// Accept multipart/form-data with an optional 'photo' file and optional 'settings' JSON string
+app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, res) => {
+  try {
+    // fullName and phone_number may come from form-data or JSON
+    const fullName = req.body.fullName || req.body.full_name || undefined;
+    const phone_number = req.body.phone_number || req.body.phone || undefined;
+
+    // settings may be a JSON string in form-data
+    let settings = {};
+    if (req.body.settings) {
+      try { settings = typeof req.body.settings === 'string' ? JSON.parse(req.body.settings) : req.body.settings; } catch (e) { settings = {}; }
+    }
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const update = {};
+    if (fullName) update.full_name = fullName;
+    if (phone_number) update.phone_number = phone_number;
+    if (settings && Object.keys(settings).length) update.settings = settings;
+
+    if (req.file) {
+      const originalPath = path.join(UPLOADS_DIR, req.file.filename);
+      let finalMain = req.file.filename;
+      let thumbName = null;
+      let webpMain = null;
+      let webpThumb = null;
+
+      if (sharp) {
+        try {
+          const base = path.basename(req.file.filename, path.extname(req.file.filename));
+
+          // 256x256 JPEG main
+          const resizedName = `${base}-256.jpg`;
+          const resizedPath = path.join(UPLOADS_DIR, resizedName);
+          await sharp(originalPath).resize(256, 256, { fit: 'cover' }).jpeg({ quality: 80 }).toFile(resizedPath);
+
+          // 64x64 thumbnail JPEG
+          const thumbFile = `${base}-64.jpg`;
+          const thumbPath = path.join(UPLOADS_DIR, thumbFile);
+          await sharp(originalPath).resize(64, 64, { fit: 'cover' }).jpeg({ quality: 75 }).toFile(thumbPath);
+
+          // WebP variants for modern browsers
+          const webpFile = `${base}-256.webp`;
+          const webpPath = path.join(UPLOADS_DIR, webpFile);
+          await sharp(originalPath).resize(256, 256, { fit: 'cover' }).webp({ quality: 75 }).toFile(webpPath);
+
+          const webpThumbFile = `${base}-64.webp`;
+          const webpThumbPath = path.join(UPLOADS_DIR, webpThumbFile);
+          await sharp(originalPath).resize(64, 64, { fit: 'cover' }).webp({ quality: 70 }).toFile(webpThumbPath);
+
+          // Attempt to remove original upload to save disk space
+          try { fs.unlinkSync(originalPath); } catch (e) { /* ignore */ }
+
+          finalMain = resizedName;
+          thumbName = thumbFile;
+          webpMain = webpFile;
+          webpThumb = webpThumbFile;
+        } catch (imgErr) {
+          console.warn('Image processing (sharp) failed:', imgErr && imgErr.message);
+          // fallback: keep original file
+          finalMain = req.file.filename;
+        }
+      }
+
+      // If S3 is enabled, upload processed files and set public S3 URLs
+      const makePublicUrl = (key) => {
+        const region = process.env.S3_REGION || 'us-east-1';
+        return `https://${process.env.S3_BUCKET}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+      };
+
+      if (S3_ENABLED) {
+        try {
+          const uploads = [];
+          const toUpload = [];
+          // choose list of filenames to upload
+          if (finalMain) toUpload.push({ name: finalMain, local: path.join(UPLOADS_DIR, finalMain), contentType: 'image/jpeg' });
+          if (thumbName) toUpload.push({ name: thumbName, local: path.join(UPLOADS_DIR, thumbName), contentType: 'image/jpeg' });
+          if (webpMain) toUpload.push({ name: webpMain, local: path.join(UPLOADS_DIR, webpMain), contentType: 'image/webp' });
+          if (webpThumb) toUpload.push({ name: webpThumb, local: path.join(UPLOADS_DIR, webpThumb), contentType: 'image/webp' });
+
+          for (const f of toUpload) {
+            try {
+              const body = fs.readFileSync(f.local);
+              const key = `avatars/${f.name}`;
+              // Using AWS SDK v3
+              const PutObjectCommand = s3Client._PutObjectCommand;
+              await s3Client.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key, Body: body, ContentType: f.contentType, ACL: 'public-read' }));
+              uploads.push({ name: f.name, url: makePublicUrl(key) });
+            } catch (upErr) {
+              console.warn('S3 upload failed for', f.name, upErr && upErr.message);
+            }
+          }
+
+          // Map uploaded URLs back to filenames
+          const findUrl = (n) => { const it = uploads.find(u => u.name === n); return it ? it.url : path.posix.join('/uploads/avatars', n); };
+          const relMain = findUrl(finalMain);
+          const relThumb = thumbName ? findUrl(thumbName) : null;
+          const relWebp = webpMain ? findUrl(webpMain) : null;
+          const relWebpThumb = webpThumb ? findUrl(webpThumb) : null;
+
+          update.photo_url = relMain;
+          if (relThumb) update.photo_thumb = relThumb;
+          if (relWebp) update.photo_webp = relWebp;
+          if (relWebpThumb) update.photo_thumb_webp = relWebpThumb;
+        } catch (s3Err) {
+          console.warn('S3 processing error:', s3Err && s3Err.message);
+          // fallback to local urls
+          update.photo_url = path.posix.join('/uploads/avatars', finalMain);
+          if (thumbName) update.photo_thumb = path.posix.join('/uploads/avatars', thumbName);
+          if (webpMain) update.photo_webp = path.posix.join('/uploads/avatars', webpMain);
+          if (webpThumb) update.photo_thumb_webp = path.posix.join('/uploads/avatars', webpThumb);
+        }
+      } else {
+        // Local file URLs
+        update.photo_url = path.posix.join('/uploads/avatars', finalMain);
+        if (thumbName) update.photo_thumb = path.posix.join('/uploads/avatars', thumbName);
+        if (webpMain) update.photo_webp = path.posix.join('/uploads/avatars', webpMain);
+        if (webpThumb) update.photo_thumb_webp = path.posix.join('/uploads/avatars', webpThumb);
+      }
+    }
+
+    // Update admin_users collection (the login users) not a generic 'users' collection
+    const userId = new ObjectId(req.user.id);
+    await database.collection('admin_users').updateOne({ _id: userId }, { $set: update });
+    const user = await database.collection('admin_users').findOne({ _id: userId }, { projection: { password: 0 } });
+
+    // normalize user object for client-side; map DB fields to expected camelCase
+    const userResp = {
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      phone_number: user.phone_number,
+      photo_url: user.photo_url || null,
+      settings: user.settings || {}
+    };
+
+    // update any active sessions for this username
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.username === user.username) {
+        sess.user = { ...sess.user, ...userResp };
+        sessions.set(token, sess);
+      }
+    }
+
+    res.json({ success: true, user: userResp });
+  } catch (e) {
+    console.error('Error updating profile', e && e.message);
+    // multer fileFilter or size errors may come through here
+    if (e && e.message && e.message.includes('Only JPEG')) return res.status(400).json({ error: e.message });
+    if (e && e.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large (max 2MB)' });
+    res.status(500).json({ error: 'failed to update profile' });
+  }
+});
+
+// Delete current user's avatar (remove files and DB fields)
+app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const userId = new ObjectId(req.user.id);
+    const user = await database.collection('admin_users').findOne({ _id: userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Collect local filenames to delete if they exist and are local paths
+    const toDeleteLocal = [];
+    const photoFields = ['photo_url','photo_thumb','photo_webp','photo_thumb_webp'];
+    for (const f of photoFields) {
+      if (user[f] && typeof user[f] === 'string' && user[f].startsWith('/uploads/avatars')) {
+        const name = path.basename(user[f]);
+        toDeleteLocal.push(path.join(UPLOADS_DIR, name));
+      }
+    }
+
+    // Remove S3 objects if S3_ENABLED and urls point to S3 bucket
+    if (S3_ENABLED) {
+      try {
+        const prefix = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION || 'us-east-1'}.amazonaws.com/`;
+        for (const f of photoFields) {
+          if (user[f] && typeof user[f] === 'string' && user[f].startsWith(prefix)) {
+            const key = user[f].replace(prefix, '');
+            try {
+              const DeleteObjectCommand = s3Client._DeleteObjectCommand;
+              await s3Client.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
+            } catch (e) { console.warn('S3 delete failed for', key, e && e.message); }
+          }
+        }
+      } catch (e) { console.warn('S3 delete flow error', e && e.message); }
+    }
+
+    // Delete local files
+    for (const p of toDeleteLocal) {
+      try { fs.unlinkSync(p); } catch (e) { /* ignore */ }
+    }
+
+    // Unset DB fields
+    const unset = {};
+    photoFields.forEach(k => unset[k] = '');
+    await database.collection('admin_users').updateOne({ _id: userId }, { $unset: { photo_url: '', photo_thumb: '', photo_webp: '', photo_thumb_webp: '' } });
+
+    // Update session entries
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.username === user.username) {
+        sess.user.photo_url = null;
+        sess.user.photo_thumb = null;
+        sess.user.photo_webp = null;
+        sess.user.photo_thumb_webp = null;
+        sessions.set(token, sess);
+      }
+    }
+
+    res.json({ success: true, message: 'Avatar removed' });
+  } catch (e) {
+    console.error('Error deleting avatar', e && e.message);
+    res.status(500).json({ error: 'failed to remove avatar' });
+  }
+});
+
 // Export issues as CSV (PA and MCA can access)
-router.get("/api/admin/export/issues", requireAuth, async (req, res) => {
+app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -756,9 +1192,20 @@ router.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       .sort({ created_at: -1 })
       .toArray();
     
-    let csv = "Ticket,Category,Message,Phone,Status,Created At\n";
+    // Include action metadata in export: action_by, action_at, action_note
+    let csv = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
     issues.forEach(issue => {
-      csv += `"${issue.ticket}","${issue.category}","${issue.message}","${issue.phone_number}","${issue.status}","${issue.created_at}"\n`;
+      const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
+      const category = (issue.category || '').toString().replace(/"/g, '""');
+      const message = (issue.message || '').toString().replace(/"/g, '""');
+      const phone = (issue.phone_number || '').toString().replace(/"/g, '""');
+      const status = (issue.status || '').toString().replace(/"/g, '""');
+      const actionBy = (issue.action_by || '').toString().replace(/"/g, '""');
+      const actionAt = issue.action_at ? new Date(issue.action_at).toISOString() : '';
+      const actionNote = (issue.action_note || '').toString().replace(/"/g, '""');
+      const created = issue.created_at ? new Date(issue.created_at).toISOString() : '';
+
+      csv += `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`;
     });
     
     res.header("Content-Type", "text/csv");
@@ -770,8 +1217,83 @@ router.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   }
 });
 
+// Persist USSD interactions (public endpoint used by USSD gateway)
+app.post('/api/ussd', async (req, res) => {
+  try {
+    const { phone, text, response, ref_code, parsed_text } = req.body || {};
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const doc = {
+      phone_number: phone || (req.body && req.body.phone_number) || '',
+      text: text || '',
+      parsed_text: parsed_text || null,
+      response: response || '',
+      ref_code: ref_code || null,
+      ip: req.ip,
+      created_at: new Date()
+    };
+
+    await database.collection('ussd_interactions').insertOne(doc);
+    res.json({ success: true, data: doc });
+  } catch (err) {
+    console.error('Error saving USSD interaction:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: list USSD interactions
+app.get('/api/admin/ussd', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const interactions = await database.collection('ussd_interactions')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+
+    res.json(interactions);
+  } catch (err) {
+    console.error('Error fetching USSD interactions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Admin: export USSD interactions as CSV
+app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const interactions = await database.collection('ussd_interactions')
+      .find({})
+      .sort({ created_at: -1 })
+      .toArray();
+
+    let csv = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
+    interactions.forEach(i => {
+      const phone = (i.phone_number || '').toString().replace(/"/g, '""');
+      const text = (i.text || '').toString().replace(/"/g, '""');
+      const parsed = i.parsed_text ? JSON.stringify(i.parsed_text).replace(/"/g, '""') : '';
+      const response = (i.response || '').toString().replace(/"/g, '""');
+      const ref = (i.ref_code || '').toString().replace(/"/g, '""');
+      const ip = (i.ip || '').toString();
+      const created = i.created_at ? new Date(i.created_at).toISOString() : '';
+      csv += `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.header('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
+    res.send(csv);
+  } catch (err) {
+    console.error('Error exporting USSD interactions:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Export bursaries as CSV (MCA only)
-router.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -798,7 +1320,7 @@ router.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, r
 });
 
 // Export constituents as CSV (MCA only)
-router.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -825,9 +1347,9 @@ router.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req
 });
 
 // Serve admin dashboard HTML
-router.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public")));
 
-router.get("/", (req, res) => {
+app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
 });
 
@@ -840,702 +1362,141 @@ async function initializeAdmin() {
       return;
     }
     
-    const existingAdmins = await database.collection("admin_users").find({ role: "MCA" }).toArray();
-    // Remove legacy 'martin' user if present
-    try {
-      const legacy = await database.collection('admin_users').findOne({ username: 'martin' });
-      if (legacy) {
-        await database.collection('admin_users').deleteOne({ _id: legacy._id });
-        console.log('🗑️ Removed legacy PA/MCA user: martin');
-      }
-    } catch (e) {
-      console.warn('Could not check/remove legacy user martin:', e && e.message ? e.message : e);
-    }
-
-    if (!existingAdmins || existingAdmins.length === 0) {
+    const existingAdmin = await database.collection("admin_users").findOne({ role: "MCA" });
+    
+    if (!existingAdmin) {
       console.log("🔧 Creating default MCA admin user...");
-      const pwHash = await hashPasswordBcrypt('admin123');
+      
       const defaultAdmin = {
         username: "admin",
-        password: pwHash,
-        full_name: "Zak",
+        // store default admin with bcrypt hash
+        password: bcryptHash("admin123"),
+    full_name: "Zak",
         role: "MCA",
-        // mark the default admin as immutable so it cannot be deleted
-        immutable: true,
         created_at: new Date()
       };
+      
       await database.collection("admin_users").insertOne(defaultAdmin);
+      
       console.log("✅ Default MCA admin created:");
       console.log("   Username: admin");
       console.log("   Password: admin123");
       console.log("   IMPORTANT: Change password after first login!");
     } else {
-      // Ensure the primary admin record is named 'admin' and has full_name 'Zak'
-      const main = await database.collection('admin_users').findOne({ username: 'admin' });
-      if (main) {
-        if (main.full_name !== 'Zak' || !isBcryptHash(main.password)) {
-          try {
-            const update = {};
-            if (main.full_name !== 'Zak') update.full_name = 'Zak';
-            if (!isBcryptHash(main.password)) {
-              // If password is legacy SHA, don't change it unless it matches admin123; otherwise leave it.
-              // Migrate to bcrypt only if it matches admin123
-              if (main.password === hashPassword('admin123')) {
-                update.password = await hashPasswordBcrypt('admin123');
-              }
-            }
-            if (Object.keys(update).length) {
-              update.updated_at = new Date();
-              await database.collection('admin_users').updateOne({ _id: main._id }, { $set: update });
-              console.log('ℹ️ Updated default admin metadata');
-            }
-          } catch (e) {
-            console.warn('Could not update default admin metadata:', e && e.message ? e.message : e);
-          }
+      // If admin exists but has a different display name, ensure it's Zak (operator requested)
+      try {
+        if (existingAdmin.username === 'admin' && existingAdmin.full_name !== 'Zak') {
+          await database.collection('admin_users').updateOne({ _id: existingAdmin._id }, { $set: { full_name: 'Zak' } });
+          console.log('ℹ️ Updated default admin full_name to Zak');
         }
+      } catch (e) {
+        console.warn('⚠️ Failed to ensure admin full_name is Zak', e && e.message);
       }
-      console.log(`✅ MCA admin user(s) exist: ${existingAdmins.map(a => a.username).join(", ")}`);
+      console.log("✅ MCA admin user exists");
+    }
+
+    // Remove any legacy test PA user named 'martin' if present (operator requested)
+    try {
+      const martin = await database.collection('admin_users').findOne({ username: 'martin' });
+      if (martin) {
+        await database.collection('admin_users').deleteOne({ _id: martin._id });
+        console.log('Removed legacy PA user: martin');
+      }
+    } catch (e) {
+      console.warn(' Failed to remove martin user (if existed):', e && e.message);
     }
   } catch (err) {
-    console.error("❌ Error initializing admin user:", err.message);
+    console.error(" Error initializing admin user:", err.message);
   }
 }
 
-// Secure seed endpoint to create or update a default admin remotely.
-// Protected by the SEED_ADMIN_TOKEN environment variable. Usage:
-//  - Set SEED_ADMIN_TOKEN in Render / your env.
-//  - POST /api/auth/seed-admin with header `x-seed-token: <token>` or body { token }
-//  - Body may include optional: { username, password, fullName, role, force }
-// If the username exists the endpoint updates password and full_name; otherwise it inserts.
-router.post('/api/auth/seed-admin', async (req, res) => {
-  try {
-    const provided = req.headers['x-seed-token'] || req.body?.token;
-    const expected = process.env.SEED_ADMIN_TOKEN;
-
-    if (!expected) {
-      return res.status(500).json({ error: 'SEED_ADMIN_TOKEN not configured on server' });
-    }
-
-    if (!provided || provided !== expected) {
-      return res.status(403).json({ error: 'Invalid or missing seed token' });
-    }
-
-    const {
-      username = 'admin',
-      password = 'admin123',
-      fullName = 'Zak',
-      role = 'MCA',
-      force = false
-    } = req.body || {};
-
-    const database = await connectDB();
-    if (!database) return res.status(503).json({ error: 'Database not connected' });
-
-    // If there are existing MCA admins and force is not true, warn the caller.
-    const existingAdmins = await database.collection('admin_users').find({ role: 'MCA' }).toArray();
-    if (existingAdmins.length > 0 && !force) {
-      return res.status(409).json({ error: 'MCA admin(s) already exist. Use force=true to override or update a specific username.' });
-    }
-
-    const uname = username.toLowerCase();
-    const existing = await database.collection('admin_users').findOne({ username: uname });
-    if (existing) {
-      // Update existing user password and info (store bcrypt)
-      const newHash = await hashPasswordBcrypt(password);
-      await database.collection('admin_users').updateOne(
-        { _id: existing._id },
-        { $set: { password: newHash, full_name: fullName, role, updated_at: new Date() } }
-      );
-      return res.json({ success: true, message: 'Existing admin updated', username: uname });
-    }
-
-    // Insert new admin (bcrypt password)
-    const newHash = await hashPasswordBcrypt(password);
-    const newUser = {
-      username: uname,
-      password: newHash,
-      full_name: fullName,
-      role,
-      created_at: new Date()
-    };
-
-    await database.collection('admin_users').insertOne(newUser);
-    return res.status(201).json({ success: true, message: 'Admin user created', username: uname });
-  } catch (err) {
-    console.error('Seed admin error:', err);
-    return res.status(500).json({ error: err.message });
-  }
+// OLD HTML: served from static file in ../public/admin-dashboard.html
+app.get('/old', (req, res) => {
+  // Redirect legacy /old route to the static admin-dashboard.html
+  res.redirect('/admin-dashboard.html');
 });
 
-// OLD HTML CODE REMOVED - Now served from file
-router.get("/old", (req, res) => {
-  res.send(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOO Ward Admin Dashboard</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container { 
-            max-width: 1400px; 
-            margin: 0 auto; 
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        .header h1 { font-size: 2em; margin-bottom: 10px; }
-        .header p { opacity: 0.9; }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            padding: 30px;
-            background: #f8f9fa;
-        }
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-card h3 { color: #667eea; font-size: 2.5em; margin-bottom: 5px; }
-        .stat-card p { color: #666; font-size: 0.9em; }
-        .tabs {
-            display: flex;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-            padding: 0 30px;
-        }
-        .tab {
-            padding: 15px 25px;
-            cursor: pointer;
-            border: none;
-            background: none;
-            font-size: 16px;
-            color: #666;
-            border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-        }
-        .tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            font-weight: bold;
-        }
-        .tab:hover { color: #667eea; }
-        .content { padding: 30px; }
-        .table-container {
-            overflow-x: auto;
-            margin-top: 20px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        th {
-            background: #667eea;
-            color: white;
-            font-weight: 600;
-        }
-        tr:hover { background: #f8f9fa; }
-        .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-        }
-        .badge.open { background: #ffc107; color: #000; }
-        .badge.in_progress { background: #17a2b8; color: white; }
-        .badge.resolved { background: #28a745; color: white; }
-        .badge.pending { background: #ffc107; color: #000; }
-        .badge.approved { background: #28a745; color: white; }
-        .badge.rejected { background: #dc3545; color: white; }
-        .export-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 10px;
-        }
-        .export-btn:hover { background: #218838; }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 1.2em;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 20px 0;
-        }
-        .empty {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-            font-style: italic;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-    <div class="header">
-      <h1> VOO Kyamatu Ward Admin Dashboard</h1>
-      <p>MCA Administrative Portal - View Issues, Bursaries & Constituents</p>
-      <div style="position: absolute; right: 20px; top: 22px;">
-        <button id="login-btn" class="export-btn">Login</button>
-        <button id="logout-btn" class="export-btn" style="display:none; background:#dc3545;">Logout</button>
-      </div>
-    </div>
-    <!-- Login modal -->
-    <div id="login-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center;">
-      <div style="background:white; padding:20px; width:320px; border-radius:8px; box-shadow:0 6px 20px rgba(0,0,0,0.2); margin:auto;">
-        <h3 style="margin-bottom:10px;">Admin Login</h3>
-        <form id="login-form">
-          <div style="margin-bottom:8px;"><input id="login-username" placeholder="Username" style="width:100%; padding:8px;" /></div>
-          <div style="margin-bottom:12px;"><input id="login-password" type="password" placeholder="Password" style="width:100%; padding:8px;" /></div>
-          <div style="text-align:right;"><button id="login-submit" class="export-btn" type="submit">Sign in</button> <button id="login-cancel" type="button" style="margin-left:8px;" class="export-btn">Cancel</button></div>
-        </form>
-      </div>
-    </div>
-        
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <h3 id="stat-constituents">-</h3>
-                <p>Total Constituents</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-issues">-</h3>
-                <p>Reported Issues</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-bursaries">-</h3>
-                <p>Bursary Applications</p>
-            </div>
-            <div class="stat-card">
-                <h3 id="stat-announcements">-</h3>
-                <p>Active Announcements</p>
-            </div>
-        </div>
-        
-        <div class="tabs">
-            <button class="tab active" onclick="showTab('issues')">📋 Issues</button>
-            <button class="tab" onclick="showTab('bursaries')">🎓 Bursaries</button>
-            <button class="tab" onclick="showTab('constituents')">👥 Constituents</button>
-            <button class="tab" onclick="showTab('announcements')">📢 Announcements</button>
-        </div>
-        
-        <div class="content">
-            <div id="issues-content">
-                <button class="export-btn requires-admin" onclick="exportData('issues')">📥 Export Issues CSV</button>
-                <div class="table-container">
-                    <table id="issues-table">
-                        <thead>
-                            <tr>
-                                <th>Ticket</th>
-                                <th>Category</th>
-                                <th>Message</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="issues-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="bursaries-content" style="display:none;">
-                <button class="export-btn requires-admin" onclick="exportData('bursaries')">📥 Export Bursaries CSV</button>
-                <div class="table-container">
-                    <table id="bursaries-table">
-                        <thead>
-                            <tr>
-                                <th>Ref Code</th>
-                                <th>Student Name</th>
-                                <th>School/Institution</th>
-                                <th>Amount Requested</th>
-                                <th>Phone</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bursaries-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="constituents-content" style="display:none;">
-                <button class="export-btn requires-admin" onclick="exportData('constituents')">📥 Export Constituents CSV</button>
-                <div class="table-container">
-                    <table id="constituents-table">
-                        <thead>
-                            <tr>
-                                <th>Phone Number</th>
-                                <th>National ID</th>
-                                <th>Full Name</th>
-                                <th>Location</th>
-                                <th>Village</th>
-                                <th>Registered At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="constituents-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="announcements-content" style="display:none;">
-                <div class="table-container">
-                    <table id="announcements-table">
-                        <thead>
-                            <tr>
-                                <th>Title</th>
-                                <th>Body</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody id="announcements-tbody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const API_BASE = window.location.origin;
-        
-    // Authentication token stored in localStorage
-    let TOKEN = localStorage.getItem('token') || null;
-
-    function authHeaders() {
-      return TOKEN ? { 'Authorization': 'Bearer ' + TOKEN } : {};
-    }
-
-    async function fetchWithAuth(url, opts = {}) {
-      opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
-      return fetch(url, opts);
-    }
-
-    // Login/logout helpers (modal-based)
-    function showLogin() {
-      // use flex to allow centering via align-items/justify-content
-      document.getElementById('login-modal').style.display = 'flex';
-      document.getElementById('login-username').focus();
-    }
-
-    async function submitLogin(ev) {
-      ev.preventDefault();
-      const user = document.getElementById('login-username').value.trim();
-      const pass = document.getElementById('login-password').value;
-      if (!user || !pass) {
-        if (typeof showToast === 'function') showToast('Enter username and password', 'error'); else console.warn('Enter username and password');
-        return;
-      }
-      try {
-        const res = await fetch(API_BASE + '/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: user, password: pass })
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          if (typeof showToast === 'function') showToast('Login failed: ' + (data.error || JSON.stringify(data)), 'error'); else console.warn('Login failed: ' + (data.error || JSON.stringify(data)));
-          return;
-        }
-        TOKEN = data.token;
-        localStorage.setItem('token', TOKEN);
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'inline-block';
-        document.getElementById('login-modal').style.display = 'none';
-        await fetchMe();
-        loadStats(); loadIssues();
-  } catch (err) { if (typeof showToast === 'function') showToast('Login error: ' + err.message, 'error'); else console.warn('Login error: ' + err.message); }
-    }
-
-    async function doLogout() {
-      const token = TOKEN;
-      TOKEN = null;
-      localStorage.removeItem('token');
-      document.getElementById('login-btn').style.display = 'inline-block';
-      document.getElementById('logout-btn').style.display = 'none';
-      applyAccess(false);
-      if (token) {
-        try { await fetch(API_BASE + '/api/auth/logout', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch (e) {}
-      }
-    }
-
-    async function fetchMe() {
-      if (!TOKEN) return applyAccess(false);
-      try {
-        const res = await fetch(API_BASE + '/api/auth/me', { headers: authHeaders() });
-        if (!res.ok) return applyAccess(false);
-        const data = await res.json();
-        applyAccess(data.fullAccess === true);
-      } catch (err) {
-        console.error('me fetch error', err);
-        applyAccess(false);
-      }
-    }
-
-    function applyAccess(fullAccess) {
-      document.querySelectorAll('.requires-admin').forEach(el => {
-        el.style.display = fullAccess ? 'inline-block' : 'none';
-      });
-      // Hide bursaries tab for non-admins
-      if (!fullAccess) {
-        const bursTab = Array.from(document.querySelectorAll('.tab')).find(t => t.textContent.toLowerCase().includes('bursaries'));
-        if (bursTab) bursTab.style.display = 'none';
-      }
-    }
-
-    // Load statistics
-    async function loadStats() {
-            try {
-                const res = await fetch(API_BASE + '/api/admin/stats');
-                const data = await res.json();
-                document.getElementById('stat-constituents').textContent = data.constituents.total;
-                document.getElementById('stat-issues').textContent = data.issues.total;
-                document.getElementById('stat-bursaries').textContent = data.bursaries.total;
-                document.getElementById('stat-announcements').textContent = data.announcements.total;
-            } catch (err) {
-                console.error('Error loading stats:', err);
-            }
-        }
-        
-        // Load issues
-        async function loadIssues() {
-            const tbody = document.getElementById('issues-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading issues...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/issues');
-                const issues = await res.json();
-                
-                if (issues.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No issues reported yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = issues.map(issue => \`
-                    <tr>
-                        <td><strong>\${issue.ticket}</strong></td>
-                        <td>\${issue.category}</td>
-                        <td>\${issue.message}</td>
-                        <td>\${issue.phone_number}</td>
-                        <td><span class="badge \${issue.status}">\${issue.status}</span></td>
-                        <td>\${new Date(issue.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading issues: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load bursaries
-        async function loadBursaries() {
-            const tbody = document.getElementById('bursaries-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="loading">Loading bursary applications...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/bursaries');
-                const bursaries = await res.json();
-                
-                if (bursaries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="empty">No bursary applications yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = bursaries.map(b => \`
-                    <tr>
-                        <td><strong>\${b.ref_code}</strong></td>
-                        <td>\${b.student_name}</td>
-                        <td>\${b.institution}</td>
-                        <td>KES \${b.amount_requested.toLocaleString()}</td>
-                        <td>\${b.phone_number}</td>
-                        <td><span class="badge \${b.status.toLowerCase()}">\${b.status}</span></td>
-                        <td>\${new Date(b.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="7" class="error">Error loading bursaries: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load constituents
-        async function loadConstituents() {
-            const tbody = document.getElementById('constituents-tbody');
-            tbody.innerHTML = '<tr><td colspan="6" class="loading">Loading constituents...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/constituents');
-                const constituents = await res.json();
-                
-                if (constituents.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="empty">No constituents registered yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = constituents.map(c => \`
-                    <tr>
-                        <td>\${c.phone_number}</td>
-                        <td>\${c.national_id}</td>
-                        <td><strong>\${c.full_name}</strong></td>
-                        <td>\${c.location}</td>
-                        <td>\${c.village}</td>
-                        <td>\${new Date(c.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="6" class="error">Error loading constituents: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Load announcements
-        async function loadAnnouncements() {
-            const tbody = document.getElementById('announcements-tbody');
-            tbody.innerHTML = '<tr><td colspan="3" class="loading">Loading announcements...</td></tr>';
-            
-            try {
-                const res = await fetchWithAuth(API_BASE + '/api/admin/announcements');
-                const announcements = await res.json();
-                
-                if (announcements.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="empty">No announcements yet</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = announcements.map(a => \`
-                    <tr>
-                        <td><strong>\${a.title}</strong></td>
-                        <td>\${a.body}</td>
-                        <td>\${new Date(a.created_at).toLocaleString()}</td>
-                    </tr>
-                \`).join('');
-            } catch (err) {
-                tbody.innerHTML = '<tr><td colspan="3" class="error">Error loading announcements: ' + err.message + '</td></tr>';
-            }
-        }
-        
-        // Show tab
-        function showTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.content > div').forEach(div => div.style.display = 'none');
-            
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            
-            // Show selected content
-            document.getElementById(tab + '-content').style.display = 'block';
-            
-            // Add active class to tab
-            event.target.classList.add('active');
-            
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-        }
-        
-    // Export data (fetch with auth and download)
-    async function exportData(type) {
-      try {
-        const res = await fetchWithAuth(API_BASE + '/api/admin/export/' + type);
-        if (!res.ok) {
-          if (typeof showToast === 'function') showToast('Export failed: ' + res.statusText, 'error'); else console.warn('Export failed: ' + res.statusText);
-          return;
-        }
-        const text = await res.text();
-        const blob = new Blob([text], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = type + '.csv';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        if (typeof showToast === 'function') showToast('Export error: ' + err.message, 'error'); else console.warn('Export error: ' + err.message);
-      }
-    }
-        
-    // Initialize
-    document.getElementById('login-btn').addEventListener('click', showLogin);
-    document.getElementById('logout-btn').addEventListener('click', doLogout);
-    // Wire up modal form submit and cancel
-    document.getElementById('login-form').addEventListener('submit', submitLogin);
-    document.getElementById('login-cancel').addEventListener('click', (e) => {
-      e.preventDefault();
-      document.getElementById('login-modal').style.display = 'none';
-    });
-    // Close modal when clicking outside the dialog
-    document.getElementById('login-modal').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('login-modal')) {
-        document.getElementById('login-modal').style.display = 'none';
-      }
-    });
-    // reflect stored token UI
-    if (TOKEN) {
-      document.getElementById('login-btn').style.display = 'none';
-      document.getElementById('logout-btn').style.display = 'inline-block';
-    }
-    fetchMe();
-    loadStats();
-    loadIssues();
-        
-        // Auto-refresh every 30 seconds
-        setInterval(() => {
-            loadStats();
-            const activeTab = document.querySelector('.tab.active').textContent.toLowerCase();
-            if (activeTab.includes('issues')) loadIssues();
-            else if (activeTab.includes('bursaries')) loadBursaries();
-            else if (activeTab.includes('constituents')) loadConstituents();
-            else if (activeTab.includes('announcements')) loadAnnouncements();
-        }, 30000);
-    </script>
-</body>
-</html>
-  `);
-});
-
-
-// Export router for use in main server
-// Expose connectDB for other modules (e.g. USSD handler) and export router
-router.connectDB = connectDB;
-// Bootstrap default admin on module load (best-effort)
-(async function bootstrapAdmin() {
-  try {
-    // initializeAdmin will connect to DB and create the default admin if none exists
+// Start server when run directly. When required as a module, export the app so
+// a parent process (e.g. src/index.js) can mount it as middleware.
+const PORT = process.env.ADMIN_PORT || 5000;
+async function startServer() {
+  console.log(`\n  VOO WARD ADMIN DASHBOARD`);
+  console.log(` Dashboard: http://localhost:${PORT}`);
+  console.log(`  Health: http://localhost:${PORT}/health`);
+  
+  // Test MongoDB connection
+  const database = await connectDB();
+  if (database) {
+    console.log(` MongoDB Connected: Ready to view data`);
+    
+    // Initialize admin user
     await initializeAdmin();
-  } catch (e) {
-    console.warn('Bootstrap admin initialization failed:', e && e.message ? e.message : e);
+  } else {
+    console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
-})();
-module.exports = router;
+  
+  console.log(`\n Ready to view issues, bursaries & constituents!\n`);
+  console.log(` Login with: admin / admin123 (Change after first login!)\n`);
+
+  app.listen(PORT, () => {
+    // Listening logged above; keep process alive when run standalone
+  });
+}
+
+// If this file is executed directly (node admin-dashboard.js) start its own server.
+if (require.main === module) {
+  startServer().catch(err => {
+    console.error('Failed to start admin-dashboard server:', err && err.message);
+    process.exit(1);
+  });
+} else {
+  // Export the Express app so a parent application can mount it (e.g. app.use('/admin', adminApp))
+  module.exports = app;
+  // expose connectDB for parent apps that may want to reuse the DB connection
+  try { module.exports.connectDB = connectDB; } catch (e) { /* noop */ }
+  // Also attempt a best-effort DB connect + admin init when required (non-blocking)
+  (async () => {
+    try {
+      const database = await connectDB();
+      if (database) await initializeAdmin();
+    } catch (e) {
+      console.warn('Admin dashboard module init warning:', e && e.message);
+    }
+  })();
+
+  // Internal endpoint: reset admin password (requires ADMIN_RESET_TOKEN header)
+  // Use only when ADMIN_RESET_TOKEN is set in environment and you provide the token in the request.
+  app.post('/internal/reset-admin', async (req, res) => {
+    try {
+      const token = req.headers['x-admin-reset-token'] || '';
+      if (!process.env.ADMIN_RESET_TOKEN || token !== process.env.ADMIN_RESET_TOKEN) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      const database = await connectDB();
+      if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+      const ADMIN_USER = (process.env.ADMIN_USER || 'admin').toLowerCase();
+      const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
+      const col = database.collection('admin_users');
+      const user = await col.findOne({ username: ADMIN_USER });
+      const bcrypt = require('bcryptjs');
+      const newHash = await bcrypt.hash(ADMIN_PASS, 10);
+
+      if (!user) {
+        const doc = { username: ADMIN_USER, password: newHash, full_name: process.env.ADMIN_FULLNAME || 'Zak', role: process.env.ADMIN_ROLE || 'MCA', created_at: new Date(), immutable: true };
+        await col.insertOne(doc);
+        console.log('Admin reset: created admin user');
+        return res.json({ success: true, message: 'Admin user created and password set from ADMIN_PASS' });
+      }
+
+      await col.updateOne({ _id: user._id }, { $set: { password: newHash, updated_at: new Date() } });
+      console.log('Admin reset: password updated for', ADMIN_USER);
+      return res.json({ success: true, message: 'Admin password reset to ADMIN_PASS' });
+    } catch (e) {
+      console.error('internal reset-admin error', e && e.message);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
+}
