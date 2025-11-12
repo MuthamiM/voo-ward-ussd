@@ -23,7 +23,9 @@ app.get('/api/admin/chat-history', requireAuth, async (req, res) => {
     const database = await connectDB();
     if (!database) return res.json([]);
     const session_id = req.query.session_id;
-    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    // normalize to ObjectId when possible for consistent DB lookups
+    uid = normalizeUserId(uid);
     const q = session_id ? { session_id } : (uid ? { user_id: uid } : {});
     const rows = await database.collection('chat_messages').find(q).sort({ created_at: 1 }).limit(500).toArray();
     res.json(rows || []);
@@ -37,8 +39,9 @@ app.get('/api/admin/chat-unread', requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.json({ unread: 0 });
-    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
     if (!uid) return res.json({ unread: 0 });
+    uid = normalizeUserId(uid);
     const doc = await database.collection('chat_unreads').findOne({ user_id: uid });
     res.json({ unread: (doc && doc.unread) ? doc.unread : 0 });
   } catch (e) {
@@ -51,8 +54,9 @@ app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
-    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
     if (!uid) return res.status(400).json({ error: 'Missing user' });
+    uid = normalizeUserId(uid);
     await database.collection('chat_unreads').updateOne(
       { user_id: uid },
       { $set: { unread: 0, last_read_at: new Date() } },
@@ -62,6 +66,51 @@ app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('Failed to mark chat read', e && e.message);
     res.status(500).json({ error: 'failed to mark read' });
+  }
+});
+
+// Admin-only: fetch chat history for any user or session (filtering)
+app.get('/api/admin/chat-history-admin', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json([]);
+    const { user_id, session_id, start, end, limit = 500, skip = 0 } = req.query;
+    const q = {};
+    if (session_id) q.session_id = session_id;
+    if (user_id) {
+      let uid = normalizeUserId(user_id);
+      q.user_id = uid;
+    }
+    if (start || end) {
+      q.created_at = {};
+      if (start) q.created_at.$gte = new Date(start);
+      if (end) q.created_at.$lte = new Date(end);
+    }
+    const rows = await database.collection('chat_messages').find(q).sort({ created_at: 1 }).skip(parseInt(skip,10)||0).limit(Math.min(2000, parseInt(limit,10)||500)).toArray();
+    // Support CSV export when requested
+    if (req.query.export === 'csv' || (req.headers.accept && req.headers.accept.includes && req.headers.accept.includes('text/csv'))) {
+      try {
+        const csvLines = ['created_at,user_id,user_name,role,session_id,message'];
+        (rows || []).forEach(r => {
+          const when = new Date(r.created_at).toISOString();
+          const uid = r.user_id ? (typeof r.user_id === 'object' && r.user_id._bsontype === 'ObjectID' ? r.user_id.toString() : String(r.user_id)) : '';
+          const name = (r.user_name || '').replace(/"/g, '""');
+          const role = (r.role || '');
+          const sid = (r.session_id || '').replace(/"/g, '""');
+          const msg = (r.message || '').replace(/"/g, '""');
+          csvLines.push(`"${when}","${uid}","${name}","${role}","${sid}","${msg}"`);
+        });
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="chat_history.csv"');
+        return res.send(csvLines.join('\n'));
+      } catch (csvErr) {
+        console.warn('Failed to generate CSV', csvErr && csvErr.message);
+      }
+    }
+    res.json(rows || []);
+  } catch (e) {
+    console.error('Failed to fetch admin chat history', e && e.message);
+    res.status(500).json({ error: 'failed to fetch admin chat history' });
   }
 });
 
@@ -200,6 +249,18 @@ function requireMCA(req, res, next) {
     return res.status(403).json({ error: "Access denied. MCA role required." });
   }
   next();
+}
+
+// Helper: normalize user id to ObjectId when possible
+function normalizeUserId(uid) {
+  if (!uid) return null;
+  try {
+    if (uid instanceof ObjectId) return uid;
+    if (typeof uid === 'string' && ObjectId.isValid(uid)) return new ObjectId(uid);
+  } catch (e) {
+    // fall through - return original value
+  }
+  return uid;
 }
 
 // MongoDB connection
@@ -978,7 +1039,7 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
     let reply;
     try {
       const database = await connectDB();
-      const userId = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+      const userId = normalizeUserId(req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null);
       const userName = req.user && (req.user.full_name || req.user.fullName || req.user.username) ? (req.user.full_name || req.user.fullName || req.user.username) : 'unknown';
       const msgDoc = { user_id: userId, user_name: userName, role: 'user', message: message, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
       if (database) {
@@ -1015,31 +1076,7 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
 });
 
 // Admin: get chatbot KB (for editor UI)
-app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
-  try {
-    const kbPath = path.join(__dirname, 'chatbot_kb.json');
-    if (!fs.existsSync(kbPath)) return res.json([]);
-    const raw = fs.readFileSync(kbPath, 'utf8');
-    const data = JSON.parse(raw);
-    res.json(data);
-  } catch (e) {
-    console.error('Error reading chatbot KB', e && e.message);
-    res.status(500).json({ error: 'failed to read kb' });
-  }
-});
-
-// Admin: update chatbot KB (replace entire KB)
-app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
-  try {
-    const kb = req.body;
-    const kbPath = path.join(__dirname, 'chatbot_kb.json');
-    fs.writeFileSync(kbPath, JSON.stringify(kb, null, 2), 'utf8');
-    res.json({ success: true });
-  } catch (e) {
-    console.error('Error writing chatbot KB', e && e.message);
-    res.status(500).json({ error: 'failed to write kb' });
-  }
-});
+// NOTE: Chatbot KB editor removed for production — chatbot now relies on OpenAI (when configured)
 
 // Admin: update current user's profile
 // Accept multipart/form-data with an optional 'photo' file and optional 'settings' JSON string

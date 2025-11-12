@@ -1418,6 +1418,14 @@
     .chatbot-button svg { display:block; }
     .chatbot-button .chat-badge { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; font-size: 12px; min-width:18px; height:18px; padding:0 6px; border-radius: 12px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
     .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
+    /* Chat preview (shown when chat is minimized) */
+    .chat-preview { position: absolute; bottom: 68px; right: 0; transform: translateY(6px); background: rgba(255,255,255,0.98); color: #111827; padding:8px 10px; border-radius:8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-width: 260px; font-size:13px; display:none; z-index:11002; }
+    .chat-preview.mini { max-width:200px; font-size:12px; padding:6px 8px; }
+    /* animations */
+    .chat-slide-in { animation: chatSlideIn 260ms ease forwards; }
+    .chat-slide-out { animation: chatSlideOut 200ms ease forwards; }
+    @keyframes chatSlideIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
+    @keyframes chatSlideOut { from { opacity: 1; transform: translateY(0) } to { opacity: 0; transform: translateY(8px) } }
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
     /* Inline chatbot button placed inside a tab (shown near the issues table) */
@@ -1469,6 +1477,7 @@
                 <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
             </svg>
             <span id="chatBadge" class="chat-badge" style="display:none;">0</span>
+            <div id="chatPreview" class="chat-preview" style="display:none;"></div>
         </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
@@ -1508,7 +1517,7 @@
                 
                         <div class="navbar-user">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <button id="editHelpBtn" class="btn-sm btn-info" style="display:none;" onclick="showKbEditor()">Edit Help</button>
+                                <!-- Edit Help removed per request -->
                                 <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
                                 <button class="btn-logout" onclick="logout()" title="Logout" style="background: none; border: none; padding: 0; margin-left: 8px; cursor: pointer;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -1715,6 +1724,40 @@
             </div>
         </div>
     </div>
+                    <!-- Chat History (MCA only) -->
+                    <div id="chat-history-content" class="tab-content" style="display:none;">
+                        <div class="content-header">
+                            <h2 class="content-title">Chat History (Admin)</h2>
+                            <div class="content-actions">
+                                <input id="chatFilterUser" placeholder="Filter by user_id" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
+                                <input id="chatFilterSession" placeholder="Filter by session_id" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
+                                <input id="chatFilterStart" type="date" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
+                                <input id="chatFilterEnd" type="date" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
+                                <button class="btn-sm" onclick="loadAdminChatHistory()">Search</button>
+                                <button class="btn-sm" onclick="clearChatFilters()">Clear</button>
+                                <button class="btn-sm btn-success" onclick="exportChatHistoryCSV()">Export CSV</button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>When</th>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Session</th>
+                                        <th>Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="chat-history-tbody"></tbody>
+                            </table>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                            <button class="btn-sm" onclick="prevChatPage()">Prev</button>
+                            <button class="btn-sm" onclick="nextChatPage()">Next</button>
+                            <span id="chatPageInfo" style="margin-left:8px;"></span>
+                        </div>
+                    </div>
 
     <!-- Change Password Modal -->
     <div class="modal" id="changePasswordModal">
@@ -1913,9 +1956,7 @@
             if (cb) { cb.style.display = 'flex'; cb.classList.add('visible'); }
             // initialize chat widget (minimize state, unread badge, session auto-open)
             try { initChatWidget(); } catch (e) { /* ignore init failures */ }
-            // show edit help button only for MCA
-            const eh = document.getElementById('editHelpBtn');
-            if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
+            // Edit Help UI removed; no client-side KB editing
         }
 
         function setupDashboard() {
@@ -1928,8 +1969,9 @@
                         <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
                         <button class="tab" onclick="showTab('constituents')">Constituents</button>
                         <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                        <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
-                        <button class="tab" onclick="showTab('users')">User Management</button>
+                            <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
+                            <button class="tab" onclick="showTab('users')">User Management</button>
+                            <button class="tab" onclick="showTab('chat-history')">Chat History</button>
                     `;
                 } else {
                 // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
@@ -2370,11 +2412,15 @@
             const suggestions = document.querySelector('.chatbot-suggestions');
             const inputRow = document.querySelector('#chatbotModal .modal-footer') || document.querySelector('#chatbotModal > .modal > .modal-footer');
             const inputControls = document.querySelector('#chatbotModal input#chatbot-input')?.parentElement;
+            const preview = document.getElementById('chatPreview');
             if (val) {
                 if (messages) messages.style.display = 'none';
                 if (suggestions) suggestions.style.display = 'none';
                 if (inputControls) inputControls.style.display = 'none';
                 const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '▢';
+                // show compact preview on the floating button
+                try { updateChatPreview(); } catch (e) {}
+                if (preview) { preview.classList.add('mini'); }
             } else {
                 if (messages) messages.style.display = 'flex';
                 if (suggestions) suggestions.style.display = 'flex';
@@ -2382,6 +2428,9 @@
                 const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '_';
                 // clear unread when user restores
                 resetChatUnread();
+                // hide preview when expanded
+                try { updateChatPreview(); } catch (e) {}
+                if (preview) { preview.classList.remove('mini'); }
             }
         }
 
@@ -2454,15 +2503,36 @@
                 const container = document.getElementById('chatbot-messages');
                 container.innerHTML = '';
                 if (!Array.isArray(msgs) || msgs.length === 0) return;
+                let lastBot = null;
                 msgs.forEach(m => {
                     const who = (m.role === 'bot') ? 'bot' : 'user';
                     const el = document.createElement('div');
                     el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
                     el.innerHTML = (m.message || '').toString().replace(/</g,'&lt;');
                     container.appendChild(el);
+                    if (who === 'bot') lastBot = (m.message || '').toString();
                 });
                 container.scrollTop = container.scrollHeight;
+                try { if (lastBot) { localStorage.setItem('chat_last_bot', lastBot); updateChatPreview(); } } catch (e) { /* ignore */ }
             } catch (e) { console.warn(e && e.message); }
+        }
+
+        function updateChatPreview() {
+            try {
+                const preview = document.getElementById('chatPreview');
+                if (!preview) return;
+                const last = localStorage.getItem('chat_last_bot') || '';
+                if (!last) { preview.style.display = 'none'; preview.textContent = ''; return; }
+                const txt = last.length > 140 ? last.slice(0, 137) + '...' : last;
+                preview.textContent = txt;
+                if (isChatMinimized()) {
+                    preview.style.display = 'block';
+                    preview.classList.remove('chat-slide-out'); preview.classList.add('chat-slide-in');
+                } else {
+                    preview.classList.remove('chat-slide-in'); preview.classList.add('chat-slide-out');
+                    setTimeout(() => { try { preview.style.display = 'none'; } catch(e){} }, 220);
+                }
+            } catch (e) { console.warn('updateChatPreview error', e && e.message); }
         }
 
         async function markChatReadOnServer() {
@@ -2521,6 +2591,7 @@
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
+            else if (tab === 'chat-history') loadAdminChatHistory();
         }
 
         // Profile modal helpers
@@ -2648,39 +2719,7 @@
             applyProfileSettings(s);
         }
 
-        // KB editor helpers
-        function showKbEditor() {
-            document.getElementById('kbEditorModal').style.display = 'flex';
-            loadKbEditor();
-        }
-
-        function hideKbEditor() { document.getElementById('kbEditorModal').style.display = 'none'; }
-
-        async function loadKbEditor() {
-            try {
-                const res = await apiRequest('/api/admin/chatbot-kb');
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to load KB');
-                document.getElementById('kbEditorArea').value = JSON.stringify(data, null, 2);
-            } catch (e) {
-                showToast('Failed to load KB: ' + e.message, 'error');
-            }
-        }
-
-        async function saveKbEditor() {
-            try {
-                const txt = document.getElementById('kbEditorArea').value;
-                let parsed;
-                try { parsed = JSON.parse(txt); } catch (e) { throw new Error('Invalid JSON'); }
-                const res = await apiRequest('/api/admin/chatbot-kb', { method: 'POST', body: JSON.stringify(parsed) });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Failed to save KB');
-                showToast('KB saved', 'success');
-                hideKbEditor();
-            } catch (e) {
-                showToast('KB save failed: ' + e.message, 'error');
-            }
-        }
+        // KB editor removed — chatbot uses OpenAI KB and server-side configuration
 
         async function sendChatbotMessage() {
             const input = document.getElementById('chatbot-input');
@@ -3059,6 +3098,74 @@
         }
 
         // ========================================
+        // ADMIN: Chat history viewer (MCA only)
+        // ========================================
+        let chatAdminPage = 0;
+        const chatAdminLimit = 80;
+
+        async function loadAdminChatHistory() {
+            const user = document.getElementById('chatFilterUser').value.trim();
+            const session = document.getElementById('chatFilterSession').value.trim();
+            const start = document.getElementById('chatFilterStart').value;
+            const end = document.getElementById('chatFilterEnd').value;
+            const skip = chatAdminPage * chatAdminLimit;
+
+            const params = new URLSearchParams();
+            if (user) params.append('user_id', user);
+            if (session) params.append('session_id', session);
+            if (start) params.append('start', start);
+            if (end) params.append('end', end);
+            params.append('limit', String(chatAdminLimit));
+            params.append('skip', String(skip));
+
+            const tbody = document.getElementById('chat-history-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading-state"><div class="spinner"></div><div>Loading chat history...</div></td></tr>';
+            try {
+                const res = await apiRequest('/api/admin/chat-history-admin?' + params.toString());
+                const rows = await res.json();
+                renderAdminChatHistory(rows || []);
+                document.getElementById('chatPageInfo').textContent = `Page ${chatAdminPage + 1}`;
+            } catch (e) {
+                tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><div class="empty-state-text">Error: ${e.message}</div></td></tr>`;
+            }
+        }
+
+        function renderAdminChatHistory(rows) {
+            const tbody = document.getElementById('chat-history-tbody');
+            if (!Array.isArray(rows) || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-state-text">No messages found</div></td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${new Date(r.created_at).toLocaleString()}</td>
+                    <td>${r.user_name || (r.user_id || '')}</td>
+                    <td>${r.role || ''}</td>
+                    <td>${r.session_id || ''}</td>
+                    <td style="max-width:600px; white-space:pre-wrap;">${(r.message||'').toString().replace(/</g,'&lt;')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function prevChatPage() { if (chatAdminPage > 0) { chatAdminPage -= 1; loadAdminChatHistory(); } }
+        function nextChatPage() { chatAdminPage += 1; loadAdminChatHistory(); }
+        function clearChatFilters() { document.getElementById('chatFilterUser').value=''; document.getElementById('chatFilterSession').value=''; document.getElementById('chatFilterStart').value=''; document.getElementById('chatFilterEnd').value=''; chatAdminPage = 0; loadAdminChatHistory(); }
+
+        function exportChatHistoryCSV() {
+            const user = document.getElementById('chatFilterUser').value.trim();
+            const session = document.getElementById('chatFilterSession').value.trim();
+            const start = document.getElementById('chatFilterStart').value;
+            const end = document.getElementById('chatFilterEnd').value;
+            const params = new URLSearchParams();
+            if (user) params.append('user_id', user);
+            if (session) params.append('session_id', session);
+            if (start) params.append('start', start);
+            if (end) params.append('end', end);
+            // Reuse admin endpoint; backend will honor filters
+            window.location.href = API_BASE + '/api/admin/chat-history-admin?' + params.toString() + '&export=csv';
+        }
+
+        // ========================================
         // EXPORT DATA
         // ========================================
         function exportData(type) {
@@ -3145,17 +3252,7 @@
     </div>
 
     <!-- KB Editor Modal (MCA only) -->
-    <div id="kbEditorModal" class="modal-backdrop" style="display:none;">
-        <div class="modal" style="max-width:800px; width:92%;">
-            <div class="modal-header">Edit Help Knowledge Base (JSON)</div>
-            <div style="margin-top:8px;"><textarea id="kbEditorArea" rows="12" style="width:100%; font-family: monospace;"></textarea></div>
-            <div style="margin-top:8px; font-size:13px; color:#666;">Note: this must be valid JSON array of objects: [{"keys":["key1"],"reply":"text"}, ...]</div>
-            <div class="modal-footer">
-                <button class="btn-sm" onclick="hideKbEditor()">Close</button>
-                <button class="btn-sm btn-primary" onclick="saveKbEditor()">Save KB</button>
-            </div>
-        </div>
-    </div>
+    <!-- KB Editor removed -->
 
     <!-- Bulk Resolve Modal -->
     <div id="bulkResolveModal" class="modal-backdrop" style="display:none;">
