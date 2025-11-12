@@ -15,6 +15,9 @@
     "mongodb": "^6.20.0",
     "morgan": "^1.10.1",
     "bcryptjs": "^2.4.3",
-    "ioredis": "^5.3.2"
+    "ioredis": "^5.3.2",
+    "multer": "^1.4.5-lts.1",
+    "sharp": "^0.32.5",
+    "aws-sdk": "^2.1350.0"
   }
 }
