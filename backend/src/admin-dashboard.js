@@ -9,7 +9,10 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 const chatbotSvc = require('./chatbot');
 
+
 const app = express();
+// Trust proxy for correct client IP detection behind Render/Heroku/NGINX
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());
