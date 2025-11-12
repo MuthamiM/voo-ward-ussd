@@ -89,16 +89,55 @@ let rateLimit;
 try {
   rateLimit = require('express-rate-limit');
 } catch (e) {
-  console.warn('express-rate-limit not installed; login rate limiting disabled');
+  console.warn('express-rate-limit not installed; falling back to in-process limiter');
 }
 
-const loginLimiter = rateLimit ? rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 10, // limit each IP to 10 login requests per windowMs
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many login attempts, please try again in a minute' }
-}) : (req, res, next) => next();
+// If express-rate-limit is available, use it. Otherwise, use a simple in-memory limiter.
+let loginLimiter;
+if (rateLimit) {
+  loginLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // limit each IP to 10 login requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many login attempts, please try again in a minute' }
+  });
+} else {
+  // Simple fallback limiter: counts attempts per IP with expiry.
+  const attempts = new Map(); // ip -> { count, firstTs }
+  const WINDOW_MS = 60 * 1000;
+  const MAX_ATTEMPTS = 10;
+
+  // periodic cleanup to avoid memory growth
+  setInterval(() => {
+    const now = Date.now();
+    for (const [ip, info] of attempts.entries()) {
+      if (now - info.firstTs > WINDOW_MS * 5) attempts.delete(ip);
+    }
+  }, WINDOW_MS * 2).unref();
+
+  loginLimiter = (req, res, next) => {
+    try {
+      const ip = (req.ip || req.connection?.remoteAddress || 'unknown').toString();
+      const now = Date.now();
+      const info = attempts.get(ip) || { count: 0, firstTs: now };
+      if (now - info.firstTs > WINDOW_MS) {
+        info.count = 1;
+        info.firstTs = now;
+      } else {
+        info.count += 1;
+      }
+      attempts.set(ip, info);
+      if (info.count > MAX_ATTEMPTS) {
+        return res.status(429).json({ error: 'Too many login attempts, please try again in a minute' });
+      }
+    } catch (e) {
+      // on error, allow request through to avoid locking everyone out
+      console.warn('Fallback limiter error', e && e.message);
+    }
+    return next();
+  };
+}
 
 // Middleware: Verify MCA role
 function requireMCA(req, res, next) {
