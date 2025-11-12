@@ -25,6 +25,22 @@ app.use((req, res, next) => {
 
 const fs = require('fs');
 const multer = require('multer');
+let sharp;
+try { sharp = require('sharp'); } catch (e) { console.warn('sharp not available; image resizing disabled'); }
+// Optional S3 support
+let s3;
+let S3_ENABLED = false;
+try {
+  const AWS = require('aws-sdk');
+  if (process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+    AWS.config.update({ region: process.env.S3_REGION || 'us-east-1' });
+    s3 = new AWS.S3();
+    S3_ENABLED = true;
+    console.log('S3: enabled for avatar uploads');
+  }
+} catch (e) {
+  // aws-sdk not installed or not configured
+}
 
 
 // Simple session storage (in production, use Redis or proper session management)
@@ -225,25 +241,25 @@ app.post("/api/auth/login", async (req, res) => {
 
     // Create session
     const token = generateSessionToken();
-    sessions.set(token, {
-      user: {
-        id: user._id.toString(),
-        username: user.username,
-        fullName: user.full_name,
-        role: user.role
-      },
-      createdAt: new Date()
-    });
-    
+    // include photo_url and settings in session so client can apply saved preferences
+    const sessionUser = {
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      photo_url: user.photo_url || null,
+      photo_thumb: user.photo_thumb || null,
+      photo_webp: user.photo_webp || null,
+      photo_thumb_webp: user.photo_thumb_webp || null,
+      settings: user.settings || {}
+    };
+
+    sessions.set(token, { user: sessionUser, createdAt: new Date() });
+
     res.json({
       success: true,
       token,
-      user: {
-        id: user._id.toString(),
-        username: user.username,
-        fullName: user.full_name,
-        role: user.role
-      }
+      user: sessionUser
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -902,9 +918,102 @@ app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, 
     if (settings && Object.keys(settings).length) update.settings = settings;
 
     if (req.file) {
-      // store public-facing URL for the saved avatar
-      const rel = path.posix.join('/uploads/avatars', req.file.filename);
-      update.photo_url = rel;
+      const originalPath = path.join(UPLOADS_DIR, req.file.filename);
+      let finalMain = req.file.filename;
+      let thumbName = null;
+      let webpMain = null;
+      let webpThumb = null;
+
+      if (sharp) {
+        try {
+          const base = path.basename(req.file.filename, path.extname(req.file.filename));
+
+          // 256x256 JPEG main
+          const resizedName = `${base}-256.jpg`;
+          const resizedPath = path.join(UPLOADS_DIR, resizedName);
+          await sharp(originalPath).resize(256, 256, { fit: 'cover' }).jpeg({ quality: 80 }).toFile(resizedPath);
+
+          // 64x64 thumbnail JPEG
+          const thumbFile = `${base}-64.jpg`;
+          const thumbPath = path.join(UPLOADS_DIR, thumbFile);
+          await sharp(originalPath).resize(64, 64, { fit: 'cover' }).jpeg({ quality: 75 }).toFile(thumbPath);
+
+          // WebP variants for modern browsers
+          const webpFile = `${base}-256.webp`;
+          const webpPath = path.join(UPLOADS_DIR, webpFile);
+          await sharp(originalPath).resize(256, 256, { fit: 'cover' }).webp({ quality: 75 }).toFile(webpPath);
+
+          const webpThumbFile = `${base}-64.webp`;
+          const webpThumbPath = path.join(UPLOADS_DIR, webpThumbFile);
+          await sharp(originalPath).resize(64, 64, { fit: 'cover' }).webp({ quality: 70 }).toFile(webpThumbPath);
+
+          // Attempt to remove original upload to save disk space
+          try { fs.unlinkSync(originalPath); } catch (e) { /* ignore */ }
+
+          finalMain = resizedName;
+          thumbName = thumbFile;
+          webpMain = webpFile;
+          webpThumb = webpThumbFile;
+        } catch (imgErr) {
+          console.warn('Image processing (sharp) failed:', imgErr && imgErr.message);
+          // fallback: keep original file
+          finalMain = req.file.filename;
+        }
+      }
+
+      // If S3 is enabled, upload processed files and set public S3 URLs
+      const makePublicUrl = (key) => {
+        const region = process.env.S3_REGION || 'us-east-1';
+        return `https://${process.env.S3_BUCKET}.s3.${region}.amazonaws.com/${encodeURIComponent(key)}`;
+      };
+
+      if (S3_ENABLED) {
+        try {
+          const uploads = [];
+          const toUpload = [];
+          // choose list of filenames to upload
+          if (finalMain) toUpload.push({ name: finalMain, local: path.join(UPLOADS_DIR, finalMain), contentType: 'image/jpeg' });
+          if (thumbName) toUpload.push({ name: thumbName, local: path.join(UPLOADS_DIR, thumbName), contentType: 'image/jpeg' });
+          if (webpMain) toUpload.push({ name: webpMain, local: path.join(UPLOADS_DIR, webpMain), contentType: 'image/webp' });
+          if (webpThumb) toUpload.push({ name: webpThumb, local: path.join(UPLOADS_DIR, webpThumb), contentType: 'image/webp' });
+
+          for (const f of toUpload) {
+            try {
+              const body = fs.readFileSync(f.local);
+              const key = `avatars/${f.name}`;
+              await s3.putObject({ Bucket: process.env.S3_BUCKET, Key: key, Body: body, ContentType: f.contentType, ACL: 'public-read' }).promise();
+              uploads.push({ name: f.name, url: makePublicUrl(key) });
+            } catch (upErr) {
+              console.warn('S3 upload failed for', f.name, upErr && upErr.message);
+            }
+          }
+
+          // Map uploaded URLs back to filenames
+          const findUrl = (n) => { const it = uploads.find(u => u.name === n); return it ? it.url : path.posix.join('/uploads/avatars', n); };
+          const relMain = findUrl(finalMain);
+          const relThumb = thumbName ? findUrl(thumbName) : null;
+          const relWebp = webpMain ? findUrl(webpMain) : null;
+          const relWebpThumb = webpThumb ? findUrl(webpThumb) : null;
+
+          update.photo_url = relMain;
+          if (relThumb) update.photo_thumb = relThumb;
+          if (relWebp) update.photo_webp = relWebp;
+          if (relWebpThumb) update.photo_thumb_webp = relWebpThumb;
+        } catch (s3Err) {
+          console.warn('S3 processing error:', s3Err && s3Err.message);
+          // fallback to local urls
+          update.photo_url = path.posix.join('/uploads/avatars', finalMain);
+          if (thumbName) update.photo_thumb = path.posix.join('/uploads/avatars', thumbName);
+          if (webpMain) update.photo_webp = path.posix.join('/uploads/avatars', webpMain);
+          if (webpThumb) update.photo_thumb_webp = path.posix.join('/uploads/avatars', webpThumb);
+        }
+      } else {
+        // Local file URLs
+        update.photo_url = path.posix.join('/uploads/avatars', finalMain);
+        if (thumbName) update.photo_thumb = path.posix.join('/uploads/avatars', thumbName);
+        if (webpMain) update.photo_webp = path.posix.join('/uploads/avatars', webpMain);
+        if (webpThumb) update.photo_thumb_webp = path.posix.join('/uploads/avatars', webpThumb);
+      }
     }
 
     // Update admin_users collection (the login users) not a generic 'users' collection
@@ -938,6 +1047,67 @@ app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, 
     if (e && e.message && e.message.includes('Only JPEG')) return res.status(400).json({ error: e.message });
     if (e && e.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ error: 'File too large (max 2MB)' });
     res.status(500).json({ error: 'failed to update profile' });
+  }
+});
+
+// Delete current user's avatar (remove files and DB fields)
+app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    const userId = new ObjectId(req.user.id);
+    const user = await database.collection('admin_users').findOne({ _id: userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Collect local filenames to delete if they exist and are local paths
+    const toDeleteLocal = [];
+    const photoFields = ['photo_url','photo_thumb','photo_webp','photo_thumb_webp'];
+    for (const f of photoFields) {
+      if (user[f] && typeof user[f] === 'string' && user[f].startsWith('/uploads/avatars')) {
+        const name = path.basename(user[f]);
+        toDeleteLocal.push(path.join(UPLOADS_DIR, name));
+      }
+    }
+
+    // Remove S3 objects if S3_ENABLED and urls point to S3 bucket
+    if (S3_ENABLED) {
+      try {
+        const prefix = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION || 'us-east-1'}.amazonaws.com/`;
+        for (const f of photoFields) {
+          if (user[f] && typeof user[f] === 'string' && user[f].startsWith(prefix)) {
+            const key = user[f].replace(prefix, '');
+            try { await s3.deleteObject({ Bucket: process.env.S3_BUCKET, Key: key }).promise(); } catch (e) { console.warn('S3 delete failed for', key, e && e.message); }
+          }
+        }
+      } catch (e) { console.warn('S3 delete flow error', e && e.message); }
+    }
+
+    // Delete local files
+    for (const p of toDeleteLocal) {
+      try { fs.unlinkSync(p); } catch (e) { /* ignore */ }
+    }
+
+    // Unset DB fields
+    const unset = {};
+    photoFields.forEach(k => unset[k] = '');
+    await database.collection('admin_users').updateOne({ _id: userId }, { $unset: { photo_url: '', photo_thumb: '', photo_webp: '', photo_thumb_webp: '' } });
+
+    // Update session entries
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.username === user.username) {
+        sess.user.photo_url = null;
+        sess.user.photo_thumb = null;
+        sess.user.photo_webp = null;
+        sess.user.photo_thumb_webp = null;
+        sessions.set(token, sess);
+      }
+    }
+
+    res.json({ success: true, message: 'Avatar removed' });
+  } catch (e) {
+    console.error('Error deleting avatar', e && e.message);
+    res.status(500).json({ error: 'failed to remove avatar' });
   }
 });
 

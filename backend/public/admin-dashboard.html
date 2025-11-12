@@ -1837,7 +1837,14 @@
                 currentUser = data.user;
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
+
+                // Apply server-stored settings (if any) so UI matches saved preferences
+                try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
+
+                // Update avatar to prefer thumb/webp variants when available
+                const pav = document.getElementById('profileAvatar');
+                if (pav) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
+
                 // Show dashboard
                 showDashboard();
             } catch (err) {
@@ -2447,6 +2454,23 @@
             reader.readAsDataURL(f);
         }
 
+        async function deleteAvatar() {
+            if (!confirm('Remove your profile photo?')) return;
+            try {
+                const res = await fetch(API_BASE + '/api/admin/profile/photo', { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + authToken } });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed to remove photo');
+                // update UI
+                currentUser.photo_url = null; currentUser.photo_thumb = null; currentUser.photo_webp = null; currentUser.photo_thumb_webp = null;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                document.getElementById('profileAvatar').src = '/images/avatar-placeholder.svg';
+                document.getElementById('profilePhotoPreview').src = '/images/avatar-placeholder.svg';
+                showToast('Profile photo removed', 'success');
+            } catch (e) {
+                showToast('Failed to remove photo: ' + e.message, 'error');
+            }
+        }
+
         function applyProfileSettings(s) {
             if (!s) s = JSON.parse(localStorage.getItem('voo_profile_settings') || '{}');
             if (s.darkTheme) document.body.classList.add('dark-theme'); else document.body.classList.remove('dark-theme');
@@ -2885,10 +2909,12 @@
             if (storedToken && storedUser) {
                 authToken = storedToken;
                 currentUser = JSON.parse(storedUser);
+                try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
+                // ensure avatar uses server-saved thumb/webp when available
+                const pav = document.getElementById('profileAvatar');
+                if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
                 showDashboard();
             }
-            // apply any stored profile settings (theme, compact, etc.)
-            try { applyProfileSettings(); } catch (e) { /* ignore */ }
             // hide chatbot by default until user is logged in
             const cb = document.getElementById('chatbotBtn');
             if (cb) cb.style.display = 'none';
@@ -2920,6 +2946,7 @@
                 <div style="width:100px; text-align:center;">
                     <img id="profilePhotoPreview" src="" alt="avatar preview" style="width:88px;height:88px;border-radius:12px;object-fit:cover;border:2px solid rgba(0,0,0,0.06); background:#fff;" />
                     <div style="margin-top:8px; font-size:12px; color:#6b7280;">Profile photo</div>
+                    <div style="margin-top:6px;"><button class="btn-sm btn-danger" onclick="deleteAvatar()">Remove photo</button></div>
                 </div>
                 <div style="flex:1;">
                     <div style="margin-bottom:8px;"><label>Full name</label><input id="profileFullName" style="width:100%; padding:8px; margin-top:6px;" /></div>
