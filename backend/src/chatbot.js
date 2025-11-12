@@ -18,6 +18,39 @@ async function getDb() {
   await _mongoClient.connect();
   // extract db name from URI
   try {
+    // Explain parsed_text field and show an example
+    if (ltext.includes('what is parsed_text') || ltext.includes('what does parsed_text') || ltext.includes('explain parsed_text')) {
+      try {
+        const db = await getDb();
+        if (!db) return 'parsed_text is a structured representation of user input (JSON) produced by the USSD parser; I cannot access the DB right now to show an example.';
+        const ex = await db.collection('ussd_interactions').find({ parsed_text: { $exists: true, $ne: null } }).sort({ created_at: -1 }).limit(1).toArray();
+        if (!ex || ex.length === 0) return 'parsed_text is a structured representation of user input (JSON). No examples are available in the database yet.';
+        return `parsed_text is the structured JSON the USSD parser saved. Example:\n${JSON.stringify(ex[0].parsed_text, null, 2).slice(0,1000)}`;
+      } catch (e) { /* fall through */ }
+    }
+
+    // Show interactions for a specific phone number (simple phone regex)
+    const phoneMatch = (ltext.match(/(\+?\d{6,15})/) || [])[0];
+    if (phoneMatch && (ltext.includes('show interactions for') || ltext.includes('interactions for') || ltext.includes('show interactions'))) {
+      try {
+        const db = await getDb();
+        if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
+        const rows = await db.collection('ussd_interactions').find({ phone_number: { $regex: phoneMatch } }).sort({ created_at: -1 }).limit(10).toArray();
+        if (!rows || rows.length === 0) return `No USSD interactions found for ${phoneMatch}.`;
+        const summary = rows.map(r => `${new Date(r.created_at).toLocaleString()}: ${String(r.text || r.response || '').slice(0,80)}`).join('\n');
+        return `Recent interactions for ${phoneMatch}:\n${summary}`;
+      } catch (e) { console.warn('Chatbot phone lookup failed', e && e.message); }
+    }
+
+    // Count unresolved issues that have an associated phone number (likely USSD-originated reports)
+    if (ltext.includes('unresolved issues') && ltext.includes('ussd')) {
+      try {
+        const db = await getDb();
+        if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
+        const count = await db.collection('issues').countDocuments({ phone_number: { $exists: true, $ne: null }, status: { $ne: 'resolved' } });
+        return `There are ${count} unresolved issues that include a reporter phone number (likely from USSD).`;
+      } catch (e) { console.warn('Chatbot unresolved-issues lookup failed', e && e.message); }
+    }
     const url = new URL(uri);
     const pathDb = (url.pathname || '').replace(/^\//, '') || 'voo_ward';
     return _mongoClient.db(pathDb);
