@@ -754,6 +754,30 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
           console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
         }
 
+            // Schedule automatic deletion after 2 minutes (safe-guard: only delete if still resolved)
+            try {
+              const DELETE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
+              const scheduledAt = new Date(Date.now() + DELETE_DELAY_MS);
+              // mark the document with a scheduled_delete_at timestamp so admins can see it
+              await database.collection('issues').updateOne({ ticket: id }, { $set: { scheduled_delete_at: scheduledAt } });
+              setTimeout(async () => {
+                try {
+                  const fresh = await database.collection('issues').findOne({ ticket: id });
+                  if (!fresh) return console.log('Scheduled delete: issue already removed', id);
+                  const s = (fresh.status || '').toString().toLowerCase();
+                  if (s === 'resolved') {
+                    await database.collection('issues').deleteOne({ ticket: id });
+                    console.log('Scheduled delete: removed resolved issue', id);
+                  } else {
+                    console.log('Scheduled delete skipped for', id, 'status is', s);
+                    // clear scheduled_delete_at to indicate it was skipped
+                    try { await database.collection('issues').updateOne({ ticket: id }, { $unset: { scheduled_delete_at: "" } }); } catch (e) { /* ignore */ }
+                  }
+                } catch (sErr) { console.warn('Scheduled delete failed for', id, sErr && sErr.message); }
+              }, DELETE_DELAY_MS);
+            } catch (schedErr) {
+              console.warn('Failed to schedule delete for issue', id, schedErr && schedErr.message);
+            }
         // Notifications are disabled in this deployment. We still update USSD interactions above.
         if (updated && updated.phone_number) {
           console.log('Notification suppressed for issue', id, 'phone', updated.phone_number);
@@ -830,6 +854,29 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
           }
 
           results.push({ id: ticket, ok: true, issue: updated });
+          // If we just marked this as resolved, schedule deletion after 2 minutes
+          try {
+            const ts = (targetStatus || '').toString().toLowerCase();
+            if (ts === 'resolved') {
+              const DELETE_DELAY_MS = 2 * 60 * 1000;
+              const scheduledAt = new Date(Date.now() + DELETE_DELAY_MS);
+              try { await database.collection('issues').updateOne({ ticket: ticket }, { $set: { scheduled_delete_at: scheduledAt } }); } catch(e) { /* ignore */ }
+              setTimeout(async () => {
+                try {
+                  const fresh = await database.collection('issues').findOne({ ticket: ticket });
+                  if (!fresh) return console.log('Scheduled delete: issue already removed', ticket);
+                  const s = (fresh.status || '').toString().toLowerCase();
+                  if (s === 'resolved') {
+                    await database.collection('issues').deleteOne({ ticket: ticket });
+                    console.log('Scheduled delete: removed resolved issue', ticket);
+                  } else {
+                    console.log('Scheduled delete skipped for', ticket, 'status is', s);
+                    try { await database.collection('issues').updateOne({ ticket: ticket }, { $unset: { scheduled_delete_at: "" } }); } catch (ee) { /* ignore */ }
+                  }
+                } catch (se) { console.warn('Scheduled delete failed for', ticket, se && se.message); }
+              }, DELETE_DELAY_MS);
+            }
+          } catch (schedErr) { console.warn('Failed to schedule delete for', ticket, schedErr && schedErr.message); }
         } catch (errInner) {
           console.warn('Error updating issue in bulk', ticket, errInner && errInner.message);
           results.push({ id: ticket, ok: false, error: errInner && errInner.message });
