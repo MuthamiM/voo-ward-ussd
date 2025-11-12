@@ -102,6 +102,7 @@ if (rateLimit) {
     legacyHeaders: false,
     message: { error: 'Too many login attempts, please try again in a minute' }
   });
+  console.log('Login limiter: express-rate-limit active');
 } else {
   // Simple fallback limiter: counts attempts per IP with expiry.
   const attempts = new Map(); // ip -> { count, firstTs }
@@ -137,6 +138,7 @@ if (rateLimit) {
     }
     return next();
   };
+  console.log('Login limiter: in-process fallback active');
 }
 
 // Middleware: Verify MCA role
@@ -1453,4 +1455,40 @@ if (require.main === module) {
       console.warn('Admin dashboard module init warning:', e && e.message);
     }
   })();
+
+  // Internal endpoint: reset admin password (requires ADMIN_RESET_TOKEN header)
+  // Use only when ADMIN_RESET_TOKEN is set in environment and you provide the token in the request.
+  app.post('/internal/reset-admin', async (req, res) => {
+    try {
+      const token = req.headers['x-admin-reset-token'] || '';
+      if (!process.env.ADMIN_RESET_TOKEN || token !== process.env.ADMIN_RESET_TOKEN) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      const database = await connectDB();
+      if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+      const ADMIN_USER = (process.env.ADMIN_USER || 'admin').toLowerCase();
+      const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
+      const col = database.collection('admin_users');
+      const user = await col.findOne({ username: ADMIN_USER });
+      const bcrypt = require('bcryptjs');
+      const newHash = await bcrypt.hash(ADMIN_PASS, 10);
+
+      if (!user) {
+        const doc = { username: ADMIN_USER, password: newHash, full_name: process.env.ADMIN_FULLNAME || 'Zak', role: process.env.ADMIN_ROLE || 'MCA', created_at: new Date(), immutable: true };
+        await col.insertOne(doc);
+        console.log('Admin reset: created admin user');
+        return res.json({ success: true, message: 'Admin user created and password set from ADMIN_PASS' });
+      }
+
+      await col.updateOne({ _id: user._id }, { $set: { password: newHash, updated_at: new Date() } });
+      console.log('Admin reset: password updated for', ADMIN_USER);
+      return res.json({ success: true, message: 'Admin password reset to ADMIN_PASS' });
+    } catch (e) {
+      console.error('internal reset-admin error', e && e.message);
+      res.status(500).json({ error: 'failed' });
+    }
+  });
 }
