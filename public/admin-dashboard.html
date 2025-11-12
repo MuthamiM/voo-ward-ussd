@@ -1383,6 +1383,9 @@
 
         /* Modal (simple) */
         .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
+        /* Make chatbot modal non-obtrusive: no full-screen dim and allow clicks through outside the chatbot box */
+        #chatbotModal.modal-backdrop { background: transparent; pointer-events: none; }
+        #chatbotModal.modal-backdrop .chatbot-modal { pointer-events: auto; }
             .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
         /* Profile avatar & settings */
         #profileAvatar { width:42px; height:42px; border-radius:50%; display:block; }
@@ -1413,6 +1416,7 @@
     /* Floating chatbot button (viewport fixed bottom-right) */
     .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11001; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform: translateY(6px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
     .chatbot-button svg { display:block; }
+    .chatbot-button .chat-badge { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; font-size: 12px; min-width:18px; height:18px; padding:0 6px; border-radius: 12px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
     .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
@@ -1464,12 +1468,13 @@
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
             </svg>
+            <span id="chatBadge" class="chat-badge" style="display:none;">0</span>
         </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
         <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
             <div class="modal chatbot-modal" style="margin:0;">
-                <div class="modal-header">Help Chat</div>
+                <div class="modal-header">Help Chat <button id="chatMinimizeBtn" class="btn-sm" style="margin-left:8px;" onclick="toggleChatMinimize()" title="Minimize chat">_</button></div>
                 <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
                 </div>
                 <div class="chatbot-suggestions">
@@ -1505,7 +1510,9 @@
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <button id="editHelpBtn" class="btn-sm btn-info" style="display:none;" onclick="showKbEditor()">Edit Help</button>
                                 <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
-                                <button class="btn-logout" onclick="logout()">Logout</button>
+                                <button class="btn-logout" onclick="logout()" title="Logout" style="background: none; border: none; padding: 0; margin-left: 8px; cursor: pointer;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                </button>
                             </div>
                             <!-- Profile avatar on the far right -->
                             <div style="display:flex; align-items:center; gap:12px;">
@@ -1544,7 +1551,7 @@
                                 <button class="btn-sm" onclick="applyIssuesSearch()">Search</button>
                                 <button class="btn-sm" onclick="clearIssuesSearch()">Clear</button>
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
-                                    Export CSV
+                                    <!-- Export CSV removed from Issues tab -->
                                 </button>
                                 <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
@@ -1658,7 +1665,7 @@
                         <div class="content-header">
                             <h2 class="content-title">USSD Interactions</h2>
                             <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('ussd')">Export CSV</button>
+                                <!-- Export CSV removed from USSD tab -->
                             </div>
                         </div>
                         <div class="table-container">
@@ -1869,7 +1876,7 @@
                     document.getElementById('password').value = '';
                     // hide chatbot when logged out
                     const cb = document.getElementById('chatbotBtn');
-                    if (cb) cb.style.display = 'none';
+                    if (cb) { cb.classList.remove('visible'); cb.style.display = 'none'; }
                     const cib = document.getElementById('chatbotInlineBtn');
                     if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
@@ -1901,6 +1908,11 @@
             // show inline chatbot in issues panel by default (issues tab is the default)
             const cib = document.getElementById('chatbotInlineBtn');
             if (cib) cib.classList.add('visible');
+            // ensure the floating chatbot button is visible and stays fixed while scrolling
+            const cb = document.getElementById('chatbotBtn');
+            if (cb) { cb.style.display = 'flex'; cb.classList.add('visible'); }
+            // initialize chat widget (minimize state, unread badge, session auto-open)
+            try { initChatWidget(); } catch (e) { /* ignore init failures */ }
             // show edit help button only for MCA
             const eh = document.getElementById('editHelpBtn');
             if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
@@ -2299,18 +2311,31 @@
 
         // In-dashboard chatbot helper
         function showChatbot() {
-            document.getElementById('chatbotModal').style.display = 'flex';
+            const cbModal = document.getElementById('chatbotModal');
+            // restore pointer events and show only the chatbot box (no full-screen dim)
+            cbModal.style.display = 'flex';
+            cbModal.style.background = 'transparent';
+            cbModal.style.pointerEvents = 'auto';
+
+            // If previously minimized, restore expanded state when user explicitly opens the chat
+            setChatMinimized(false);
+
             const convo = document.getElementById('chatbot-messages');
             if (!convo.children.length) {
                 appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
             }
+            // reset unread counter when user opens the chat
+            resetChatUnread();
             document.getElementById('chatbot-input').focus();
         }
 
         function hideChatbot() {
-            document.getElementById('chatbotModal').style.display = 'none';
+            const cbModal = document.getElementById('chatbotModal');
+            cbModal.style.display = 'none';
+            cbModal.style.pointerEvents = 'none';
         }
 
+        // Append chat messages and handle unread badge when minimized/hidden
         function appendChatMessage(who, text) {
             const c = document.getElementById('chatbot-messages');
             const el = document.createElement('div');
@@ -2322,9 +2347,79 @@
             // If bot message, attach quick-action buttons when applicable
             if (who === 'bot') {
                 attachActionButtons(el, text);
+                // If the chat is minimized or hidden, increment unread badge
+                const cbModal = document.getElementById('chatbotModal');
+                const minimized = isChatMinimized();
+                const hidden = !cbModal || cbModal.style.display !== 'flex' || cbModal.style.pointerEvents === 'none';
+                if (minimized || hidden) incrementChatUnread();
             }
 
             c.scrollTop = c.scrollHeight;
+        }
+
+        // Chat widget helpers: minimize, unread badge and session auto-open
+        function isChatMinimized() {
+            return localStorage.getItem('chat_minimized') === 'true';
+        }
+
+        function setChatMinimized(val) {
+            localStorage.setItem('chat_minimized', val ? 'true' : 'false');
+            const messages = document.getElementById('chatbot-messages');
+            const suggestions = document.querySelector('.chatbot-suggestions');
+            const inputRow = document.querySelector('#chatbotModal .modal-footer') || document.querySelector('#chatbotModal > .modal > .modal-footer');
+            const inputControls = document.querySelector('#chatbotModal input#chatbot-input')?.parentElement;
+            if (val) {
+                if (messages) messages.style.display = 'none';
+                if (suggestions) suggestions.style.display = 'none';
+                if (inputControls) inputControls.style.display = 'none';
+                const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '▢';
+            } else {
+                if (messages) messages.style.display = 'flex';
+                if (suggestions) suggestions.style.display = 'flex';
+                if (inputControls) inputControls.style.display = 'flex';
+                const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '_';
+                // clear unread when user restores
+                resetChatUnread();
+            }
+        }
+
+        function toggleChatMinimize() {
+            const cur = isChatMinimized();
+            setChatMinimized(!cur);
+        }
+
+        function updateChatBadge() {
+            const badge = document.getElementById('chatBadge');
+            const count = parseInt(localStorage.getItem('chat_unread') || '0', 10) || 0;
+            if (!badge) return;
+            if (count > 0) { badge.style.display = 'flex'; badge.textContent = count > 99 ? '99+' : String(count); }
+            else badge.style.display = 'none';
+        }
+
+        function incrementChatUnread() {
+            const cur = parseInt(localStorage.getItem('chat_unread') || '0', 10) || 0;
+            localStorage.setItem('chat_unread', String(cur + 1));
+            updateChatBadge();
+        }
+
+        function resetChatUnread() {
+            localStorage.setItem('chat_unread', '0');
+            updateChatBadge();
+        }
+
+        // Auto-open chat once per browser session (use sessionStorage to track)
+        function initChatWidget() {
+            // apply minimized state from localStorage
+            setChatMinimized(isChatMinimized());
+            updateChatBadge();
+            // if we haven't auto-opened this session, open once and mark session opened
+            try {
+                if (!sessionStorage.getItem('chat_auto_opened')) {
+                    // open chat briefly for first-time-in-session users
+                    showChatbot();
+                    sessionStorage.setItem('chat_auto_opened', '1');
+                }
+            } catch (e) { /* ignore */ }
         }
 
         function attachActionButtons(containerEl, text) {
@@ -2542,13 +2637,25 @@
             appendChatMessage('user', text);
             input.value = '';
             try {
-                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text }) });
+                const sessionId = getChatSessionId();
+                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text, session_id: sessionId }) });
                 const data = await res.json();
                 if (res.ok && data && data.reply) appendChatMessage('bot', data.reply);
                 else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
             } catch (e) {
                 appendChatMessage('bot', 'Error contacting help service: ' + e.message);
             }
+        }
+
+        function getChatSessionId() {
+            try {
+                let sid = sessionStorage.getItem('chat_session_id');
+                if (!sid) {
+                    sid = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
+                    sessionStorage.setItem('chat_session_id', sid);
+                }
+                return sid;
+            } catch (e) { return 'sess-unknown'; }
         }
 
         function sendSuggestion(text) {

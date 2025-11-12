@@ -555,8 +555,9 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
-    res.json(bursaries);
+    // Ensure we always return an array to the frontend to avoid "map is not a function" errors
+    const safeBursaries = Array.isArray(bursaries) ? bursaries : (bursaries ? [bursaries] : []);
+    res.json(safeBursaries);
   } catch (err) {
     console.error("Error fetching bursaries:", err);
     res.status(500).json({ error: err.message });
@@ -926,7 +927,27 @@ app.get("/api/admin/stats", async (req, res) => {
 app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
   try {
     const { message } = req.body || {};
-    const reply = await chatbotSvc.generateReply(message, req.user);
+    // Log user message and bot reply to chat_messages collection (if DB available)
+    let reply;
+    try {
+      const database = await connectDB();
+      const userId = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+      const userName = req.user && (req.user.full_name || req.user.fullName || req.user.username) ? (req.user.full_name || req.user.fullName || req.user.username) : 'unknown';
+      const msgDoc = { user_id: userId, user_name: userName, role: 'user', message: message, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
+      if (database) {
+        try { await database.collection('chat_messages').insertOne(msgDoc); } catch (e) { console.warn('Failed to log chat message:', e && e.message); }
+      }
+
+      reply = await chatbotSvc.generateReply(message, req.user);
+
+      const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: reply, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
+      if (database) {
+        try { await database.collection('chat_messages').insertOne(botDoc); } catch (e) { console.warn('Failed to log chat reply:', e && e.message); }
+      }
+    } catch (e) {
+      // If DB or logging fails, still try to get a reply
+      try { reply = await chatbotSvc.generateReply(message, req.user); } catch (err) { reply = 'Sorry, the help service is unavailable.'; }
+    }
     res.json({ reply });
   } catch (err) {
     console.error('Chatbot error', err && err.message);
