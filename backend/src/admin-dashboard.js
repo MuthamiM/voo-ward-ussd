@@ -27,19 +27,22 @@ const fs = require('fs');
 const multer = require('multer');
 let sharp;
 try { sharp = require('sharp'); } catch (e) { console.warn('sharp not available; image resizing disabled'); }
-// Optional S3 support
-let s3;
+// Optional S3 support using AWS SDK v3 (@aws-sdk/client-s3)
+let s3Client;
 let S3_ENABLED = false;
 try {
-  const AWS = require('aws-sdk');
+  const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
   if (process.env.S3_BUCKET && process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-    AWS.config.update({ region: process.env.S3_REGION || 'us-east-1' });
-    s3 = new AWS.S3();
+    const region = process.env.S3_REGION || 'us-east-1';
+    s3Client = new S3Client({ region });
+    // attach command constructors so later code can reference them when needed
+    s3Client._PutObjectCommand = PutObjectCommand;
+    s3Client._DeleteObjectCommand = DeleteObjectCommand;
     S3_ENABLED = true;
-    console.log('S3: enabled for avatar uploads');
+    console.log('S3 (v3): enabled for avatar uploads');
   }
 } catch (e) {
-  // aws-sdk not installed or not configured
+  // @aws-sdk/client-s3 not installed or not configured
 }
 
 
@@ -1041,7 +1044,9 @@ app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, 
             try {
               const body = fs.readFileSync(f.local);
               const key = `avatars/${f.name}`;
-              await s3.putObject({ Bucket: process.env.S3_BUCKET, Key: key, Body: body, ContentType: f.contentType, ACL: 'public-read' }).promise();
+              // Using AWS SDK v3
+              const PutObjectCommand = s3Client._PutObjectCommand;
+              await s3Client.send(new PutObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key, Body: body, ContentType: f.contentType, ACL: 'public-read' }));
               uploads.push({ name: f.name, url: makePublicUrl(key) });
             } catch (upErr) {
               console.warn('S3 upload failed for', f.name, upErr && upErr.message);
@@ -1137,7 +1142,10 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
         for (const f of photoFields) {
           if (user[f] && typeof user[f] === 'string' && user[f].startsWith(prefix)) {
             const key = user[f].replace(prefix, '');
-            try { await s3.deleteObject({ Bucket: process.env.S3_BUCKET, Key: key }).promise(); } catch (e) { console.warn('S3 delete failed for', key, e && e.message); }
+            try {
+              const DeleteObjectCommand = s3Client._DeleteObjectCommand;
+              await s3Client.send(new DeleteObjectCommand({ Bucket: process.env.S3_BUCKET, Key: key }));
+            } catch (e) { console.warn('S3 delete failed for', key, e && e.message); }
           }
         }
       } catch (e) { console.warn('S3 delete flow error', e && e.message); }
