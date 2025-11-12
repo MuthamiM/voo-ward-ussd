@@ -30,6 +30,89 @@ async function connectDB() {
     console.warn('Admin dashboard: MongoDB connect failed:', e && e.message);
     return null;
   }
+}
+
+// Expose router and connectDB.
+module.exports = router;
+module.exports.connectDB = connectDB;
+
+// --- Minimal API endpoints ---
+// Health
+router.get('/health', (req, res) => res.json({ ok: true, service: 'admin-dashboard', ts: new Date().toISOString() }));
+
+// Basic admin login (demo): supports username/password from env or defaults.
+router.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body || {};
+  const okUser = process.env.ADMIN_USER || 'admin';
+  const okPass = process.env.ADMIN_PASS || 'admin123';
+  if (username === okUser && password === okPass) {
+    const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
+    sessions.set(token, { user: { username: okUser, fullAccess: true }, createdAt: Date.now() });
+    return res.json({ token, fullAccess: true });
+  }
+  return res.status(401).json({ error: 'Invalid credentials' });
+});
+
+// Simple admin stats endpoint (placeholder)
+router.get('/api/admin/stats', async (req, res) => {
+  // Try to present reasonable default structure even without DB
+  const stats = { constituents: { total: 0 }, issues: { total: 0 }, bursaries: { total: 0 }, announcements: { total: 0 } };
+  try {
+    const db = await connectDB();
+    if (db) {
+      stats.constituents.total = await db.collection('constituents').countDocuments();
+      stats.issues.total = await db.collection('issues').countDocuments();
+      stats.bursaries.total = await db.collection('bursaries').countDocuments();
+      stats.announcements.total = await db.collection('announcements').countDocuments();
+      // close client if we created it here
+      try { if (db._client) await db._client.close(); } catch (e) {}
+    }
+  } catch (e) {
+    console.warn('admin/stats failed:', e && e.message);
+  }
+  res.json(stats);
+});
+
+// A simple logout endpoint
+router.post('/api/auth/logout', (req, res) => {
+  const token = (req.headers.authorization || '').replace('Bearer ', '');
+  if (token) sessions.delete(token);
+  res.json({ ok: true });
+});
+
+// Keep the module lightweight; other admin features can be re-added safely in separate PRs.
+// Minimal, robust admin-dashboard module
+// This module intentionally implements a small, well-scoped admin API and
+// exports an Express router and a connectDB helper. It avoids starting its
+// own HTTP server when required by a parent process.
+
+const express = require('express');
+const { MongoClient } = require('mongodb');
+require('dotenv').config();
+
+const router = express.Router();
+router.use(express.json());
+
+// Simple in-memory session store for demo/admin-only flows
+const sessions = new Map();
+
+// Connect to MongoDB (best-effort). Returns the `db` object or null.
+async function connectDB() {
+  const uri = process.env.MONGO_URI;
+  if (!uri) return null;
+  try {
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await client.connect();
+    const dbName = process.env.MONGO_DB || 'voo';
+    const db = client.db(dbName);
+    // attach client so callers can close if needed
+    db._client = client;
+    console.log('Admin dashboard: connected to MongoDB');
+    return db;
+  } catch (e) {
+    console.warn('Admin dashboard: MongoDB connect failed:', e && e.message);
+    return null;
+  }
 
   loginLimiter = (req, res, next) => {
     try {
