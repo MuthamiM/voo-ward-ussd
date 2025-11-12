@@ -2,7 +2,29 @@ const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
 const fs = require('fs');
-const KB_PATH = path = require('path').join(__dirname, 'chatbot_kb.json');
+const path = require('path');
+const { MongoClient } = require('mongodb');
+const KB_PATH = path.join(__dirname, 'chatbot_kb.json');
+
+// Helper: lightweight DB connector for on-demand stats (reused connection)
+let _mongoClient;
+async function getDb() {
+  if (_mongoClient && _mongoClient.isConnected && _mongoClient.topology && _mongoClient.topology.isConnected()) {
+    return _mongoClient.db();
+  }
+  const uri = process.env.MONGO_URI;
+  if (!uri) return null;
+  _mongoClient = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+  await _mongoClient.connect();
+  // extract db name from URI
+  try {
+    const url = new URL(uri);
+    const pathDb = (url.pathname || '').replace(/^\//, '') || 'voo_ward';
+    return _mongoClient.db(pathDb);
+  } catch (e) {
+    return _mongoClient.db();
+  }
+}
 
 // Helper to load KB fresh each call to reflect admin edits
 function loadKB() {
@@ -30,6 +52,11 @@ function fallbackReply(text) {
     }
   }
 
+  // USSD specific canned answers
+  if (t.includes('ussd') || t.includes('ussd interactions') || t.includes('parsed_text')) {
+    return 'USSD interactions are logged under the USSD tab. You can export them as CSV using Export > USSD Interactions, or ask me how many interactions exist.';
+  }
+
   // Fallback hard-coded answers if KB didn't match
   if (t.includes('help') || t === 'hi' || t === 'hello') return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
   return 'Sorry — I did not understand that. Try: "resolve issues", "export issues", or "change password".';
@@ -39,6 +66,27 @@ async function generateReply(message, user) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
   const text = (message || '').toString().trim();
+  const ltext = text.toLowerCase();
+  // If the admin asks about USSD counts, answer directly from DB without calling LLM
+  try {
+    if (ltext.includes('how many ussd') || ltext.includes('ussd count') || ltext.includes('number of ussd')) {
+      const db = await getDb();
+      if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
+      const count = await db.collection('ussd_interactions').countDocuments();
+      return `There are currently ${count} USSD interactions recorded in the database.`;
+    }
+    if (ltext.includes('recent ussd') || ltext.includes('latest ussd') || ltext.includes('recent interactions')) {
+      const db = await getDb();
+      if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
+      const rows = await db.collection('ussd_interactions').find({}).sort({ created_at: -1 }).limit(5).toArray();
+      if (!rows || rows.length === 0) return 'No USSD interactions found.';
+      const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0,60)}`).join('\n');
+      return `Latest USSD interactions (top ${rows.length}):\n${summary}`;
+    }
+  } catch (dbErr) {
+    // fall through to LLM/fallback if DB read fails
+    console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
+  }
   if (!OPENAI_API_KEY) {
     return fallbackReply(text);
   }
