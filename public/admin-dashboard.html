@@ -1809,196 +1809,6 @@
         let currentUser = null;
         let authToken = null;
 
-        // Small toast helper to replace blocking alert() calls
-        function showToast(message, type = 'info', ttl = 4500) {
-            try {
-                const id = 'vk-html-toast';
-                let container = document.getElementById(id);
-                if (!container) {
-                    container = document.createElement('div');
-                    container.id = id;
-                    container.style.position = 'fixed';
-                    container.style.right = '18px';
-                    container.style.top = '18px';
-                    container.style.zIndex = 99999;
-                    document.body.appendChild(container);
-                }
-                const el = document.createElement('div');
-                el.textContent = message;
-                el.style.padding = '8px 12px';
-                el.style.marginTop = '8px';
-                el.style.borderRadius = '6px';
-                el.style.color = '#fff';
-                el.style.fontSize = '13px';
-                el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
-                el.style.maxWidth = '360px';
-                el.style.wordBreak = 'break-word';
-                el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
-                container.appendChild(el);
-                setTimeout(() => { try { container.removeChild(el); } catch (e) {} }, ttl);
-            } catch (e) { console.log(message); }
-        }
-
-        // Promise-based confirm dialog (non-blocking) to replace window.confirm
-        function confirmDialog(message) {
-            return new Promise((resolve) => {
-                try {
-                    const overlay = document.createElement('div');
-                    overlay.style.position = 'fixed';
-                    overlay.style.left = 0;
-                    overlay.style.top = 0;
-                    overlay.style.right = 0;
-                    overlay.style.bottom = 0;
-                    overlay.style.background = 'rgba(0,0,0,0.45)';
-                    overlay.style.display = 'flex';
-                    overlay.style.alignItems = 'center';
-                    overlay.style.justifyContent = 'center';
-                    overlay.style.zIndex = 100000;
-
-                    const box = document.createElement('div');
-                    box.style.background = '#fff';
-                    box.style.padding = '16px';
-                    box.style.borderRadius = '8px';
-                    box.style.maxWidth = '480px';
-                    box.style.width = '90%';
-                    box.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
-
-                    const msg = document.createElement('div');
-                    msg.textContent = message;
-                    msg.style.marginBottom = '12px';
-
-                    const controls = document.createElement('div');
-                    controls.style.display = 'flex';
-                    controls.style.justifyContent = 'flex-end';
-                    controls.style.gap = '8px';
-
-                    const noBtn = document.createElement('button');
-                    noBtn.textContent = 'Cancel';
-                    noBtn.style.padding = '8px 12px';
-
-                    const yesBtn = document.createElement('button');
-                    yesBtn.textContent = 'Yes';
-                    yesBtn.style.padding = '8px 12px';
-                    yesBtn.style.background = '#dc2626';
-                    yesBtn.style.color = '#fff';
-                    yesBtn.style.border = 'none';
-                    yesBtn.style.borderRadius = '6px';
-
-                    controls.appendChild(noBtn);
-                    controls.appendChild(yesBtn);
-                    box.appendChild(msg);
-                    box.appendChild(controls);
-                    overlay.appendChild(box);
-                    document.body.appendChild(overlay);
-
-                    function cleanup(result) {
-                        try { document.body.removeChild(overlay); } catch (e) {}
-                        resolve(result);
-                    }
-
-                    noBtn.addEventListener('click', () => cleanup(false));
-                    yesBtn.addEventListener('click', () => cleanup(true));
-                } catch (e) {
-                    resolve(window.confirm(message));
-                }
-            });
-        }
-
-        // Small toast helper to replace blocking alert() calls
-        function showToast(message, type = 'info', ttl = 4500) {
-            try {
-                const id = 'vk-html-toast';
-                let container = document.getElementById(id);
-                if (!container) {
-                    container = document.createElement('div');
-                    container.id = id;
-                    container.style.position = 'fixed';
-                    container.style.right = '18px';
-                    container.style.top = '18px';
-                    container.style.zIndex = 99999;
-                    document.body.appendChild(container);
-                }
-                const el = document.createElement('div');
-                el.textContent = message;
-                el.style.padding = '8px 12px';
-                el.style.marginTop = '8px';
-                el.style.borderRadius = '6px';
-                el.style.color = '#fff';
-                el.style.fontSize = '13px';
-                el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.08)';
-                el.style.maxWidth = '360px';
-                el.style.wordBreak = 'break-word';
-                el.style.background = type === 'error' ? '#dc2626' : type === 'success' ? '#16a34a' : '#2563eb';
-                container.appendChild(el);
-                setTimeout(() => { try { container.removeChild(el); } catch (e) {} }, ttl);
-            } catch (e) { console.log(message); }
-        }
-
-        // Promise-based confirm dialog (non-blocking) to replace window.confirm
-        function confirmDialog(message) {
-            return new Promise((resolve) => {
-                try {
-                    const overlay = document.createElement('div');
-                    overlay.style.position = 'fixed';
-                    overlay.style.left = 0;
-                    overlay.style.top = 0;
-                    overlay.style.right = 0;
-                    overlay.style.bottom = 0;
-                    overlay.style.background = 'rgba(0,0,0,0.45)';
-                    overlay.style.display = 'flex';
-                    overlay.style.alignItems = 'center';
-                    overlay.style.justifyContent = 'center';
-                    overlay.style.zIndex = 100000;
-
-                    const box = document.createElement('div');
-                    box.style.background = '#fff';
-                    box.style.padding = '16px';
-                    box.style.borderRadius = '8px';
-                    box.style.maxWidth = '480px';
-                    box.style.width = '90%';
-                    box.style.boxShadow = '0 12px 28px rgba(0,0,0,0.18)';
-
-                    const msg = document.createElement('div');
-                    msg.textContent = message;
-                    msg.style.marginBottom = '12px';
-
-                    const controls = document.createElement('div');
-                    controls.style.display = 'flex';
-                    controls.style.justifyContent = 'flex-end';
-                    controls.style.gap = '8px';
-
-                    const noBtn = document.createElement('button');
-                    noBtn.textContent = 'Cancel';
-                    noBtn.style.padding = '8px 12px';
-
-                    const yesBtn = document.createElement('button');
-                    yesBtn.textContent = 'Yes';
-                    yesBtn.style.padding = '8px 12px';
-                    yesBtn.style.background = '#dc2626';
-                    yesBtn.style.color = '#fff';
-                    yesBtn.style.border = 'none';
-                    yesBtn.style.borderRadius = '6px';
-
-                    controls.appendChild(noBtn);
-                    controls.appendChild(yesBtn);
-                    box.appendChild(msg);
-                    box.appendChild(controls);
-                    overlay.appendChild(box);
-                    document.body.appendChild(overlay);
-
-                    function cleanup(result) {
-                        try { document.body.removeChild(overlay); } catch (e) {}
-                        resolve(result);
-                    }
-
-                    noBtn.addEventListener('click', () => cleanup(false));
-                    yesBtn.addEventListener('click', () => cleanup(true));
-                } catch (e) {
-                    resolve(window.confirm(message));
-                }
-            });
-        }
-
         // ========================================
         // AUTHENTICATION
         // ========================================
@@ -2045,15 +1855,11 @@
             }
         });
 
-        async function logout() {
-            const confirmed = await confirmDialog('Are you sure you want to logout?');
-            if (!confirmed) return;
-
-            try {
-                await fetch(API_BASE + '/api/auth/logout', {
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                fetch(API_BASE + '/api/auth/logout', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + authToken }
-<<<<<<< Updated upstream
                 }).finally(() => {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('currentUser');
@@ -2069,22 +1875,7 @@
                     const cib = document.getElementById('chatbotInlineBtn');
                     if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
-=======
->>>>>>> Stashed changes
                 });
-            } catch (e) {
-                // continue with local cleanup even if API call fails
-                console.warn('Logout API call failed', e);
-            } finally {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('currentUser');
-                authToken = null;
-                currentUser = null;
-                document.getElementById('loginPage').style.display = 'flex';
-                document.getElementById('dashboardPage').style.display = 'none';
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-                showToast('Logged out', 'info');
             }
         }
 
@@ -2422,7 +2213,6 @@
             }
         }
 
-<<<<<<< Updated upstream
         function applyIssuesSearch() { loadIssues(); }
         function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
 
@@ -2522,23 +2312,6 @@
                 try { loadConstituents(); } catch(e) {}
             } catch (e) {
                 showToast('Bulk resolve failed: ' + e.message, 'error');
-=======
-        async function updateIssueStatus(issueId, newStatus) {
-            try {
-                const res = await apiRequest(`/api/admin/issues/${issueId}/status`, {
-                    method: 'PATCH',
-                    body: JSON.stringify({ status: newStatus })
-                });
-
-                if (!res.ok) {
-                    throw new Error('Failed to update status');
-                }
-
-                loadIssues();
-                loadStats();
-            } catch (err) {
-                if (typeof showToast === 'function') showToast('Error updating status: ' + err.message, 'error'); else console.error('Error updating status:', err);
->>>>>>> Stashed changes
             }
         }
 
@@ -3002,11 +2775,7 @@
                 closeCreateAnnouncementModal();
                 loadAnnouncements();
                 loadStats();
-<<<<<<< Updated upstream
                 showToast('Announcement published successfully!', 'success');
-=======
-                if (typeof showToast === 'function') showToast('Announcement published successfully!', 'success'); else console.log('Announcement published successfully!');
->>>>>>> Stashed changes
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -3086,46 +2855,33 @@
                 
                 closeAddUserModal();
                 loadUsers();
-<<<<<<< Updated upstream
                 showToast('User created successfully!', 'success');
-=======
-                if (typeof showToast === 'function') showToast('User created successfully!', 'success'); else console.log('User created successfully!');
->>>>>>> Stashed changes
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
         }
 
         async function deleteUser(userId) {
-            const confirmed = await confirmDialog('Are you sure you want to delete this user? This action cannot be undone.');
-            if (!confirmed) return;
-
+            if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                return;
+            }
+            
             try {
                 const res = await apiRequest(`/api/auth/users/${userId}`, {
                     method: 'DELETE'
                 });
-
+                
                 const data = await res.json();
-
+                
                 if (!res.ok) {
-<<<<<<< Updated upstream
                     showToast(data.error || 'Failed to delete user', 'error');
-=======
-                    if (typeof showToast === 'function') showToast(data.error || 'Failed to delete user', 'error'); else console.warn(data.error || 'Failed to delete user');
->>>>>>> Stashed changes
                     return;
                 }
 
                 loadUsers();
-<<<<<<< Updated upstream
                 showToast('User deleted successfully!', 'success');
             } catch (err) {
                 showToast('Error: ' + err.message, 'error');
-=======
-                if (typeof showToast === 'function') showToast('User deleted successfully!', 'success'); else console.log('User deleted successfully!');
-            } catch (err) {
-                if (typeof showToast === 'function') showToast('Error: ' + err.message, 'error'); else console.warn('Error: ' + err.message);
->>>>>>> Stashed changes
             }
         }
 
