@@ -1,4 +1,4 @@
-// Clean minimal admin-dashboard router
+// Minimal admin-dashboard router (single-file authoritative version)
 const express = require('express');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
