@@ -17,6 +17,53 @@ app.set('trust proxy', 1);
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// Chat history and unread APIs
+app.get('/api/admin/chat-history', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json([]);
+    const session_id = req.query.session_id;
+    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    const q = session_id ? { session_id } : (uid ? { user_id: uid } : {});
+    const rows = await database.collection('chat_messages').find(q).sort({ created_at: 1 }).limit(500).toArray();
+    res.json(rows || []);
+  } catch (e) {
+    console.error('Failed to fetch chat history', e && e.message);
+    res.status(500).json({ error: 'failed to fetch chat history' });
+  }
+});
+ 
+app.get('/api/admin/chat-unread', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json({ unread: 0 });
+    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    if (!uid) return res.json({ unread: 0 });
+    const doc = await database.collection('chat_unreads').findOne({ user_id: uid });
+    res.json({ unread: (doc && doc.unread) ? doc.unread : 0 });
+  } catch (e) {
+    console.error('Failed to fetch unread count', e && e.message);
+    res.status(500).json({ error: 'failed to fetch unread' });
+  }
+});
+ 
+app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+    const uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    if (!uid) return res.status(400).json({ error: 'Missing user' });
+    await database.collection('chat_unreads').updateOne(
+      { user_id: uid },
+      { $set: { unread: 0, last_read_at: new Date() } },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Failed to mark chat read', e && e.message);
+    res.status(500).json({ error: 'failed to mark read' });
+  }
+});
 
 // CORS - allow frontend to connect
 app.use((req, res, next) => {
@@ -942,7 +989,19 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
 
       const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: reply, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
       if (database) {
-        try { await database.collection('chat_messages').insertOne(botDoc); } catch (e) { console.warn('Failed to log chat reply:', e && e.message); }
+        try { 
+          await database.collection('chat_messages').insertOne(botDoc); 
+          // increment per-user unread counter if we have a user id
+          if (userId) {
+            try {
+              await database.collection('chat_unreads').updateOne(
+                { user_id: userId },
+                { $inc: { unread: 1 }, $set: { last_message_at: new Date() } },
+                { upsert: true }
+              );
+            } catch (incErr) { console.warn('Failed to increment chat_unreads:', incErr && incErr.message); }
+          }
+        } catch (e) { console.warn('Failed to log chat reply:', e && e.message); }
       }
     } catch (e) {
       // If DB or logging fails, still try to get a reply

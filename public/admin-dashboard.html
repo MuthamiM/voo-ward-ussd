@@ -2326,6 +2326,8 @@
             }
             // reset unread counter when user opens the chat
             resetChatUnread();
+            // notify server we've read messages
+            try { markChatReadOnServer(); } catch (e) { /* ignore */ }
             document.getElementById('chatbot-input').focus();
         }
 
@@ -2420,6 +2422,56 @@
                     sessionStorage.setItem('chat_auto_opened', '1');
                 }
             } catch (e) { /* ignore */ }
+            // load server-side chat state (history & unread)
+            try { loadChatStateFromServer(); } catch (e) { /* ignore */ }
+        }
+
+        // Fetch chat unread count and history from server and render
+        async function loadChatStateFromServer() {
+            try {
+                // get unread count
+                const resU = await apiRequest('/api/admin/chat-unread');
+                if (resU.ok) {
+                    const du = await resU.json();
+                    localStorage.setItem('chat_unread', String(du.unread || 0));
+                    updateChatBadge();
+                }
+
+                // load recent chat history for this session/user
+                const sessionId = getChatSessionId();
+                const res = await apiRequest('/api/admin/chat-history?session_id=' + encodeURIComponent(sessionId));
+                if (res.ok) {
+                    const msgs = await res.json();
+                    renderChatHistory(msgs || []);
+                }
+            } catch (e) {
+                console.warn('Failed to load chat state', e && e.message);
+            }
+        }
+
+        function renderChatHistory(msgs) {
+            try {
+                const container = document.getElementById('chatbot-messages');
+                container.innerHTML = '';
+                if (!Array.isArray(msgs) || msgs.length === 0) return;
+                msgs.forEach(m => {
+                    const who = (m.role === 'bot') ? 'bot' : 'user';
+                    const el = document.createElement('div');
+                    el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
+                    el.innerHTML = (m.message || '').toString().replace(/</g,'&lt;');
+                    container.appendChild(el);
+                });
+                container.scrollTop = container.scrollHeight;
+            } catch (e) { console.warn(e && e.message); }
+        }
+
+        async function markChatReadOnServer() {
+            try {
+                const res = await apiRequest('/api/admin/chat-read', { method: 'POST' });
+                if (res.ok) {
+                    resetChatUnread();
+                }
+            } catch (e) { console.warn('Failed to mark chat read on server', e && e.message); }
         }
 
         function attachActionButtons(containerEl, text) {
