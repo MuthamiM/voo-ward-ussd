@@ -76,7 +76,6 @@ app.post("/ussd", async (req, res) => {
 
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
-<<<<<<< Updated upstream
 // Defensive: some versions of admin-dashboard manage their own server and do not
 // export an express router. Only call app.use when a middleware/router is exported.
 // Defensive: Try multiple candidate paths for admin-dashboard and inspect file contents
@@ -145,24 +144,6 @@ if (!chosenPath) {
 }
 
 // Expose DB connector for other routers (ussd handler) if provided
-=======
-let adminDashboard;
-try {
-  adminDashboard = require('./admin-dashboard');
-  // support either an express Router/function or a module that starts its own server
-  if (typeof adminDashboard === 'function') {
-    app.use(adminDashboard);
-  } else if (adminDashboard && adminDashboard.router) {
-    app.use(adminDashboard.router);
-  } else {
-    console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
-  }
-} catch (err) {
-  console.warn('⚠️ Failed to require admin-dashboard module:', err && err.message);
-}
-
-// Expose DB connector for other routers (if adminDashboard exported it)
->>>>>>> Stashed changes
 if (adminDashboard && adminDashboard.connectDB) {
   app.locals.connectDB = adminDashboard.connectDB;
 }
