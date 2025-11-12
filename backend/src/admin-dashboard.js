@@ -268,6 +268,9 @@ const { ServerApiVersion } = require("mongodb");
 let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+// Auto-delete configuration: delay before deleting resolved issues and reaper interval
+const ISSUE_AUTO_DELETE_MS = parseInt(process.env.ISSUE_AUTO_DELETE_MS, 10) || (2 * 60 * 1000); // default 2 minutes
+const ISSUE_REAPER_INTERVAL_MS = parseInt(process.env.ISSUE_REAPER_INTERVAL_MS, 10) || (60 * 1000); // default run every 60s
 
 async function connectDB() {
   if (db) return db;
@@ -308,6 +311,44 @@ async function connectDB() {
 // Prepare upload directory for profile avatars
 const UPLOADS_DIR = path.join(__dirname, '../public/uploads/avatars');
 try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+
+// Background reaper: delete issues with scheduled_delete_at <= now (safe-guard: only if still resolved)
+function startIssueReaper() {
+  try {
+    const intervalMs = ISSUE_REAPER_INTERVAL_MS;
+    const timer = setInterval(async () => {
+      try {
+        const database = await connectDB();
+        if (!database) return;
+        const now = new Date();
+        const cursor = database.collection('issues').find({ scheduled_delete_at: { $lte: now } });
+        const docs = await cursor.toArray();
+        for (const doc of docs) {
+          try {
+            const status = (doc.status || '').toString().toLowerCase();
+            if (status === 'resolved') {
+              await database.collection('issues').deleteOne({ _id: doc._id });
+              console.log('Reaper: deleted scheduled resolved issue', doc.ticket || doc._id);
+            } else {
+              await database.collection('issues').updateOne({ _id: doc._id }, { $unset: { scheduled_delete_at: "" } });
+              console.log('Reaper: cleared scheduled_delete_at for', doc.ticket || doc._id, 'status', status);
+            }
+          } catch (e) {
+            console.warn('Reaper failed for', doc.ticket || doc._id, e && e.message);
+          }
+        }
+      } catch (e) {
+        console.warn('Issue reaper error', e && e.message);
+      }
+    }, intervalMs);
+    if (timer && typeof timer.unref === 'function') try { timer.unref(); } catch (e) { /* ignore */ }
+    console.log('Issue reaper started (interval ms):', intervalMs);
+    return timer;
+  } catch (e) {
+    console.warn('Failed to start issue reaper', e && e.message);
+    return null;
+  }
+}
 
 // Multer storage for avatars
 const storage = multer.diskStorage({
@@ -756,8 +797,7 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
 
             // Schedule automatic deletion after 2 minutes (safe-guard: only delete if still resolved)
             try {
-              const DELETE_DELAY_MS = 2 * 60 * 1000; // 2 minutes
-              const scheduledAt = new Date(Date.now() + DELETE_DELAY_MS);
+              const scheduledAt = new Date(Date.now() + ISSUE_AUTO_DELETE_MS);
               // mark the document with a scheduled_delete_at timestamp so admins can see it
               await database.collection('issues').updateOne({ ticket: id }, { $set: { scheduled_delete_at: scheduledAt } });
               setTimeout(async () => {
@@ -774,7 +814,7 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
                     try { await database.collection('issues').updateOne({ ticket: id }, { $unset: { scheduled_delete_at: "" } }); } catch (e) { /* ignore */ }
                   }
                 } catch (sErr) { console.warn('Scheduled delete failed for', id, sErr && sErr.message); }
-              }, DELETE_DELAY_MS);
+              }, ISSUE_AUTO_DELETE_MS);
             } catch (schedErr) {
               console.warn('Failed to schedule delete for issue', id, schedErr && schedErr.message);
             }
@@ -858,8 +898,7 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
           try {
             const ts = (targetStatus || '').toString().toLowerCase();
             if (ts === 'resolved') {
-              const DELETE_DELAY_MS = 2 * 60 * 1000;
-              const scheduledAt = new Date(Date.now() + DELETE_DELAY_MS);
+              const scheduledAt = new Date(Date.now() + ISSUE_AUTO_DELETE_MS);
               try { await database.collection('issues').updateOne({ ticket: ticket }, { $set: { scheduled_delete_at: scheduledAt } }); } catch(e) { /* ignore */ }
               setTimeout(async () => {
                 try {
@@ -874,7 +913,7 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
                     try { await database.collection('issues').updateOne({ ticket: ticket }, { $unset: { scheduled_delete_at: "" } }); } catch (ee) { /* ignore */ }
                   }
                 } catch (se) { console.warn('Scheduled delete failed for', ticket, se && se.message); }
-              }, DELETE_DELAY_MS);
+              }, ISSUE_AUTO_DELETE_MS);
             }
           } catch (schedErr) { console.warn('Failed to schedule delete for', ticket, schedErr && schedErr.message); }
         } catch (errInner) {
@@ -1598,6 +1637,8 @@ async function startServer() {
     
     // Initialize admin user
     await initializeAdmin();
+    // Start background reaper to process scheduled deletions
+    try { startIssueReaper(); } catch (e) { console.warn('Failed to start issue reaper after init', e && e.message); }
   } else {
     console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
@@ -1626,6 +1667,8 @@ if (require.main === module) {
     try {
       const database = await connectDB();
       if (database) await initializeAdmin();
+        // Start background reaper when running as a module too
+        try { startIssueReaper(); } catch (e) { console.warn('Failed to start issue reaper (module init)', e && e.message); }
     } catch (e) {
       console.warn('Admin dashboard module init warning:', e && e.message);
     }
