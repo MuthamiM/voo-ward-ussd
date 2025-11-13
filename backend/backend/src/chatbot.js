@@ -48,18 +48,18 @@ async function generateReply(message, user) {
   // Try DB-powered answers for simple queries when possible
   try {
     if (ltext.includes('how many ussd') || ltext.includes('ussd count') || ltext.includes('number of ussd')) {
-      const db = await (async () => {
-        try { const { MongoClient } = require('mongodb'); const c = new MongoClient(process.env.MONGO_URI, { serverSelectionTimeoutMS: 3000 }); await c.connect(); const url = new URL(process.env.MONGO_URI); const pathDb = (url.pathname||'').replace(/^\//,'')||'voo_ward'; return c.db(pathDb); } catch (e) { return null; }
-      })();
-      if (!db) return fallbackReply(text);
-      const count = await db.collection('ussd_interactions').countDocuments();
-      return `There are currently ${count} USSD interactions recorded in the database.`;
-    }
+        const db = await (async () => {
+          try { const { MongoClient } = require('mongodb'); const c = new MongoClient(process.env.MONGO_URI, { serverSelectionTimeoutMS: 3000 }); await c.connect(); const url = new URL(process.env.MONGO_URI); const pathDb = (url.pathname||'').replace(/^\//,'')||'voo_ward'; return c.db(pathDb); } catch (e) { return null; }
+        })();
+        if (!db) return { reply: fallbackReply(text), source: 'kb' };
+        const count = await db.collection('ussd_interactions').countDocuments();
+        return { reply: `There are currently ${count} USSD interactions recorded in the database.`, source: 'db' };
+      }
   } catch (dbErr) {
     console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
   }
 
-  if (!OPENAI_API_KEY) return fallbackReply(text);
+  if (!OPENAI_API_KEY) return { reply: fallbackReply(text), source: 'kb' };
 
   try {
     const payload = {
@@ -83,13 +83,13 @@ async function generateReply(message, user) {
 
     const data = await resp.json();
     if (resp.ok && data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-      return data.choices[0].message.content.trim();
+      return { reply: data.choices[0].message.content.trim(), source: 'openai' };
     }
 
-    return fallbackReply(text);
+    return { reply: fallbackReply(text), source: 'kb' };
   } catch (e) {
     console.error('Chatbot LLM error', e && e.message);
-    return fallbackReply(text);
+    return { reply: fallbackReply(text), source: 'kb' };
   }
 }
 

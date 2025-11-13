@@ -2380,12 +2380,27 @@
         }
 
         // Append chat messages and handle unread badge when minimized/hidden
-        function appendChatMessage(who, text) {
+        function appendChatMessage(who, text, source) {
             const c = document.getElementById('chatbot-messages');
             const el = document.createElement('div');
             el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
             // allow simple HTML for buttons
             el.innerHTML = text.replace(/</g,'&lt;');
+            // if bot and source provided, add a subtle badge
+            if (who === 'bot' && source) {
+                const badge = document.createElement('span');
+                badge.className = 'chat-source-badge';
+                badge.textContent = source === 'openai' ? 'OpenAI' : (source === 'db' ? 'DB' : 'KB');
+                badge.style.marginLeft = '8px';
+                badge.style.fontSize = '11px';
+                badge.style.opacity = '0.9';
+                badge.style.background = '#eef6ff';
+                badge.style.color = '#12324b';
+                badge.style.padding = '2px 6px';
+                badge.style.borderRadius = '10px';
+                badge.style.verticalAlign = 'middle';
+                el.appendChild(badge);
+            }
             c.appendChild(el);
 
             // If bot message, attach quick-action buttons when applicable
@@ -2509,6 +2524,21 @@
                     const el = document.createElement('div');
                     el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
                     el.innerHTML = (m.message || '').toString().replace(/</g,'&lt;');
+                    // show origin badge if available
+                    if (who === 'bot' && m.source) {
+                        const badge = document.createElement('span');
+                        badge.className = 'chat-source-badge';
+                        badge.textContent = m.source === 'openai' ? 'OpenAI' : (m.source === 'db' ? 'DB' : 'KB');
+                        badge.style.marginLeft = '8px';
+                        badge.style.fontSize = '11px';
+                        badge.style.opacity = '0.8';
+                        badge.style.background = '#e9eef8';
+                        badge.style.color = '#1a2b4a';
+                        badge.style.padding = '2px 6px';
+                        badge.style.borderRadius = '10px';
+                        badge.style.verticalAlign = 'middle';
+                        el.appendChild(badge);
+                    }
                     container.appendChild(el);
                     if (who === 'bot') lastBot = (m.message || '').toString();
                 });
@@ -2731,7 +2761,7 @@
                 const sessionId = getChatSessionId();
                 const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text, session_id: sessionId }) });
                 const data = await res.json();
-                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply);
+                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply, data.source);
                 else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
             } catch (e) {
                 appendChatMessage('bot', 'Error contacting help service: ' + e.message);

@@ -74,7 +74,7 @@ async function generateReply(message, user) {
       const db = await getDb();
       if (!db) return fallbackReply(text);
       const count = await db.collection('ussd_interactions').countDocuments();
-      return `There are currently ${count} USSD interactions recorded in the database.`;
+      return { reply: `There are currently ${count} USSD interactions recorded in the database.`, source: 'db' };
     }
     if (ltext.includes('recent ussd') || ltext.includes('latest ussd') || ltext.includes('recent interactions')) {
       const db = await getDb();
@@ -82,14 +82,14 @@ async function generateReply(message, user) {
       const rows = await db.collection('ussd_interactions').find({}).sort({ created_at: -1 }).limit(5).toArray();
       if (!rows || rows.length === 0) return 'No USSD interactions found.';
       const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0,60)}`).join('\n');
-      return `Latest USSD interactions (top ${rows.length}):\n${summary}`;
+      return { reply: `Latest USSD interactions (top ${rows.length}):\n${summary}`, source: 'db' };
     }
   } catch (dbErr) {
     console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
   }
 
   // If OpenAI not configured, fall back to local KB replies
-  if (!OPENAI_API_KEY) return fallbackReply(text);
+  if (!OPENAI_API_KEY) return { reply: fallbackReply(text), source: 'kb' };
 
   try {
     const payload = {
@@ -113,14 +113,14 @@ async function generateReply(message, user) {
 
     const data = await resp.json();
     if (resp.ok && data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-      return data.choices[0].message.content.trim();
+      return { reply: data.choices[0].message.content.trim(), source: 'openai' };
     }
 
-    return fallbackReply(text);
+    return { reply: fallbackReply(text), source: 'kb' };
   } catch (e) {
     console.error('Chatbot LLM error', e && e.message);
-    return fallbackReply(text);
+    return { reply: fallbackReply(text), source: 'kb' };
   }
 }
 
-module.exports = { generateReply };
+module.exports = { generateReply }; 

@@ -1183,7 +1183,6 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
       }
 
       const gen = await chatbotSvc.generateReply(message, req.user);
-      // generateReply now returns { reply, source }
       if (gen && typeof gen === 'object' && gen.reply) replyObj = gen;
 
       const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: replyObj.reply, source: replyObj.source || 'kb', session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
@@ -1208,7 +1207,7 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
         const gen = await chatbotSvc.generateReply(message, req.user);
         if (gen && typeof gen === 'object' && gen.reply) replyObj = gen;
         else if (typeof gen === 'string') replyObj = { reply: gen, source: 'kb' };
-      } catch (err) { /* swallow */ }
+      } catch (err) { /* ignore */ }
     }
     return res.json({ reply: replyObj.reply, source: replyObj.source });
   } catch (err) {
@@ -1216,8 +1215,6 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
     res.status(500).json({ error: 'chatbot error' });
   }
 });
-
-// NOTE: /internal/test-chat removed. Use the secured /api/admin/chatbot endpoint for testing with auth.
 
 // Admin: get chatbot KB (for editor UI)
 // NOTE: Chatbot KB editor removed for production — chatbot now relies on OpenAI (when configured)
