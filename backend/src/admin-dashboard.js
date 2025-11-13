@@ -1180,7 +1180,7 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
   try {
     const { message } = req.body || {};
     // Log user message and bot reply to chat_messages collection (if DB available)
-    let replyObj = { reply: 'Sorry, the help service is unavailable.', source: 'kb' };
+    let reply;
     try {
       const database = await connectDB();
       const userId = normalizeUserId(req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null);
@@ -1190,11 +1190,9 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
         try { await database.collection('chat_messages').insertOne(msgDoc); } catch (e) { console.warn('Failed to log chat message:', e && e.message); }
       }
 
-      const gen = await chatbotSvc.generateReply(message, req.user);
-      // generateReply now returns { reply, source }
-      if (gen && typeof gen === 'object' && gen.reply) replyObj = gen;
+      reply = await chatbotSvc.generateReply(message, req.user);
 
-      const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: replyObj.reply, source: replyObj.source || 'kb', session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
+      const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: reply, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
       if (database) {
         try { 
           await database.collection('chat_messages').insertOne(botDoc); 
@@ -1212,20 +1210,29 @@ app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
       }
     } catch (e) {
       // If DB or logging fails, still try to get a reply
-      try {
-        const gen = await chatbotSvc.generateReply(message, req.user);
-        if (gen && typeof gen === 'object' && gen.reply) replyObj = gen;
-        else if (typeof gen === 'string') replyObj = { reply: gen, source: 'kb' };
-      } catch (err) { /* swallow */ }
+      try { reply = await chatbotSvc.generateReply(message, req.user); } catch (err) { reply = 'Sorry, the help service is unavailable.'; }
     }
-    return res.json({ reply: replyObj.reply, source: replyObj.source });
+    res.json({ reply });
   } catch (err) {
     console.error('Chatbot error', err && err.message);
     res.status(500).json({ error: 'chatbot error' });
   }
 });
 
-// NOTE: /internal/test-chat removed. Use the secured /api/admin/chatbot endpoint for testing with auth.
+// Dev-only: allow testing chatbot without auth when explicitly enabled via env
+// WARNING: keep disabled in production. Enable by setting ALLOW_CHATBOT_PUBLIC_TEST=1
+app.post('/internal/test-chat', async (req, res) => {
+  try {
+    if (!process.env.ALLOW_CHATBOT_PUBLIC_TEST) return res.status(404).json({ error: 'Not found' });
+    const { message } = req.body || {};
+    if (!message) return res.status(400).json({ error: 'message required' });
+    const reply = await chatbotSvc.generateReply(message, { username: 'dev' });
+    return res.json({ reply });
+  } catch (e) {
+    console.error('internal test-chat error', e && e.message);
+    res.status(500).json({ error: 'internal error' });
+  }
+});
 
 // Admin: get chatbot KB (for editor UI)
 // NOTE: Chatbot KB editor removed for production — chatbot now relies on OpenAI (when configured)
@@ -1463,23 +1470,6 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
     // write header
     res.write('Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n');
 
-    // Two-phase audit: insert a 'started' audit doc, update later with final count/status
-    let auditId = null;
-    try {
-      const auditRes = await database.collection('admin_audit').insertOne({
-        action: 'export',
-        export_type: 'issues',
-        performed_by: req.user?.username || 'unknown',
-        status: 'started',
-        count: 0,
-        created_at: new Date(),
-        started_at: new Date()
-      });
-      auditId = auditRes.insertedId;
-    } catch (auditErr) {
-      console.warn('Failed to write audit (started) for issues export', auditErr && auditErr.message);
-    }
-
     const cursor = database.collection('issues').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1501,12 +1491,17 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       console.warn('Error while streaming issues export', streamErr && streamErr.message);
     }
 
-    // update audit record to completed
+    // write audit record for export
     try {
-      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
-      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'issues', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
+      await database.collection('admin_audit').insertOne({
+        action: 'export',
+        export_type: 'issues',
+        performed_by: req.user?.username || 'unknown',
+        count: count,
+        created_at: new Date()
+      });
     } catch (auditErr) {
-      console.warn('Failed to write/update audit entry for issues export', auditErr && auditErr.message);
+      console.warn('Failed to write audit entry for issues export', auditErr && auditErr.message);
     }
 
     return res.end();
@@ -1605,13 +1600,6 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
     res.write('Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n');
 
-    // Two-phase audit: insert 'started' and update after stream
-    let auditId = null;
-    try {
-      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
-      auditId = auditRes.insertedId;
-    } catch (auditErr) { console.warn('Failed to write audit (started) for ussd export', auditErr && auditErr.message); }
-
     const cursor = database.collection('ussd_interactions').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1631,9 +1619,8 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     }
 
     try {
-      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
-      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
-    } catch (auditErr) { console.warn('Failed to write/update audit entry for ussd export', auditErr && auditErr.message); }
+      await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', count, created_at: new Date() });
+    } catch (auditErr) { console.warn('Failed to write audit entry for ussd export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1652,13 +1639,6 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
     res.setHeader('Content-Disposition', 'attachment; filename=bursaries.csv');
     res.write('Ref Code,Student Name,School,Amount,Status,Phone,Created At\n');
 
-    // two-phase audit: started -> completed
-    let auditId = null;
-    try {
-      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
-      auditId = auditRes.insertedId;
-    } catch (auditErr) { console.warn('Failed to write audit (started) for bursaries export', auditErr && auditErr.message); }
-
     const cursor = database.collection('bursary_applications').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1675,10 +1655,7 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
       }
     } catch (streamErr) { console.warn('Error while streaming bursaries export', streamErr && streamErr.message); }
 
-    try {
-      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
-      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
-    } catch (auditErr) { console.warn('Failed to write/update audit entry for bursaries export', auditErr && auditErr.message); }
+    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for bursaries export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1697,12 +1674,6 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
     res.setHeader('Content-Disposition', 'attachment; filename=constituents.csv');
     res.write('Phone,National ID,Full Name,Location,Village,Created At\n');
 
-    let auditId = null;
-    try {
-      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
-      auditId = auditRes.insertedId;
-    } catch (auditErr) { console.warn('Failed to write audit (started) for constituents export', auditErr && auditErr.message); }
-
     const cursor = database.collection('constituents').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1718,10 +1689,7 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
       }
     } catch (streamErr) { console.warn('Error while streaming constituents export', streamErr && streamErr.message); }
 
-    try {
-      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
-      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
-    } catch (auditErr) { console.warn('Failed to write/update audit entry for constituents export', auditErr && auditErr.message); }
+    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for constituents export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1731,6 +1699,7 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
 });
 
 // Unified export endpoint: /api/admin/export?type=issues|bursaries|constituents|ussd
+// Enforces auth and role checks depending on export type. Streams CSV in-memory (safe for typical datasets).
 app.get('/api/admin/export', requireAuth, async (req, res) => {
   try {
     const type = (req.query.type || '').toString();
@@ -1830,11 +1799,11 @@ app.get('/api/admin/export', requireAuth, async (req, res) => {
   }
 });
 
-// Serve admin dashboard HTML (use canonical repository public directory)
-app.use(express.static(path.join(__dirname, "..", "..", "public")));
+// Serve admin dashboard HTML (point to repository canonical public directory)
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "..", "public", "admin-dashboard.html"));
+  res.sendFile(path.join(__dirname, "..", "public", "admin-dashboard.html"));
 });
 
 // Initialize default MCA admin user on startup

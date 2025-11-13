@@ -1,154 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOO Ward Admin Dashboard</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
-        
-        :root {
-            --primary: #7c3aed;
-            --primary-dark: #6d28d9;
-            --primary-light: #a78bfa;
-            --secondary: #06b6d4;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #0ea5e9;
-            --dark: #1e1b4b;
-            --accent-purple: #c084fc;
-            --accent-pink: #ec4899;
-            --accent-orange: #fb923c;
-            --accent-teal: #2dd4bf;
-            --gray-50: #fafafa;
-            --gray-100: #f4f4f5;
-            --gray-200: #e4e4e7;
-            --gray-300: #d4d4d8;
-            --gray-400: #a1a1aa;
-            --gray-500: #71717a;
-            --gray-600: #52525b;
-            --gray-700: #3f3f46;
-            --gray-800: #27272a;
-            --gray-900: #18181b;
-        }
-
-        /* Smooth update animation for rows when status changes */
-        .row-updated {
-            animation: highlight-row 1s ease forwards;
-        }
-
-        @keyframes highlight-row {
-            0% { background: rgba(124,58,237,0.12); }
-            100% { background: transparent; }
-        }
-
-        /* Small button spinner */
-        .btn .spinner-inline {
-            display: inline-block;
-            /* Modal (simple) and responsive rules (unchanged) */
-        }
-
-        .particle-2 {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08));
-            top: 60%;
-            right: 15%;
-            animation: moveLeftRight 10s ease-in-out infinite;
-        }
-
-        .particle-3 {
-            width: 100px;
-            height: 100px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
-            bottom: 25%;
-            left: 20%;
-            animation: moveDiagonal 14s ease-in-out infinite;
-        }
-
-        .particle-4 {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.1));
-            top: 40%;
-            right: 25%;
-            animation: moveCircular 16s linear infinite;
-        }
-
-        .particle-5 {
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07));
-            bottom: 40%;
-            right: 10%;
-            animation: moveZigzag 11s ease-in-out infinite;
-        }
-
-        /* Animation Keyframes */
-        @keyframes floatDiagonal {
-            0%, 100% { 
-                transform: translate(0, 0) rotate(0deg) scale(1); 
-            }
-            25% { 
-                transform: translate(50px, 50px) rotate(90deg) scale(1.1); 
-            }
-            50% { 
-                transform: translate(100px, -50px) rotate(180deg) scale(0.9); 
-            }
-            75% { 
-                transform: translate(-50px, 100px) rotate(270deg) scale(1.05); 
-            }
-        }
-
-        @keyframes floatWave {
-            0%, 100% { 
-                transform: translate(0, 0) rotate(0deg); 
-            }
-            33% { 
-                transform: translate(-80px, -60px) rotate(120deg); 
-            }
-            66% { 
-                transform: translate(60px, 80px) rotate(240deg); 
-            }
-        }
-
-        @keyframes moveUpDown {
-            0%, 100% { 
-                transform: translateY(0) scale(1); 
-            }
-            50% { 
-                transform: translateY(-80px) scale(1.15); 
-            }
-        }
-
-        @keyframes moveLeftRight {
-            0%, 100% { 
-                transform: translateX(0) rotate(0deg); 
-            }
-            50% { 
-                transform: translateX(-100px) rotate(180deg); 
-            }
-        }
-
-        @keyframes moveDiagonal {
-            0%, 100% { 
-                transform: translate(0, 0) scale(1); 
-            }
-            50% { 
-                transform: translate(120px, -120px) scale(1.2); 
-            }
-        }
-                        <div id="loginError" style="color: red; font-weight: bold;"></div>
-        @keyframes moveCircular {
-            0% { 
-                transform: rotate(0deg) translateX(100px) rotate(0deg); 
-            }
-            100% { 
-                transform: rotate(360deg) translateX(100px) rotate(-360deg); 
-            }
-        }
-
+        // Chat UI and helper functions removed per user request (front-end only)
         @keyframes moveZigzag {
             0%, 100% { 
                 transform: translate(0, 0); 
@@ -1295,7 +1148,6 @@
 
         /* Modal (simple) */
         .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
-    /* Chatbot UI removed per user request - modal/backdrop behavior removed */
             .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
         /* Profile avatar & settings */
         #profileAvatar { width:42px; height:42px; border-radius:50%; display:block; }
@@ -1316,25 +1168,13 @@
         .modal-header { font-weight: 700; margin-bottom: 8px; }
     .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
     .modal.show { display:block; }
-    /* Chat rows */
+    /* Chat rows (styling only) */
     .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
     .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
     .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
-    /* Chatbot floating button and modal positioning */
-    /* global floating chatbot removed (inline Issues-panel help used instead) */
-    /* Chatbot CSS removed per user request */
-    /* Chat preview (shown when chat is minimized) */
-    .chat-preview { position: absolute; bottom: 68px; right: 0; transform: translateY(6px); background: rgba(255,255,255,0.98); color: #111827; padding:8px 10px; border-radius:8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-width: 260px; font-size:13px; display:none; z-index:11002; }
-    .chat-preview.mini { max-width:200px; font-size:12px; padding:6px 8px; }
-    /* animations */
-    .chat-slide-in { animation: chatSlideIn 260ms ease forwards; }
-    .chat-slide-out { animation: chatSlideOut 200ms ease forwards; }
-    @keyframes chatSlideIn { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: translateY(0) } }
-    @keyframes chatSlideOut { from { opacity: 1; transform: translateY(0) } to { opacity: 0; transform: translateY(8px) } }
+    /* Chatbot UI removed per user request - floating/modal CSS removed */
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
-    /* Inline chatbot button placed inside a tab (shown near the issues table) */
-    /* Inline chatbot button CSS removed per user request */
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
@@ -1391,11 +1231,9 @@
                 
                         <div class="navbar-user">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <!-- Edit Help removed per request -->
+                                <!-- Edit Help button removed -->
                                 <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
-                                <button class="btn-logout" onclick="logout()" title="Logout" style="background: none; border: none; padding: 0; margin-left: 8px; cursor: pointer;">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                                </button>
+                                <button class="btn-logout" onclick="logout()">Logout</button>
                             </div>
                             <!-- Profile avatar on the far right -->
                             <div style="display:flex; align-items:center; gap:12px;">
@@ -1541,7 +1379,7 @@
                         <div class="content-header">
                             <h2 class="content-title">USSD Interactions</h2>
                             <div class="content-actions">
-                                <!-- Export CSV removed from USSD tab -->
+                                <!-- Export CSV removed per user request -->
                             </div>
                         </div>
                         <div class="table-container">
@@ -1591,7 +1429,6 @@
             </div>
         </div>
     </div>
-                    <!-- Chat History removed per user request -->
 
     <!-- Change Password Modal -->
     <div class="modal" id="changePasswordModal">
@@ -1778,8 +1615,7 @@
             // Load initial data
             loadStats();
             loadIssues();
-            // Chat widget disabled per user request (removed from UI)
-            // Edit Help UI removed; no client-side KB editing
+            // Inline chatbot and Edit Help UI removed per user request — no DOM actions
         }
 
         function setupDashboard() {
@@ -1792,9 +1628,8 @@
                         <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
                         <button class="tab" onclick="showTab('constituents')">Constituents</button>
                         <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                            <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
-                            <button class="tab" onclick="showTab('users')">User Management</button>
-                    				<!-- Chat History tab removed per user request -->
+                        <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
+                        <button class="tab" onclick="showTab('users')">User Management</button>
                     `;
                 } else {
                 // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
@@ -2174,8 +2009,30 @@
             }
         }
 
-        // In-dashboard chatbot helper
-        // Chat UI and helper functions removed per user request (front-end only)
+        // In-dashboard chatbot helper removed per user request (front-end only)
+
+        function openTab(tab) {
+            // Hide all content
+            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            // Remove active class from tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+            // Show selected content
+            const content = document.getElementById(tab + '-content');
+            if (content) content.style.display = 'block';
+
+            // Try to set the corresponding tab button active
+            const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
+            if (btn) btn.classList.add('active');
+
+            // Load data for selected tab
+            if (tab === 'issues') loadIssues();
+            else if (tab === 'bursaries') loadBursaries();
+            else if (tab === 'constituents') loadConstituents();
+            else if (tab === 'announcements') loadAnnouncements();
+            else if (tab === 'ussd') loadUssd();
+            else if (tab === 'users') loadUsers();
+        }
 
         // Profile modal helpers
         // Profile modal helpers (enhanced)
@@ -2302,7 +2159,7 @@
             applyProfileSettings(s);
         }
 
-        // Chat front-end messaging helpers removed per user request
+        // Chat messaging removed in this copy per user request
 
         // ========================================
         // USSD INTERACTIONS
@@ -2641,9 +2498,10 @@
             // Inline chatbot removed per user request — no-op
         }
 
-        // Chat history removed (front-end) per user request
-
-        // Export data disabled in UI per user request
+        // ========================================
+        // EXPORT DATA
+        // ========================================
+        // Export disabled in UI per user request
         function exportData(type) {
             console.warn('Export disabled by admin UI cleanup.');
             showToast('Export disabled in this build.', 'info');
@@ -2724,7 +2582,6 @@
         </div>
     </div>
 
-    <!-- KB Editor Modal (MCA only) -->
     <!-- KB Editor removed -->
 
     <!-- Bulk Resolve Modal -->

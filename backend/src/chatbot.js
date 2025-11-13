@@ -1,7 +1,7 @@
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
-const fs = require('fs');
+const fs = require('fs'); // This line is unchanged
 const path = require('path');
 const { MongoClient } = require('mongodb');
 const KB_PATH = path.join(__dirname, 'chatbot_kb.json');
@@ -67,29 +67,30 @@ async function generateReply(message, user) {
   const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
   const text = (message || '').toString().trim();
   const ltext = text.toLowerCase();
-
-  // Try a small, safe DB-powered answer for specific queries if DB available
+  // If the admin asks about USSD counts, answer directly from DB without calling LLM
   try {
     if (ltext.includes('how many ussd') || ltext.includes('ussd count') || ltext.includes('number of ussd')) {
       const db = await getDb();
-      if (!db) return fallbackReply(text);
+      if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
       const count = await db.collection('ussd_interactions').countDocuments();
-      return { reply: `There are currently ${count} USSD interactions recorded in the database.`, source: 'db' };
+      return `There are currently ${count} USSD interactions recorded in the database.`;
     }
     if (ltext.includes('recent ussd') || ltext.includes('latest ussd') || ltext.includes('recent interactions')) {
       const db = await getDb();
-      if (!db) return fallbackReply(text);
+      if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
       const rows = await db.collection('ussd_interactions').find({}).sort({ created_at: -1 }).limit(5).toArray();
       if (!rows || rows.length === 0) return 'No USSD interactions found.';
       const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0,60)}`).join('\n');
-      return { reply: `Latest USSD interactions (top ${rows.length}):\n${summary}`, source: 'db' };
+      return `Latest USSD interactions (top ${rows.length}):\n${summary}`;
     }
   } catch (dbErr) {
+    // fall through to LLM/fallback if DB read fails
     console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
   }
-
-  // If OpenAI not configured, fall back to local KB replies
-  if (!OPENAI_API_KEY) return { reply: fallbackReply(text), source: 'kb' };
+  if (!OPENAI_API_KEY) {
+    // Enforce OpenAI usage only. If key not configured, return clear guidance to operator.
+    return 'Chatbot is not configured: set OPENAI_API_KEY on the server to enable assistant responses.';
+  }
 
   try {
     const payload = {
@@ -113,14 +114,15 @@ async function generateReply(message, user) {
 
     const data = await resp.json();
     if (resp.ok && data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
-      return { reply: data.choices[0].message.content.trim(), source: 'openai' };
+      return data.choices[0].message.content.trim();
     }
 
-    return { reply: fallbackReply(text), source: 'kb' };
+    // fallback on unexpected response
+    return 'The help service returned an unexpected response. Please check server logs.';
   } catch (e) {
     console.error('Chatbot LLM error', e && e.message);
-    return { reply: fallbackReply(text), source: 'kb' };
+    return 'Chatbot encountered an internal error while contacting the language service.';
   }
 }
 
-module.exports = { generateReply }; 
+module.exports = { generateReply };
