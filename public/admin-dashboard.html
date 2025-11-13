@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1751,7 +1751,7 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    // Chatbot UI removed — no DOM changes required on logout
+                    // Chatbot UI removed ΓÇö no DOM changes required on logout
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
             }
@@ -2638,7 +2638,7 @@
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
 
-            // Inline chatbot removed per user request — no-op
+            // Inline chatbot removed per user request ΓÇö no-op
         }
 
         // Chat history removed (front-end) per user request
@@ -2666,7 +2666,7 @@
                 if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
                 showDashboard();
             }
-            // Chatbot UI removed — no initialization required
+            // Chatbot UI removed ΓÇö no initialization required
         });
 
         // Auto-refresh data every 30 seconds
