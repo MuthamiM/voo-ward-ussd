@@ -1852,11 +1852,7 @@ async function initializeAdmin() {
   }
 }
 
-// OLD HTML: served from static file in ../public/admin-dashboard.html
-app.get('/old', (req, res) => {
-  // Redirect legacy /old route to the static admin-dashboard.html
-  res.redirect('/admin-dashboard.html');
-});
+// Legacy '/old' route removed during frontend consolidation.
 
 // Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.

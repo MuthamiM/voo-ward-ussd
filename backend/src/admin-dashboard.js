@@ -1463,6 +1463,23 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
     // write header
     res.write('Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n');
 
+    // Two-phase audit: insert a 'started' audit doc, update later with final count/status
+    let auditId = null;
+    try {
+      const auditRes = await database.collection('admin_audit').insertOne({
+        action: 'export',
+        export_type: 'issues',
+        performed_by: req.user?.username || 'unknown',
+        status: 'started',
+        count: 0,
+        created_at: new Date(),
+        started_at: new Date()
+      });
+      auditId = auditRes.insertedId;
+    } catch (auditErr) {
+      console.warn('Failed to write audit (started) for issues export', auditErr && auditErr.message);
+    }
+
     const cursor = database.collection('issues').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1484,17 +1501,12 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       console.warn('Error while streaming issues export', streamErr && streamErr.message);
     }
 
-    // write audit record for export
+    // update audit record to completed
     try {
-      await database.collection('admin_audit').insertOne({
-        action: 'export',
-        export_type: 'issues',
-        performed_by: req.user?.username || 'unknown',
-        count: count,
-        created_at: new Date()
-      });
+      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
+      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'issues', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
     } catch (auditErr) {
-      console.warn('Failed to write audit entry for issues export', auditErr && auditErr.message);
+      console.warn('Failed to write/update audit entry for issues export', auditErr && auditErr.message);
     }
 
     return res.end();
@@ -1593,6 +1605,13 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
     res.write('Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n');
 
+    // Two-phase audit: insert 'started' and update after stream
+    let auditId = null;
+    try {
+      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
+      auditId = auditRes.insertedId;
+    } catch (auditErr) { console.warn('Failed to write audit (started) for ussd export', auditErr && auditErr.message); }
+
     const cursor = database.collection('ussd_interactions').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1612,8 +1631,9 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     }
 
     try {
-      await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', count, created_at: new Date() });
-    } catch (auditErr) { console.warn('Failed to write audit entry for ussd export', auditErr && auditErr.message); }
+      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
+      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
+    } catch (auditErr) { console.warn('Failed to write/update audit entry for ussd export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1632,6 +1652,13 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
     res.setHeader('Content-Disposition', 'attachment; filename=bursaries.csv');
     res.write('Ref Code,Student Name,School,Amount,Status,Phone,Created At\n');
 
+    // two-phase audit: started -> completed
+    let auditId = null;
+    try {
+      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
+      auditId = auditRes.insertedId;
+    } catch (auditErr) { console.warn('Failed to write audit (started) for bursaries export', auditErr && auditErr.message); }
+
     const cursor = database.collection('bursary_applications').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1648,7 +1675,10 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
       }
     } catch (streamErr) { console.warn('Error while streaming bursaries export', streamErr && streamErr.message); }
 
-    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for bursaries export', auditErr && auditErr.message); }
+    try {
+      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
+      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
+    } catch (auditErr) { console.warn('Failed to write/update audit entry for bursaries export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1667,6 +1697,12 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
     res.setHeader('Content-Disposition', 'attachment; filename=constituents.csv');
     res.write('Phone,National ID,Full Name,Location,Village,Created At\n');
 
+    let auditId = null;
+    try {
+      const auditRes = await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', status: 'started', count: 0, created_at: new Date(), started_at: new Date() });
+      auditId = auditRes.insertedId;
+    } catch (auditErr) { console.warn('Failed to write audit (started) for constituents export', auditErr && auditErr.message); }
+
     const cursor = database.collection('constituents').find({}).sort({ created_at: -1 });
     let count = 0;
     try {
@@ -1682,7 +1718,10 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
       }
     } catch (streamErr) { console.warn('Error while streaming constituents export', streamErr && streamErr.message); }
 
-    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for constituents export', auditErr && auditErr.message); }
+    try {
+      if (auditId) await database.collection('admin_audit').updateOne({ _id: auditId }, { $set: { status: 'completed', count, completed_at: new Date() } });
+      else await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', count, created_at: new Date(), status: 'completed' });
+    } catch (auditErr) { console.warn('Failed to write/update audit entry for constituents export', auditErr && auditErr.message); }
 
     return res.end();
   } catch (err) {
@@ -1855,11 +1894,7 @@ async function initializeAdmin() {
   }
 }
 
-// OLD HTML: served from static file in ../public/admin-dashboard.html
-app.get('/old', (req, res) => {
-  // Redirect legacy /old route to the static admin-dashboard.html
-  res.redirect('/admin-dashboard.html');
-});
+// Legacy '/old' route removed during frontend consolidation.
 
 // Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
