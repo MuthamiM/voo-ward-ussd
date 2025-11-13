@@ -6,7 +6,8 @@
   "type": "commonjs",
   "scripts": {
     "start": "node src/index.js",
-    "admin": "node src/admin-dashboard.js"
+    "admin": "node src/admin-dashboard.js",
+    "test-chatbot": "node test/chatbot.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.929.0",
