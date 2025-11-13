@@ -9,6 +9,14 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 const chatbotSvc = require('./chatbot');
 
+// Feature flag: enable chat-history APIs only when this is explicitly set to 'true'
+const CHAT_HISTORY_ENABLED = process.env.ENABLE_CHAT_HISTORY === 'true';
+
+function requireChatHistoryEnabled(req, res, next) {
+  if (!CHAT_HISTORY_ENABLED) return res.status(404).json({ error: 'not found' });
+  next();
+}
+
 
 const app = express();
 // Trust proxy for correct client IP detection behind Render/Heroku/NGINX
@@ -18,7 +26,7 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 // Chat history and unread APIs
-app.get('/api/admin/chat-history', requireAuth, async (req, res) => {
+app.get('/api/admin/chat-history', requireAuth, requireChatHistoryEnabled, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.json([]);
@@ -35,7 +43,7 @@ app.get('/api/admin/chat-history', requireAuth, async (req, res) => {
   }
 });
  
-app.get('/api/admin/chat-unread', requireAuth, async (req, res) => {
+app.get('/api/admin/chat-unread', requireAuth, requireChatHistoryEnabled, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.json({ unread: 0 });
@@ -50,7 +58,7 @@ app.get('/api/admin/chat-unread', requireAuth, async (req, res) => {
   }
 });
  
-app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
+app.post('/api/admin/chat-read', requireAuth, requireChatHistoryEnabled, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
@@ -70,7 +78,7 @@ app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
 });
 
 // Admin-only: fetch chat history for any user or session (filtering)
-app.get('/api/admin/chat-history-admin', requireAuth, requireMCA, async (req, res) => {
+app.get('/api/admin/chat-history-admin', requireAuth, requireMCA, requireChatHistoryEnabled, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.json([]);

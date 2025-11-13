@@ -46,95 +46,7 @@
         /* Small button spinner */
         .btn .spinner-inline {
             display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid rgba(255,255,255,0.6);
-            border-top-color: rgba(255,255,255,0.95);
-            border-radius: 50%;
-            margin-left: 8px;
-            vertical-align: middle;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Status select animations and colors */
-        .issue-status-select {
-            transition: background-color 300ms ease, transform 150ms ease;
-            padding: 6px; border-radius: 8px; border: 1px solid #e6e9ef; background: #fff;
-        }
-        .issue-status-select.status-pending { background: #fff7ed; }
-        .issue-status-select.status-in_progress { background: #eef2ff; }
-        .issue-status-select.status-resolved { background: #ecfdf5; }
-        .issue-status-select:focus { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6d28d9 100%);
-            background-attachment: fixed;
-            min-height: 100vh;
-            color: #1f2937;
-            overflow-x: hidden;
-        }
-
-        /* ========================================
-           LOGIN PAGE - GLASSMORPHISM
-        ======================================== */
-        .login-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        /* Animated Moving Shapes Background */
-        .login-container::before {
-            content: '';
-            position: absolute;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
-            border-radius: 50%;
-            top: -150px;
-            right: -150px;
-            animation: floatDiagonal 15s ease-in-out infinite;
-        }
-
-        .login-container::after {
-            content: '';
-            position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-            border-radius: 50%;
-            bottom: -100px;
-            left: -100px;
-            animation: floatWave 12s ease-in-out infinite reverse;
-        }
-
-        /* Multiple Animated Particles */
-        .animated-particle {
-            position: absolute;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .particle-1 {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-            top: 20%;
-            left: 10%;
-            animation: moveUpDown 8s ease-in-out infinite;
+            /* Modal (simple) and responsive rules (unchanged) */
         }
 
         .particle-2 {
@@ -1383,9 +1295,7 @@
 
         /* Modal (simple) */
         .modal-backdrop { position: fixed; inset:0; background: rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:10000; }
-        /* Make chatbot modal non-obtrusive: no full-screen dim and allow clicks through outside the chatbot box */
-        #chatbotModal.modal-backdrop { background: transparent; pointer-events: none; }
-        #chatbotModal.modal-backdrop .chatbot-modal { pointer-events: auto; }
+    /* Chatbot UI removed per user request - modal/backdrop behavior removed */
             .modal { background: white; border-radius: 10px; padding: 18px; width: 560px; max-width: calc(100% - 48px); }
         /* Profile avatar & settings */
         #profileAvatar { width:42px; height:42px; border-radius:50%; display:block; }
@@ -1412,12 +1322,7 @@
     .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
     /* Chatbot floating button and modal positioning */
     /* global floating chatbot removed (inline Issues-panel help used instead) */
-    .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
-    /* Floating chatbot button (viewport fixed bottom-right) */
-    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11001; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform: translateY(6px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
-    .chatbot-button svg { display:block; }
-    .chatbot-button .chat-badge { position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; font-size: 12px; min-width:18px; height:18px; padding:0 6px; border-radius: 12px; display:flex; align-items:center; justify-content:center; box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
-    .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
+    /* Chatbot CSS removed per user request */
     /* Chat preview (shown when chat is minimized) */
     .chat-preview { position: absolute; bottom: 68px; right: 0; transform: translateY(6px); background: rgba(255,255,255,0.98); color: #111827; padding:8px 10px; border-radius:8px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); max-width: 260px; font-size:13px; display:none; z-index:11002; }
     .chat-preview.mini { max-width:200px; font-size:12px; padding:6px 8px; }
@@ -1429,8 +1334,7 @@
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
     /* Inline chatbot button placed inside a tab (shown near the issues table) */
-    .chatbot-inline-button { position: absolute; right: 18px; bottom: 68px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(10px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
-    .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
+    /* Inline chatbot button CSS removed per user request */
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
@@ -1470,37 +1374,7 @@
             <!-- Emergency admin reset removed for production safety -->
         </div>
     </div>
-        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
-        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot">
-            <!-- Bot SVG icon -->
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
-            </svg>
-            <span id="chatBadge" class="chat-badge" style="display:none;">0</span>
-            <div id="chatPreview" class="chat-preview" style="display:none;"></div>
-        </button>
-
-        <!-- Chatbot Modal (anchored bottom-right) -->
-        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
-            <div class="modal chatbot-modal" style="margin:0;">
-                <div class="modal-header">Help Chat <button id="chatMinimizeBtn" class="btn-sm" style="margin-left:8px;" onclick="toggleChatMinimize()" title="Minimize chat">_</button></div>
-                <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
-                </div>
-                <div class="chatbot-suggestions">
-                    <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
-                    <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
-                    <button onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
-                    <button onclick="sendSuggestion('Export issues CSV')">Export issues</button>
-                </div>
-                <div style="margin-top:8px; display:flex; gap:8px;">
-                    <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
-                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
-                </div>
-            </div>
-        </div>
+        <!-- Chat UI removed per user request -->
 
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
@@ -1559,9 +1433,7 @@
                                 <input id="issuesSearch" placeholder="Search ticket/phone/message" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
                                 <button class="btn-sm" onclick="applyIssuesSearch()">Search</button>
                                 <button class="btn-sm" onclick="clearIssuesSearch()">Clear</button>
-                                <button class="btn-sm btn-success" onclick="exportData('issues')">
-                                    <!-- Export CSV removed from Issues tab -->
-                                </button>
+                                <!-- Export CSV removed per user request -->
                                 <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
                         </div>
@@ -1584,8 +1456,7 @@
                                 <tbody id="issues-tbody"></tbody>
                             </table>
                         </div>
-                        <!-- Inline chatbot trigger anchored to the issues panel (appears bottom-right of the panel) -->
-                        <button id="chatbotInlineBtn" class="chatbot-inline-button" title="Help" onclick="showChatbot()">?</button>
+                        <!-- Inline chatbot removed per user request -->
                     </div>
 
                     <!-- Bursaries Tab -->
@@ -1593,9 +1464,7 @@
                         <div class="content-header">
                             <h2 class="content-title">Bursary Applications</h2>
                             <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('bursaries')">
-                                    Export CSV
-                                </button>
+                                <!-- Export CSV removed per user request -->
                             </div>
                         </div>
                         <div class="table-container">
@@ -1621,9 +1490,7 @@
                         <div class="content-header">
                             <h2 class="content-title">Registered Constituents</h2>
                             <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('constituents')">
-                                    Export CSV
-                                </button>
+                                <!-- Export CSV removed per user request -->
                             </div>
                         </div>
                         <div class="table-container">
@@ -1724,40 +1591,7 @@
             </div>
         </div>
     </div>
-                    <!-- Chat History (MCA only) -->
-                    <div id="chat-history-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Chat History (Admin)</h2>
-                            <div class="content-actions">
-                                <input id="chatFilterUser" placeholder="Filter by user_id" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
-                                <input id="chatFilterSession" placeholder="Filter by session_id" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
-                                <input id="chatFilterStart" type="date" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
-                                <input id="chatFilterEnd" type="date" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
-                                <button class="btn-sm" onclick="loadAdminChatHistory()">Search</button>
-                                <button class="btn-sm" onclick="clearChatFilters()">Clear</button>
-                                <button class="btn-sm btn-success" onclick="exportChatHistoryCSV()">Export CSV</button>
-                            </div>
-                        </div>
-                        <div class="table-container">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>When</th>
-                                        <th>User</th>
-                                        <th>Role</th>
-                                        <th>Session</th>
-                                        <th>Message</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="chat-history-tbody"></tbody>
-                            </table>
-                        </div>
-                        <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-                            <button class="btn-sm" onclick="prevChatPage()">Prev</button>
-                            <button class="btn-sm" onclick="nextChatPage()">Next</button>
-                            <span id="chatPageInfo" style="margin-left:8px;"></span>
-                        </div>
-                    </div>
+                    <!-- Chat History removed per user request -->
 
     <!-- Change Password Modal -->
     <div class="modal" id="changePasswordModal">
@@ -1917,11 +1751,7 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    // hide chatbot when logged out
-                    const cb = document.getElementById('chatbotBtn');
-                    if (cb) { cb.classList.remove('visible'); cb.style.display = 'none'; }
-                    const cib = document.getElementById('chatbotInlineBtn');
-                    if (cib) cib.classList.remove('visible');
+                    // Chatbot UI removed — no DOM changes required on logout
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
             }
@@ -1948,14 +1778,7 @@
             // Load initial data
             loadStats();
             loadIssues();
-            // show inline chatbot in issues panel by default (issues tab is the default)
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) cib.classList.add('visible');
-            // ensure the floating chatbot button is visible and stays fixed while scrolling
-            const cb = document.getElementById('chatbotBtn');
-            if (cb) { cb.style.display = 'flex'; cb.classList.add('visible'); }
-            // initialize chat widget (minimize state, unread badge, session auto-open)
-            try { initChatWidget(); } catch (e) { /* ignore init failures */ }
+            // Chat widget disabled per user request (removed from UI)
             // Edit Help UI removed; no client-side KB editing
         }
 
@@ -1971,7 +1794,7 @@
                         <button class="tab" onclick="showTab('announcements')">Announcements</button>
                             <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
                             <button class="tab" onclick="showTab('users')">User Management</button>
-                            <button class="tab" onclick="showTab('chat-history')">Chat History</button>
+                    				<!-- Chat History tab removed per user request -->
                     `;
                 } else {
                 // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
@@ -2352,277 +2175,7 @@
         }
 
         // In-dashboard chatbot helper
-        function showChatbot() {
-            const cbModal = document.getElementById('chatbotModal');
-            // restore pointer events and show only the chatbot box (no full-screen dim)
-            cbModal.style.display = 'flex';
-            cbModal.style.background = 'transparent';
-            cbModal.style.pointerEvents = 'auto';
-
-            // If previously minimized, restore expanded state when user explicitly opens the chat
-            setChatMinimized(false);
-
-            const convo = document.getElementById('chatbot-messages');
-            if (!convo.children.length) {
-                appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
-            }
-            // reset unread counter when user opens the chat
-            resetChatUnread();
-            // notify server we've read messages
-            try { markChatReadOnServer(); } catch (e) { /* ignore */ }
-            document.getElementById('chatbot-input').focus();
-        }
-
-        function hideChatbot() {
-            const cbModal = document.getElementById('chatbotModal');
-            cbModal.style.display = 'none';
-            cbModal.style.pointerEvents = 'none';
-        }
-
-        // Append chat messages and handle unread badge when minimized/hidden
-        function appendChatMessage(who, text, source) {
-            const c = document.getElementById('chatbot-messages');
-            const el = document.createElement('div');
-            el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
-            // allow simple HTML for buttons
-            el.innerHTML = text.replace(/</g,'&lt;');
-            // if bot and source provided, add a subtle badge
-            if (who === 'bot' && source) {
-                const badge = document.createElement('span');
-                badge.className = 'chat-source-badge';
-                badge.textContent = source === 'openai' ? 'OpenAI' : (source === 'db' ? 'DB' : 'KB');
-                badge.style.marginLeft = '8px';
-                badge.style.fontSize = '11px';
-                badge.style.opacity = '0.9';
-                badge.style.background = '#eef6ff';
-                badge.style.color = '#12324b';
-                badge.style.padding = '2px 6px';
-                badge.style.borderRadius = '10px';
-                badge.style.verticalAlign = 'middle';
-                el.appendChild(badge);
-            }
-            c.appendChild(el);
-
-            // If bot message, attach quick-action buttons when applicable
-            if (who === 'bot') {
-                attachActionButtons(el, text);
-                // If the chat is minimized or hidden, increment unread badge
-                const cbModal = document.getElementById('chatbotModal');
-                const minimized = isChatMinimized();
-                const hidden = !cbModal || cbModal.style.display !== 'flex' || cbModal.style.pointerEvents === 'none';
-                if (minimized || hidden) incrementChatUnread();
-            }
-
-            c.scrollTop = c.scrollHeight;
-        }
-
-        // Chat widget helpers: minimize, unread badge and session auto-open
-        function isChatMinimized() {
-            return localStorage.getItem('chat_minimized') === 'true';
-        }
-
-        function setChatMinimized(val) {
-            localStorage.setItem('chat_minimized', val ? 'true' : 'false');
-            const messages = document.getElementById('chatbot-messages');
-            const suggestions = document.querySelector('.chatbot-suggestions');
-            const inputRow = document.querySelector('#chatbotModal .modal-footer') || document.querySelector('#chatbotModal > .modal > .modal-footer');
-            const inputControls = document.querySelector('#chatbotModal input#chatbot-input')?.parentElement;
-            const preview = document.getElementById('chatPreview');
-            if (val) {
-                if (messages) messages.style.display = 'none';
-                if (suggestions) suggestions.style.display = 'none';
-                if (inputControls) inputControls.style.display = 'none';
-                const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '▢';
-                // show compact preview on the floating button
-                try { updateChatPreview(); } catch (e) {}
-                if (preview) { preview.classList.add('mini'); }
-            } else {
-                if (messages) messages.style.display = 'flex';
-                if (suggestions) suggestions.style.display = 'flex';
-                if (inputControls) inputControls.style.display = 'flex';
-                const btn = document.getElementById('chatMinimizeBtn'); if (btn) btn.textContent = '_';
-                // clear unread when user restores
-                resetChatUnread();
-                // hide preview when expanded
-                try { updateChatPreview(); } catch (e) {}
-                if (preview) { preview.classList.remove('mini'); }
-            }
-        }
-
-        function toggleChatMinimize() {
-            const cur = isChatMinimized();
-            setChatMinimized(!cur);
-        }
-
-        function updateChatBadge() {
-            const badge = document.getElementById('chatBadge');
-            const count = parseInt(localStorage.getItem('chat_unread') || '0', 10) || 0;
-            if (!badge) return;
-            if (count > 0) { badge.style.display = 'flex'; badge.textContent = count > 99 ? '99+' : String(count); }
-            else badge.style.display = 'none';
-        }
-
-        function incrementChatUnread() {
-            const cur = parseInt(localStorage.getItem('chat_unread') || '0', 10) || 0;
-            localStorage.setItem('chat_unread', String(cur + 1));
-            updateChatBadge();
-        }
-
-        function resetChatUnread() {
-            localStorage.setItem('chat_unread', '0');
-            updateChatBadge();
-        }
-
-        // Auto-open chat once per browser session (use sessionStorage to track)
-        function initChatWidget() {
-            // apply minimized state from localStorage
-            setChatMinimized(isChatMinimized());
-            updateChatBadge();
-            // if we haven't auto-opened this session, open once and mark session opened
-            try {
-                if (!sessionStorage.getItem('chat_auto_opened')) {
-                    // open chat briefly for first-time-in-session users
-                    showChatbot();
-                    sessionStorage.setItem('chat_auto_opened', '1');
-                }
-            } catch (e) { /* ignore */ }
-            // load server-side chat state (history & unread)
-            try { loadChatStateFromServer(); } catch (e) { /* ignore */ }
-        }
-
-        // Fetch chat unread count and history from server and render
-        async function loadChatStateFromServer() {
-            try {
-                // get unread count
-                const resU = await apiRequest('/api/admin/chat-unread');
-                if (resU.ok) {
-                    const du = await resU.json();
-                    localStorage.setItem('chat_unread', String(du.unread || 0));
-                    updateChatBadge();
-                }
-
-                // load recent chat history for this session/user
-                const sessionId = getChatSessionId();
-                const res = await apiRequest('/api/admin/chat-history?session_id=' + encodeURIComponent(sessionId));
-                if (res.ok) {
-                    const msgs = await res.json();
-                    renderChatHistory(msgs || []);
-                }
-            } catch (e) {
-                console.warn('Failed to load chat state', e && e.message);
-            }
-        }
-
-        function renderChatHistory(msgs) {
-            try {
-                const container = document.getElementById('chatbot-messages');
-                container.innerHTML = '';
-                if (!Array.isArray(msgs) || msgs.length === 0) return;
-                let lastBot = null;
-                msgs.forEach(m => {
-                    const who = (m.role === 'bot') ? 'bot' : 'user';
-                    const el = document.createElement('div');
-                    el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
-                    el.innerHTML = (m.message || '').toString().replace(/</g,'&lt;');
-                    // show origin badge if available
-                    if (who === 'bot' && m.source) {
-                        const badge = document.createElement('span');
-                        badge.className = 'chat-source-badge';
-                        badge.textContent = m.source === 'openai' ? 'OpenAI' : (m.source === 'db' ? 'DB' : 'KB');
-                        badge.style.marginLeft = '8px';
-                        badge.style.fontSize = '11px';
-                        badge.style.opacity = '0.8';
-                        badge.style.background = '#e9eef8';
-                        badge.style.color = '#1a2b4a';
-                        badge.style.padding = '2px 6px';
-                        badge.style.borderRadius = '10px';
-                        badge.style.verticalAlign = 'middle';
-                        el.appendChild(badge);
-                    }
-                    container.appendChild(el);
-                    if (who === 'bot') lastBot = (m.message || '').toString();
-                });
-                container.scrollTop = container.scrollHeight;
-                try { if (lastBot) { localStorage.setItem('chat_last_bot', lastBot); updateChatPreview(); } } catch (e) { /* ignore */ }
-            } catch (e) { console.warn(e && e.message); }
-        }
-
-        function updateChatPreview() {
-            try {
-                const preview = document.getElementById('chatPreview');
-                if (!preview) return;
-                const last = localStorage.getItem('chat_last_bot') || '';
-                if (!last) { preview.style.display = 'none'; preview.textContent = ''; return; }
-                const txt = last.length > 140 ? last.slice(0, 137) + '...' : last;
-                preview.textContent = txt;
-                if (isChatMinimized()) {
-                    preview.style.display = 'block';
-                    preview.classList.remove('chat-slide-out'); preview.classList.add('chat-slide-in');
-                } else {
-                    preview.classList.remove('chat-slide-in'); preview.classList.add('chat-slide-out');
-                    setTimeout(() => { try { preview.style.display = 'none'; } catch(e){} }, 220);
-                }
-            } catch (e) { console.warn('updateChatPreview error', e && e.message); }
-        }
-
-        async function markChatReadOnServer() {
-            try {
-                const res = await apiRequest('/api/admin/chat-read', { method: 'POST' });
-                if (res.ok) {
-                    resetChatUnread();
-                }
-            } catch (e) { console.warn('Failed to mark chat read on server', e && e.message); }
-        }
-
-        function attachActionButtons(containerEl, text) {
-            const t = (text || '').toLowerCase();
-            const actions = [];
-            if (t.includes('resolve')) actions.push({ label: 'Open Issues', fn: () => openTab('issues') });
-            if (t.includes('export')) actions.push({ label: 'Export Issues CSV', fn: () => exportData('issues') });
-            if (t.includes('ussd') || t.includes('parsed_text') || t.includes('parsed')) actions.push({ label: 'Open USSD', fn: () => openTab('ussd') });
-            if (t.includes('password')) actions.push({ label: 'Change Password', fn: () => showChangePasswordModal() });
-
-            if (!actions.length) return;
-
-            const wrapper = document.createElement('div');
-            wrapper.style.marginTop = '8px';
-            wrapper.style.display = 'flex';
-            wrapper.style.gap = '8px';
-
-            actions.forEach(a => {
-                const b = document.createElement('button');
-                b.className = 'btn-sm';
-                b.textContent = a.label;
-                b.onclick = (ev) => { ev.stopPropagation(); a.fn(); };
-                wrapper.appendChild(b);
-            });
-
-            containerEl.appendChild(wrapper);
-        }
-
-        function openTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-            // Show selected content
-            const content = document.getElementById(tab + '-content');
-            if (content) content.style.display = 'block';
-
-            // Try to set the corresponding tab button active
-            const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
-            if (btn) btn.classList.add('active');
-
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-            else if (tab === 'ussd') loadUssd();
-            else if (tab === 'users') loadUsers();
-            else if (tab === 'chat-history') loadAdminChatHistory();
-        }
+        // Chat UI and helper functions removed per user request (front-end only)
 
         // Profile modal helpers
         // Profile modal helpers (enhanced)
@@ -2749,41 +2302,7 @@
             applyProfileSettings(s);
         }
 
-        // KB editor removed — chatbot uses OpenAI KB and server-side configuration
-
-        async function sendChatbotMessage() {
-            const input = document.getElementById('chatbot-input');
-            const text = (input.value || '').trim();
-            if (!text) return;
-            appendChatMessage('user', text);
-            input.value = '';
-            try {
-                const sessionId = getChatSessionId();
-                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text, session_id: sessionId }) });
-                const data = await res.json();
-                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply, data.source);
-                else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
-            } catch (e) {
-                appendChatMessage('bot', 'Error contacting help service: ' + e.message);
-            }
-        }
-
-        function getChatSessionId() {
-            try {
-                let sid = sessionStorage.getItem('chat_session_id');
-                if (!sid) {
-                    sid = 'sess-' + Date.now() + '-' + Math.random().toString(36).slice(2,8);
-                    sessionStorage.setItem('chat_session_id', sid);
-                }
-                return sid;
-            } catch (e) { return 'sess-unknown'; }
-        }
-
-        function sendSuggestion(text) {
-            const input = document.getElementById('chatbot-input');
-            input.value = text;
-            sendChatbotMessage();
-        }
+        // Chat front-end messaging helpers removed per user request
 
         // ========================================
         // USSD INTERACTIONS
@@ -3119,87 +2638,15 @@
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
 
-            // toggle inline chatbot visibility depending on selected tab
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) {
-                if (tab === 'issues') cib.classList.add('visible');
-                else cib.classList.remove('visible');
-            }
+            // Inline chatbot removed per user request — no-op
         }
 
-        // ========================================
-        // ADMIN: Chat history viewer (MCA only)
-        // ========================================
-        let chatAdminPage = 0;
-        const chatAdminLimit = 80;
+        // Chat history removed (front-end) per user request
 
-        async function loadAdminChatHistory() {
-            const user = document.getElementById('chatFilterUser').value.trim();
-            const session = document.getElementById('chatFilterSession').value.trim();
-            const start = document.getElementById('chatFilterStart').value;
-            const end = document.getElementById('chatFilterEnd').value;
-            const skip = chatAdminPage * chatAdminLimit;
-
-            const params = new URLSearchParams();
-            if (user) params.append('user_id', user);
-            if (session) params.append('session_id', session);
-            if (start) params.append('start', start);
-            if (end) params.append('end', end);
-            params.append('limit', String(chatAdminLimit));
-            params.append('skip', String(skip));
-
-            const tbody = document.getElementById('chat-history-tbody');
-            tbody.innerHTML = '<tr><td colspan="5" class="loading-state"><div class="spinner"></div><div>Loading chat history...</div></td></tr>';
-            try {
-                const res = await apiRequest('/api/admin/chat-history-admin?' + params.toString());
-                const rows = await res.json();
-                renderAdminChatHistory(rows || []);
-                document.getElementById('chatPageInfo').textContent = `Page ${chatAdminPage + 1}`;
-            } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="5" class="empty-state"><div class="empty-state-text">Error: ${e.message}</div></td></tr>`;
-            }
-        }
-
-        function renderAdminChatHistory(rows) {
-            const tbody = document.getElementById('chat-history-tbody');
-            if (!Array.isArray(rows) || rows.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><div class="empty-state-text">No messages found</div></td></tr>';
-                return;
-            }
-            tbody.innerHTML = rows.map(r => `
-                <tr>
-                    <td>${new Date(r.created_at).toLocaleString()}</td>
-                    <td>${r.user_name || (r.user_id || '')}</td>
-                    <td>${r.role || ''}</td>
-                    <td>${r.session_id || ''}</td>
-                    <td style="max-width:600px; white-space:pre-wrap;">${(r.message||'').toString().replace(/</g,'&lt;')}</td>
-                </tr>
-            `).join('');
-        }
-
-        function prevChatPage() { if (chatAdminPage > 0) { chatAdminPage -= 1; loadAdminChatHistory(); } }
-        function nextChatPage() { chatAdminPage += 1; loadAdminChatHistory(); }
-        function clearChatFilters() { document.getElementById('chatFilterUser').value=''; document.getElementById('chatFilterSession').value=''; document.getElementById('chatFilterStart').value=''; document.getElementById('chatFilterEnd').value=''; chatAdminPage = 0; loadAdminChatHistory(); }
-
-        function exportChatHistoryCSV() {
-            const user = document.getElementById('chatFilterUser').value.trim();
-            const session = document.getElementById('chatFilterSession').value.trim();
-            const start = document.getElementById('chatFilterStart').value;
-            const end = document.getElementById('chatFilterEnd').value;
-            const params = new URLSearchParams();
-            if (user) params.append('user_id', user);
-            if (session) params.append('session_id', session);
-            if (start) params.append('start', start);
-            if (end) params.append('end', end);
-            // Reuse admin endpoint; backend will honor filters
-            window.location.href = API_BASE + '/api/admin/chat-history-admin?' + params.toString() + '&export=csv';
-        }
-
-        // ========================================
-        // EXPORT DATA
-        // ========================================
+        // Export data disabled in UI per user request
         function exportData(type) {
-            window.location.href = API_BASE + '/api/admin/export/' + type;
+            console.warn('Export disabled by admin UI cleanup.');
+            showToast('Export disabled in this build.', 'info');
         }
 
         // ========================================
@@ -3219,11 +2666,7 @@
                 if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
                 showDashboard();
             }
-            // hide chatbot by default until user is logged in
-            const cb = document.getElementById('chatbotBtn');
-            if (cb) cb.style.display = 'none';
-            const cib = document.getElementById('chatbotInlineBtn');
-            if (cib) cib.classList.remove('visible');
+            // Chatbot UI removed — no initialization required
         });
 
         // Auto-refresh data every 30 seconds
