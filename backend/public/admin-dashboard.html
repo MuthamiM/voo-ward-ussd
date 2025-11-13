@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1878,19 +1877,6 @@
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
         }
-=======
-<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <meta http-equiv="refresh" content="0; url=/admin-dashboard.html" />
-    <title>Redirecting to Admin Dashboard</title>
-  </head>
-  <body>
-    <p>Redirecting to the canonical admin dashboard. If you are not redirected automatically, <a href="/admin-dashboard.html">click here</a>.</p>
-  </body>
-</html>
->>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
         // ========================================
         // STATISTICS
@@ -2048,17 +2034,54 @@
 
                             try {
                             const r = await apiRequest(`/api/admin/issues/${id}`, {
-                                <!doctype html>
-                                <html>
-                                    <head>
-                                        <meta charset="utf-8" />
-                                        <meta http-equiv="refresh" content="0; url=/admin-dashboard.html" />
-                                        <title>Redirecting to Admin Dashboard</title>
-                                    </head>
-                                    <body>
-                                        <p>Redirecting to the canonical admin dashboard. If you are not redirected automatically, <a href="/admin-dashboard.html">click here</a>.</p>
-                                    </body>
-                                    </html>
+                                method: 'PATCH',
+                                body: JSON.stringify({ status: sel.value, action_note: note })
+                            });
+                            if (!r.ok) {
+                                const err = await r.json();
+                                throw new Error(err.error || 'save failed');
+                            }
+
+                            // Success UX: animate row, show saved state
+                            row.classList.add('row-updated');
+                            btn.textContent = 'Saved';
+                            setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                                // remove animation class after it finishes
+                                row.classList.remove('row-updated');
+                            }, 900);
+
+                            // Refresh stats and related views in background
+                            try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
+                            try { loadUssd(); } catch(e) { /* ignore */ }
+                            try { loadConstituents(); } catch(e) { /* ignore */ }
+                        } catch (e) {
+                            showToast('Save failed: '+e.message, 'error');
+                            btn.disabled = false;
+                            btn.textContent = originalText;
+                        } finally {
+                            // clean up spinner if still present
+                            if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
+                        }
+                    });
+                });
+
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
+            }
+        }
+
+        function applyIssuesSearch() { loadIssues(); }
+        function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
+
+        // Open a specific ticket row and highlight it
+        function openTicket(ticket) {
+            // reload issues then try to find the row
+            loadIssues();
+            setTimeout(() => {
+                const rows = document.querySelectorAll('#issues-tbody tr');
+                for (const r of rows) {
                     if (r.innerText && r.innerText.indexOf(ticket) !== -1) {
                         r.classList.add('row-updated');
                         r.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2151,10 +2174,7 @@
             }
         }
 
-<<<<<<< HEAD
         // In-dashboard chatbot helper
-=======
->>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
         // Chat UI and helper functions removed per user request (front-end only)
 
         // Profile modal helpers
@@ -2282,13 +2302,7 @@
             applyProfileSettings(s);
         }
 
-<<<<<<< HEAD
         // Chat front-end messaging helpers removed per user request
-=======
-    // KB editor removed — chatbot uses OpenAI when configured; no client-side KB editing available
-
-        // Chat messaging helpers removed from this copy per user request
->>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
         // ========================================
         // USSD INTERACTIONS
@@ -2627,7 +2641,6 @@
             // Inline chatbot removed per user request — no-op
         }
 
-<<<<<<< HEAD
         // Chat history removed (front-end) per user request
 
         // Export data disabled in UI per user request
@@ -2635,9 +2648,6 @@
             console.warn('Export disabled by admin UI cleanup.');
             showToast('Export disabled in this build.', 'info');
         }
-=======
-        // Chat history and export functionality removed/disabled (front-end) per user request
->>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
         // ========================================
         // INITIALIZATION
@@ -2714,6 +2724,7 @@
         </div>
     </div>
 
+    <!-- KB Editor Modal (MCA only) -->
     <!-- KB Editor removed -->
 
     <!-- Bulk Resolve Modal -->
