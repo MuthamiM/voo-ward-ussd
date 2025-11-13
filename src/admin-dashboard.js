@@ -9,11 +9,110 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 const chatbotSvc = require('./chatbot');
 
+
 const app = express();
+// Trust proxy for correct client IP detection behind Render/Heroku/NGINX
+app.set('trust proxy', 1);
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+// Chat history and unread APIs
+app.get('/api/admin/chat-history', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json([]);
+    const session_id = req.query.session_id;
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    // normalize to ObjectId when possible for consistent DB lookups
+    uid = normalizeUserId(uid);
+    const q = session_id ? { session_id } : (uid ? { user_id: uid } : {});
+    const rows = await database.collection('chat_messages').find(q).sort({ created_at: 1 }).limit(500).toArray();
+    res.json(rows || []);
+  } catch (e) {
+    console.error('Failed to fetch chat history', e && e.message);
+    res.status(500).json({ error: 'failed to fetch chat history' });
+  }
+});
+ 
+app.get('/api/admin/chat-unread', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json({ unread: 0 });
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    if (!uid) return res.json({ unread: 0 });
+    uid = normalizeUserId(uid);
+    const doc = await database.collection('chat_unreads').findOne({ user_id: uid });
+    res.json({ unread: (doc && doc.unread) ? doc.unread : 0 });
+  } catch (e) {
+    console.error('Failed to fetch unread count', e && e.message);
+    res.status(500).json({ error: 'failed to fetch unread' });
+  }
+});
+ 
+app.post('/api/admin/chat-read', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+    let uid = req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null;
+    if (!uid) return res.status(400).json({ error: 'Missing user' });
+    uid = normalizeUserId(uid);
+    await database.collection('chat_unreads').updateOne(
+      { user_id: uid },
+      { $set: { unread: 0, last_read_at: new Date() } },
+      { upsert: true }
+    );
+    res.json({ success: true });
+  } catch (e) {
+    console.error('Failed to mark chat read', e && e.message);
+    res.status(500).json({ error: 'failed to mark read' });
+  }
+});
+
+// Admin-only: fetch chat history for any user or session (filtering)
+app.get('/api/admin/chat-history-admin', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) return res.json([]);
+    const { user_id, session_id, start, end, limit = 500, skip = 0 } = req.query;
+    const q = {};
+    if (session_id) q.session_id = session_id;
+    if (user_id) {
+      let uid = normalizeUserId(user_id);
+      q.user_id = uid;
+    }
+    if (start || end) {
+      q.created_at = {};
+      if (start) q.created_at.$gte = new Date(start);
+      if (end) q.created_at.$lte = new Date(end);
+    }
+    const rows = await database.collection('chat_messages').find(q).sort({ created_at: 1 }).skip(parseInt(skip,10)||0).limit(Math.min(2000, parseInt(limit,10)||500)).toArray();
+    // Support CSV export when requested
+    if (req.query.export === 'csv' || (req.headers.accept && req.headers.accept.includes && req.headers.accept.includes('text/csv'))) {
+      try {
+        const csvLines = ['created_at,user_id,user_name,role,session_id,message'];
+        (rows || []).forEach(r => {
+          const when = new Date(r.created_at).toISOString();
+          const uid = r.user_id ? (typeof r.user_id === 'object' && r.user_id._bsontype === 'ObjectID' ? r.user_id.toString() : String(r.user_id)) : '';
+          const name = (r.user_name || '').replace(/"/g, '""');
+          const role = (r.role || '');
+          const sid = (r.session_id || '').replace(/"/g, '""');
+          const msg = (r.message || '').replace(/"/g, '""');
+          csvLines.push(`"${when}","${uid}","${name}","${role}","${sid}","${msg}"`);
+        });
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="chat_history.csv"');
+        return res.send(csvLines.join('\n'));
+      } catch (csvErr) {
+        console.warn('Failed to generate CSV', csvErr && csvErr.message);
+      }
+    }
+    res.json(rows || []);
+  } catch (e) {
+    console.error('Failed to fetch admin chat history', e && e.message);
+    res.status(500).json({ error: 'failed to fetch admin chat history' });
+  }
+});
 
 // CORS - allow frontend to connect
 app.use((req, res, next) => {
@@ -144,6 +243,21 @@ if (rateLimit) {
   console.log('Login limiter: in-process fallback active');
 }
 
+// Chat rate limiter (protect chatbot from abuse). Per-IP window by default.
+let chatLimiter;
+if (rateLimit) {
+  chatLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30, // limit each IP to 30 chat requests per minute
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many chat requests, please slow down' }
+  });
+} else {
+  // Simple no-op fallback (allow all) to avoid blocking when module not present
+  chatLimiter = (req, res, next) => next();
+}
+
 // Middleware: Verify MCA role
 function requireMCA(req, res, next) {
   if (req.user.role !== "MCA") {
@@ -152,11 +266,26 @@ function requireMCA(req, res, next) {
   next();
 }
 
+// Helper: normalize user id to ObjectId when possible
+function normalizeUserId(uid) {
+  if (!uid) return null;
+  try {
+    if (uid instanceof ObjectId) return uid;
+    if (typeof uid === 'string' && ObjectId.isValid(uid)) return new ObjectId(uid);
+  } catch (e) {
+    // fall through - return original value
+  }
+  return uid;
+}
+
 // MongoDB connection
 const { ServerApiVersion } = require("mongodb");
 let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+// Auto-delete configuration: delay before deleting resolved issues and reaper interval
+const ISSUE_AUTO_DELETE_MS = parseInt(process.env.ISSUE_AUTO_DELETE_MS, 10) || (2 * 60 * 1000); // default 2 minutes
+const ISSUE_REAPER_INTERVAL_MS = parseInt(process.env.ISSUE_REAPER_INTERVAL_MS, 10) || (60 * 1000); // default run every 60s
 
 async function connectDB() {
   if (db) return db;
@@ -183,6 +312,14 @@ async function connectDB() {
       const url = new URL(MONGO_URI);
       const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
       db = client.db(pathDb);
+      // Ensure important indexes exist to optimize reaper and related queries
+      try {
+        const issuesCol = db.collection('issues');
+        await issuesCol.createIndex({ scheduled_delete_at: 1, deleted: 1 });
+        console.log('Ensured index on issues.scheduled_delete_at and issues.deleted');
+      } catch (ixErr) {
+        console.warn('Could not ensure indexes for issues collection:', ixErr && ixErr.message);
+      }
     }
     
     console.log("✅ Connected to MongoDB Atlas");
@@ -197,6 +334,52 @@ async function connectDB() {
 // Prepare upload directory for profile avatars
 const UPLOADS_DIR = path.join(__dirname, '../public/uploads/avatars');
 try { fs.mkdirSync(UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+
+// Background reaper: delete issues with scheduled_delete_at <= now (safe-guard: only if still resolved)
+function startIssueReaper() {
+  try {
+    const intervalMs = ISSUE_REAPER_INTERVAL_MS;
+    const timer = setInterval(async () => {
+      try {
+        const database = await connectDB();
+        if (!database) return;
+        const now = new Date();
+        const cursor = database.collection('issues').find({ scheduled_delete_at: { $lte: now } });
+        const docs = await cursor.toArray();
+        for (const doc of docs) {
+          try {
+            const status = (doc.status || '').toString().toLowerCase();
+            if (status === 'resolved') {
+              // Soft-delete: mark deleted=true so we retain audit trail
+              try {
+                await database.collection('issues').updateOne(
+                  { _id: doc._id },
+                  { $set: { deleted: true, deleted_at: new Date(), deleted_by: 'system' }, $unset: { scheduled_delete_at: "" } }
+                );
+                console.log('Reaper: soft-deleted scheduled resolved issue', doc.ticket || doc._id);
+              } catch (softErr) {
+                console.warn('Reaper: failed to soft-delete', doc.ticket || doc._id, softErr && softErr.message);
+              }
+            } else {
+              await database.collection('issues').updateOne({ _id: doc._id }, { $unset: { scheduled_delete_at: "" } });
+              console.log('Reaper: cleared scheduled_delete_at for', doc.ticket || doc._id, 'status', status);
+            }
+          } catch (e) {
+            console.warn('Reaper failed for', doc.ticket || doc._id, e && e.message);
+          }
+        }
+      } catch (e) {
+        console.warn('Issue reaper error', e && e.message);
+      }
+    }, intervalMs);
+    if (timer && typeof timer.unref === 'function') try { timer.unref(); } catch (e) { /* ignore */ }
+    console.log('Issue reaper started (interval ms):', intervalMs);
+    return timer;
+  } catch (e) {
+    console.warn('Failed to start issue reaper', e && e.message);
+    return null;
+  }
+}
 
 // Multer storage for avatars
 const storage = multer.diskStorage({
@@ -528,8 +711,9 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
+    // Exclude soft-deleted issues from exports
     const issues = await database.collection("issues")
-      .find({})
+      .find({ deleted: { $ne: true } })
       .sort({ created_at: -1 })
       .toArray();
     
@@ -552,8 +736,9 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
-    res.json(bursaries);
+    // Ensure we always return an array to the frontend to avoid "map is not a function" errors
+    const safeBursaries = Array.isArray(bursaries) ? bursaries : (bursaries ? [bursaries] : []);
+    res.json(safeBursaries);
   } catch (err) {
     console.error("Error fetching bursaries:", err);
     res.status(500).json({ error: err.message });
@@ -642,6 +827,37 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
           console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
         }
 
+            // Schedule automatic deletion after 2 minutes (safe-guard: only delete if still resolved)
+            try {
+              const scheduledAt = new Date(Date.now() + ISSUE_AUTO_DELETE_MS);
+              // mark the document with a scheduled_delete_at timestamp so admins can see it
+              await database.collection('issues').updateOne({ ticket: id }, { $set: { scheduled_delete_at: scheduledAt } });
+              setTimeout(async () => {
+                try {
+                  const fresh = await database.collection('issues').findOne({ ticket: id });
+                  if (!fresh) return console.log('Scheduled delete: issue already removed', id);
+                  const s = (fresh.status || '').toString().toLowerCase();
+                  if (s === 'resolved') {
+                    // Soft-delete instead of hard delete to keep an audit trail
+                    try {
+                      await database.collection('issues').updateOne(
+                        { ticket: id },
+                        { $set: { deleted: true, deleted_at: new Date(), deleted_by: req.user?.username || 'system' }, $unset: { scheduled_delete_at: "" } }
+                      );
+                      console.log('Scheduled delete: soft-deleted resolved issue', id);
+                    } catch (sdErr) {
+                      console.warn('Scheduled soft-delete failed for', id, sdErr && sdErr.message);
+                    }
+                  } else {
+                    console.log('Scheduled delete skipped for', id, 'status is', s);
+                    // clear scheduled_delete_at to indicate it was skipped
+                    try { await database.collection('issues').updateOne({ ticket: id }, { $unset: { scheduled_delete_at: "" } }); } catch (e) { /* ignore */ }
+                  }
+                } catch (sErr) { console.warn('Scheduled delete failed for', id, sErr && sErr.message); }
+              }, ISSUE_AUTO_DELETE_MS);
+            } catch (schedErr) {
+              console.warn('Failed to schedule delete for issue', id, schedErr && schedErr.message);
+            }
         // Notifications are disabled in this deployment. We still update USSD interactions above.
         if (updated && updated.phone_number) {
           console.log('Notification suppressed for issue', id, 'phone', updated.phone_number);
@@ -718,6 +934,36 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
           }
 
           results.push({ id: ticket, ok: true, issue: updated });
+          // If we just marked this as resolved, schedule deletion after 2 minutes
+          try {
+            const ts = (targetStatus || '').toString().toLowerCase();
+            if (ts === 'resolved') {
+              const scheduledAt = new Date(Date.now() + ISSUE_AUTO_DELETE_MS);
+              try { await database.collection('issues').updateOne({ ticket: ticket }, { $set: { scheduled_delete_at: scheduledAt } }); } catch(e) { /* ignore */ }
+              setTimeout(async () => {
+                try {
+                  const fresh = await database.collection('issues').findOne({ ticket: ticket });
+                  if (!fresh) return console.log('Scheduled delete: issue already removed', ticket);
+                  const s = (fresh.status || '').toString().toLowerCase();
+                  if (s === 'resolved') {
+                    // Soft-delete instead of hard delete to keep an audit trail
+                    try {
+                      await database.collection('issues').updateOne(
+                        { ticket: ticket },
+                        { $set: { deleted: true, deleted_at: new Date(), deleted_by: req.user?.username || 'system' }, $unset: { scheduled_delete_at: "" } }
+                      );
+                      console.log('Scheduled delete: soft-deleted resolved issue', ticket);
+                    } catch (sdErr) {
+                      console.warn('Scheduled soft-delete failed for', ticket, sdErr && sdErr.message);
+                    }
+                  } else {
+                    console.log('Scheduled delete skipped for', ticket, 'status is', s);
+                    try { await database.collection('issues').updateOne({ ticket: ticket }, { $unset: { scheduled_delete_at: "" } }); } catch (ee) { /* ignore */ }
+                  }
+                } catch (se) { console.warn('Scheduled delete failed for', ticket, se && se.message); }
+              }, ISSUE_AUTO_DELETE_MS);
+            }
+          } catch (schedErr) { console.warn('Failed to schedule delete for', ticket, schedErr && schedErr.message); }
         } catch (errInner) {
           console.warn('Error updating issue in bulk', ticket, errInner && errInner.message);
           results.push({ id: ticket, ok: false, error: errInner && errInner.message });
@@ -880,16 +1126,17 @@ app.get("/api/admin/stats", async (req, res) => {
     }
     
     const [
-      totalConstituents,
-      totalIssues,
-      openIssues,
+  totalConstituents,
+  totalIssues,
+  openIssues,
       totalBursaries,
       pendingBursaries,
       totalAnnouncements
     ] = await Promise.all([
-      database.collection("constituents").countDocuments(),
-      database.collection("issues").countDocuments(),
-      database.collection("issues").countDocuments({ status: "open" }),
+  database.collection("constituents").countDocuments(),
+  // exclude soft-deleted issues from counts
+  database.collection("issues").countDocuments({ deleted: { $ne: true } }),
+  database.collection("issues").countDocuments({ status: "open", deleted: { $ne: true } }),
       database.collection("bursary_applications").countDocuments(),
       database.collection("bursary_applications").countDocuments({ status: "Pending" }),
       database.collection("announcements").countDocuments()
@@ -920,10 +1167,43 @@ app.get("/api/admin/stats", async (req, res) => {
 });
 
 // Simple chatbot/help endpoint to guide admins in using the dashboard
-app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+// Protect chat endpoint with a rate limiter to prevent abuse
+app.post('/api/admin/chatbot', chatLimiter, requireAuth, async (req, res) => {
   try {
     const { message } = req.body || {};
-    const reply = await chatbotSvc.generateReply(message, req.user);
+    // Log user message and bot reply to chat_messages collection (if DB available)
+    let reply;
+    try {
+      const database = await connectDB();
+      const userId = normalizeUserId(req.user && (req.user._id || req.user.id) ? (req.user._id || req.user.id) : null);
+      const userName = req.user && (req.user.full_name || req.user.fullName || req.user.username) ? (req.user.full_name || req.user.fullName || req.user.username) : 'unknown';
+      const msgDoc = { user_id: userId, user_name: userName, role: 'user', message: message, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
+      if (database) {
+        try { await database.collection('chat_messages').insertOne(msgDoc); } catch (e) { console.warn('Failed to log chat message:', e && e.message); }
+      }
+
+      reply = await chatbotSvc.generateReply(message, req.user);
+
+      const botDoc = { user_id: userId, user_name: userName, role: 'bot', message: reply, session_id: req.body && req.body.session_id ? req.body.session_id : null, created_at: new Date() };
+      if (database) {
+        try { 
+          await database.collection('chat_messages').insertOne(botDoc); 
+          // increment per-user unread counter if we have a user id
+          if (userId) {
+            try {
+              await database.collection('chat_unreads').updateOne(
+                { user_id: userId },
+                { $inc: { unread: 1 }, $set: { last_message_at: new Date() } },
+                { upsert: true }
+              );
+            } catch (incErr) { console.warn('Failed to increment chat_unreads:', incErr && incErr.message); }
+          }
+        } catch (e) { console.warn('Failed to log chat reply:', e && e.message); }
+      }
+    } catch (e) {
+      // If DB or logging fails, still try to get a reply
+      try { reply = await chatbotSvc.generateReply(message, req.user); } catch (err) { reply = 'Sorry, the help service is unavailable.'; }
+    }
     res.json({ reply });
   } catch (err) {
     console.error('Chatbot error', err && err.message);
@@ -931,32 +1211,23 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
   }
 });
 
-// Admin: get chatbot KB (for editor UI)
-app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+// Dev-only: allow testing chatbot without auth when explicitly enabled via env
+// WARNING: keep disabled in production. Enable by setting ALLOW_CHATBOT_PUBLIC_TEST=1
+app.post('/internal/test-chat', async (req, res) => {
   try {
-    const kbPath = path.join(__dirname, 'chatbot_kb.json');
-    if (!fs.existsSync(kbPath)) return res.json([]);
-    const raw = fs.readFileSync(kbPath, 'utf8');
-    const data = JSON.parse(raw);
-    res.json(data);
+    if (!process.env.ALLOW_CHATBOT_PUBLIC_TEST) return res.status(404).json({ error: 'Not found' });
+    const { message } = req.body || {};
+    if (!message) return res.status(400).json({ error: 'message required' });
+    const reply = await chatbotSvc.generateReply(message, { username: 'dev' });
+    return res.json({ reply });
   } catch (e) {
-    console.error('Error reading chatbot KB', e && e.message);
-    res.status(500).json({ error: 'failed to read kb' });
+    console.error('internal test-chat error', e && e.message);
+    res.status(500).json({ error: 'internal error' });
   }
 });
 
-// Admin: update chatbot KB (replace entire KB)
-app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
-  try {
-    const kb = req.body;
-    const kbPath = path.join(__dirname, 'chatbot_kb.json');
-    fs.writeFileSync(kbPath, JSON.stringify(kb, null, 2), 'utf8');
-    res.json({ success: true });
-  } catch (e) {
-    console.error('Error writing chatbot KB', e && e.message);
-    res.status(500).json({ error: 'failed to write kb' });
-  }
-});
+// Admin: get chatbot KB (for editor UI)
+// NOTE: Chatbot KB editor removed for production — chatbot now relies on OpenAI (when configured)
 
 // Admin: update current user's profile
 // Accept multipart/form-data with an optional 'photo' file and optional 'settings' JSON string
@@ -1217,6 +1488,42 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   }
 });
 
+// Admin: purge soft-deleted issues (permanent removal). MCA only.
+app.post('/api/admin/issues/purge', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { ticket, older_than_minutes, all, confirm } = req.body || {};
+    if (!confirm) return res.status(400).json({ error: 'Confirm required. Set { confirm: true } to proceed.' });
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    if (ticket) {
+      const r = await database.collection('issues').deleteOne({ ticket: ticket, deleted: true });
+      await database.collection('admin_audit').insertOne({ action: 'purge-issue', ticket, performed_by: req.user?.username || 'unknown', count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    if (older_than_minutes && Number(older_than_minutes) > 0) {
+      const mins = Number(older_than_minutes);
+      const cutoff = new Date(Date.now() - mins * 60 * 1000);
+      const r = await database.collection('issues').deleteMany({ deleted: true, deleted_at: { $lte: cutoff } });
+      await database.collection('admin_audit').insertOne({ action: 'purge-issues-older', performed_by: req.user?.username || 'unknown', older_than_minutes: mins, count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    if (all) {
+      const r = await database.collection('issues').deleteMany({ deleted: true });
+      await database.collection('admin_audit').insertOne({ action: 'purge-all-deleted-issues', performed_by: req.user?.username || 'unknown', count: r.deletedCount, created_at: new Date() });
+      return res.json({ success: true, deleted: r.deletedCount });
+    }
+
+    return res.status(400).json({ error: 'Provide ticket or older_than_minutes or all with confirm:true' });
+  } catch (e) {
+    console.error('Purge issues error', e && e.message);
+    res.status(500).json({ error: 'failed to purge issues' });
+  }
+});
+
 // Persist USSD interactions (public endpoint used by USSD gateway)
 app.post('/api/ussd', async (req, res) => {
   try {
@@ -1431,6 +1738,8 @@ async function startServer() {
     
     // Initialize admin user
     await initializeAdmin();
+    // Start background reaper to process scheduled deletions
+    try { startIssueReaper(); } catch (e) { console.warn('Failed to start issue reaper after init', e && e.message); }
   } else {
     console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
@@ -1459,6 +1768,8 @@ if (require.main === module) {
     try {
       const database = await connectDB();
       if (database) await initializeAdmin();
+        // Start background reaper when running as a module too
+        try { startIssueReaper(); } catch (e) { console.warn('Failed to start issue reaper (module init)', e && e.message); }
     } catch (e) {
       console.warn('Admin dashboard module init warning:', e && e.message);
     }
