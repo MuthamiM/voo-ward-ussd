@@ -1452,37 +1452,52 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
 app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-    
-    const issues = await database.collection("issues")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-    
-    // Include action metadata in export: action_by, action_at, action_note
-    let csv = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
-    issues.forEach(issue => {
-      const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
-      const category = (issue.category || '').toString().replace(/"/g, '""');
-      const message = (issue.message || '').toString().replace(/"/g, '""');
-      const phone = (issue.phone_number || '').toString().replace(/"/g, '""');
-      const status = (issue.status || '').toString().replace(/"/g, '""');
-      const actionBy = (issue.action_by || '').toString().replace(/"/g, '""');
-      const actionAt = issue.action_at ? new Date(issue.action_at).toISOString() : '';
-      const actionNote = (issue.action_note || '').toString().replace(/"/g, '""');
-      const created = issue.created_at ? new Date(issue.created_at).toISOString() : '';
+    if (!database) return res.status(503).json({ error: "Database not connected" });
 
-      csv += `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`;
-    });
-    
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=issues.csv");
-    res.send(csv);
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=issues.csv');
+
+    // write header
+    res.write('Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n');
+
+    const cursor = database.collection('issues').find({}).sort({ created_at: -1 });
+    let count = 0;
+    try {
+      for await (const issue of cursor) {
+        const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
+        const category = (issue.category || '').toString().replace(/"/g, '""');
+        const message = (issue.message || '').toString().replace(/"/g, '""');
+        const phone = (issue.phone_number || '').toString().replace(/"/g, '""');
+        const status = (issue.status || '').toString().replace(/"/g, '""');
+        const actionBy = (issue.action_by || '').toString().replace(/"/g, '""');
+        const actionAt = issue.action_at ? new Date(issue.action_at).toISOString() : '';
+        const actionNote = (issue.action_note || '').toString().replace(/"/g, '""');
+        const created = issue.created_at ? new Date(issue.created_at).toISOString() : '';
+
+        res.write(`"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`);
+        count++;
+      }
+    } catch (streamErr) {
+      console.warn('Error while streaming issues export', streamErr && streamErr.message);
+    }
+
+    // write audit record for export
+    try {
+      await database.collection('admin_audit').insertOne({
+        action: 'export',
+        export_type: 'issues',
+        performed_by: req.user?.username || 'unknown',
+        count: count,
+        created_at: new Date()
+      });
+    } catch (auditErr) {
+      console.warn('Failed to write audit entry for issues export', auditErr && auditErr.message);
+    }
+
+    return res.end();
   } catch (err) {
-    console.error("Error exporting issues:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error exporting issues:", err && err.message);
+    return res.status(500).json({ error: err.message || 'failed to export issues' });
   }
 });
 
@@ -1571,29 +1586,36 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
 
-    const interactions = await database.collection('ussd_interactions')
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
+    res.write('Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n');
 
-    let csv = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
-    interactions.forEach(i => {
-      const phone = (i.phone_number || '').toString().replace(/"/g, '""');
-      const text = (i.text || '').toString().replace(/"/g, '""');
-      const parsed = i.parsed_text ? JSON.stringify(i.parsed_text).replace(/"/g, '""') : '';
-      const response = (i.response || '').toString().replace(/"/g, '""');
-      const ref = (i.ref_code || '').toString().replace(/"/g, '""');
-      const ip = (i.ip || '').toString();
-      const created = i.created_at ? new Date(i.created_at).toISOString() : '';
-      csv += `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
-    });
+    const cursor = database.collection('ussd_interactions').find({}).sort({ created_at: -1 });
+    let count = 0;
+    try {
+      for await (const i of cursor) {
+        const phone = (i.phone_number || '').toString().replace(/"/g, '""');
+        const text = (i.text || '').toString().replace(/"/g, '""');
+        const parsed = i.parsed_text ? JSON.stringify(i.parsed_text).replace(/"/g, '""') : '';
+        const response = (i.response || '').toString().replace(/"/g, '""');
+        const ref = (i.ref_code || '').toString().replace(/"/g, '""');
+        const ip = (i.ip || '').toString();
+        const created = i.created_at ? new Date(i.created_at).toISOString() : '';
+        res.write(`"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`);
+        count++;
+      }
+    } catch (streamErr) {
+      console.warn('Error while streaming USSD export', streamErr && streamErr.message);
+    }
 
-    res.header('Content-Type', 'text/csv');
-    res.header('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
-    res.send(csv);
+    try {
+      await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'ussd', performed_by: req.user?.username || 'unknown', count, created_at: new Date() });
+    } catch (auditErr) { console.warn('Failed to write audit entry for ussd export', auditErr && auditErr.message); }
+
+    return res.end();
   } catch (err) {
-    console.error('Error exporting USSD interactions:', err);
-    res.status(500).json({ error: err.message });
+    console.error('Error exporting USSD interactions:', err && err.message);
+    return res.status(500).json({ error: err.message || 'failed to export ussd' });
   }
 });
 
@@ -1601,26 +1623,34 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
 app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-    
-    const bursaries = await database.collection("bursary_applications")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-    
-    let csv = "Ref Code,Student Name,School,Amount,Status,Phone,Created At\n";
-    bursaries.forEach(b => {
-      csv += `"${b.ref_code}","${b.student_name}","${b.institution}","${b.amount_requested}","${b.status}","${b.phone_number}","${b.created_at}"\n`;
-    });
-    
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=bursaries.csv");
-    res.send(csv);
+    if (!database) return res.status(503).json({ error: "Database not connected" });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=bursaries.csv');
+    res.write('Ref Code,Student Name,School,Amount,Status,Phone,Created At\n');
+
+    const cursor = database.collection('bursary_applications').find({}).sort({ created_at: -1 });
+    let count = 0;
+    try {
+      for await (const b of cursor) {
+        const ref = (b.ref_code || '').toString().replace(/"/g, '""');
+        const student = (b.student_name || '').toString().replace(/"/g, '""');
+        const school = (b.institution || '').toString().replace(/"/g, '""');
+        const amount = (b.amount_requested || '').toString().replace(/"/g, '""');
+        const status = (b.status || '').toString().replace(/"/g, '""');
+        const phone = (b.phone_number || '').toString().replace(/"/g, '""');
+        const created = b.created_at ? new Date(b.created_at).toISOString() : '';
+        res.write(`"${ref}","${student}","${school}","${amount}","${status}","${phone}","${created}"\n`);
+        count++;
+      }
+    } catch (streamErr) { console.warn('Error while streaming bursaries export', streamErr && streamErr.message); }
+
+    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'bursaries', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for bursaries export', auditErr && auditErr.message); }
+
+    return res.end();
   } catch (err) {
-    console.error("Error exporting bursaries:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error exporting bursaries:", err && err.message);
+    return res.status(500).json({ error: err.message || 'failed to export bursaries' });
   }
 });
 
@@ -1628,26 +1658,133 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
 app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-    
-    const constituents = await database.collection("constituents")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-    
-    let csv = "Phone,National ID,Full Name,Location,Village,Created At\n";
-    constituents.forEach(c => {
-      csv += `"${c.phone_number}","${c.national_id}","${c.full_name}","${c.location}","${c.village}","${c.created_at}"\n`;
-    });
-    
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=constituents.csv");
-    res.send(csv);
+    if (!database) return res.status(503).json({ error: "Database not connected" });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=constituents.csv');
+    res.write('Phone,National ID,Full Name,Location,Village,Created At\n');
+
+    const cursor = database.collection('constituents').find({}).sort({ created_at: -1 });
+    let count = 0;
+    try {
+      for await (const c of cursor) {
+        const phone = (c.phone_number || '').toString().replace(/"/g, '""');
+        const nid = (c.national_id || '').toString().replace(/"/g, '""');
+        const name = (c.full_name || '').toString().replace(/"/g, '""');
+        const loc = (c.location || '').toString().replace(/"/g, '""');
+        const village = (c.village || '').toString().replace(/"/g, '""');
+        const created = c.created_at ? new Date(c.created_at).toISOString() : '';
+        res.write(`"${phone}","${nid}","${name}","${loc}","${village}","${created}"\n`);
+        count++;
+      }
+    } catch (streamErr) { console.warn('Error while streaming constituents export', streamErr && streamErr.message); }
+
+    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: 'constituents', performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for constituents export', auditErr && auditErr.message); }
+
+    return res.end();
   } catch (err) {
-    console.error("Error exporting constituents:", err);
-    res.status(500).json({ error: err.message });
+    console.error("Error exporting constituents:", err && err.message);
+    return res.status(500).json({ error: err.message || 'failed to export constituents' });
+  }
+});
+
+// Unified export endpoint: /api/admin/export?type=issues|bursaries|constituents|ussd
+app.get('/api/admin/export', requireAuth, async (req, res) => {
+  try {
+    const type = (req.query.type || '').toString();
+    if (!type) return res.status(400).json({ error: 'type query parameter required (issues|bursaries|constituents|ussd)' });
+
+    const mcaOnly = ['bursaries', 'constituents'];
+    if (mcaOnly.includes(type) && req.user.role !== 'MCA') {
+      return res.status(403).json({ error: 'Access denied. MCA role required for this export.' });
+    }
+
+    const database = await connectDB();
+    if (!database) return res.status(503).json({ error: 'Database not connected' });
+
+    // Configure streaming params per export type
+    let collectionName, headerRow, filename, query = {};
+    if (type === 'issues') {
+      collectionName = 'issues';
+      headerRow = 'Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At';
+      filename = 'issues.csv';
+      query = { deleted: { $ne: true } };
+    } else if (type === 'bursaries') {
+      collectionName = 'bursary_applications';
+      headerRow = 'Ref Code,Student Name,School,Amount,Status,Phone,Created At';
+      filename = 'bursaries.csv';
+    } else if (type === 'constituents') {
+      collectionName = 'constituents';
+      headerRow = 'Phone,National ID,Full Name,Location,Village,Created At';
+      filename = 'constituents.csv';
+    } else if (type === 'ussd') {
+      collectionName = 'ussd_interactions';
+      headerRow = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At';
+      filename = 'ussd_interactions.csv';
+    } else {
+      return res.status(400).json({ error: 'Unsupported export type' });
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.write(headerRow + '\n');
+
+    const cursor = database.collection(collectionName).find(query).sort({ created_at: -1 });
+    let count = 0;
+    try {
+      for await (const doc of cursor) {
+        let line = '';
+        if (type === 'issues') {
+          const ticket = (doc.ticket || '').toString().replace(/"/g, '""');
+          const category = (doc.category || '').toString().replace(/"/g, '""');
+          const message = (doc.message || '').toString().replace(/"/g, '""');
+          const phone = (doc.phone_number || '').toString().replace(/"/g, '""');
+          const status = (doc.status || '').toString().replace(/"/g, '""');
+          const actionBy = (doc.action_by || '').toString().replace(/"/g, '""');
+          const actionAt = doc.action_at ? new Date(doc.action_at).toISOString() : '';
+          const actionNote = (doc.action_note || '').toString().replace(/"/g, '""');
+          const created = doc.created_at ? new Date(doc.created_at).toISOString() : '';
+          line = `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"`;
+        } else if (type === 'bursaries') {
+          const ref = (doc.ref_code || '').toString().replace(/"/g, '""');
+          const student = (doc.student_name || '').toString().replace(/"/g, '""');
+          const school = (doc.institution || '').toString().replace(/"/g, '""');
+          const amount = (doc.amount_requested || '').toString().replace(/"/g, '""');
+          const status = (doc.status || '').toString().replace(/"/g, '""');
+          const phone = (doc.phone_number || '').toString().replace(/"/g, '""');
+          const created = doc.created_at ? new Date(doc.created_at).toISOString() : '';
+          line = `"${ref}","${student}","${school}","${amount}","${status}","${phone}","${created}"`;
+        } else if (type === 'constituents') {
+          const phone = (doc.phone_number || '').toString().replace(/"/g, '""');
+          const nid = (doc.national_id || '').toString().replace(/"/g, '""');
+          const name = (doc.full_name || '').toString().replace(/"/g, '""');
+          const loc = (doc.location || '').toString().replace(/"/g, '""');
+          const village = (doc.village || '').toString().replace(/"/g, '""');
+          const created = doc.created_at ? new Date(doc.created_at).toISOString() : '';
+          line = `"${phone}","${nid}","${name}","${loc}","${village}","${created}"`;
+        } else if (type === 'ussd') {
+          const phone = (doc.phone_number || '').toString().replace(/"/g, '""');
+          const text = (doc.text || '').toString().replace(/"/g, '""');
+          const parsed = doc.parsed_text ? JSON.stringify(doc.parsed_text).replace(/"/g, '""') : '';
+          const response = (doc.response || '').toString().replace(/"/g, '""');
+          const ref = (doc.ref_code || '').toString().replace(/"/g, '""');
+          const ip = (doc.ip || '').toString();
+          const created = doc.created_at ? new Date(doc.created_at).toISOString() : '';
+          line = `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"`;
+        }
+        res.write(line + '\n');
+        count++;
+      }
+    } catch (streamErr) {
+      console.warn('Error while streaming unified export', streamErr && streamErr.message);
+    }
+
+    try { await database.collection('admin_audit').insertOne({ action: 'export', export_type: type, performed_by: req.user?.username || 'unknown', count, created_at: new Date() }); } catch (auditErr) { console.warn('Failed to write audit entry for unified export', auditErr && auditErr.message); }
+
+    return res.end();
+  } catch (err) {
+    console.error('Unified export error', err && err.message);
+    res.status(500).json({ error: 'failed to export' });
   }
 });
 
