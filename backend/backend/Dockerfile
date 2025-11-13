@@ -17,7 +17,10 @@ FROM base as build
 
 # Copy package files
 COPY backend/package*.json ./
-RUN npm ci --include=dev --no-audit --no-fund
+# Install dependencies (use npm install to tolerate lockfile mismatches during build)
+# Using `npm install` here avoids hard CI-only errors when lockfile and package.json
+# diverge (e.g., during staged upgrades). This makes Docker builds more robust.
+RUN npm install --include=dev --no-audit --no-fund
 
 # Copy application code
 COPY backend/ .

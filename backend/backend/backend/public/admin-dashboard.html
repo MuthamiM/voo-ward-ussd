@@ -1,7 +1,255 @@
+<<<<<<< HEAD
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0; url=/admin-dashboard.html" />
+    <title>Redirecting to Admin Dashboard</title>
+  </head>
+  <body>
+    <p>Redirecting to the canonical admin dashboard. If you are not redirected automatically, <a href="/admin-dashboard.html">click here</a>.</p>
+  </body>
+</html>
+=======
 <!DOCTYPE html>
 <html lang="en">
 <head>
-        // Chat UI and helper functions removed per user request (front-end only)
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOO Ward Admin Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #6d28d9;
+            --primary-light: #a78bfa;
+            --secondary: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #0ea5e9;
+            --dark: #1e1b4b;
+            --accent-purple: #c084fc;
+            --accent-pink: #ec4899;
+            --accent-orange: #fb923c;
+            --accent-teal: #2dd4bf;
+            --gray-50: #fafafa;
+            --gray-100: #f4f4f5;
+            --gray-200: #e4e4e7;
+            --gray-300: #d4d4d8;
+            --gray-400: #a1a1aa;
+            --gray-500: #71717a;
+            --gray-600: #52525b;
+            --gray-700: #3f3f46;
+            --gray-800: #27272a;
+            --gray-900: #18181b;
+        }
+
+        /* Smooth update animation for rows when status changes */
+        .row-updated {
+            animation: highlight-row 1s ease forwards;
+        }
+
+        @keyframes highlight-row {
+            0% { background: rgba(124,58,237,0.12); }
+            100% { background: transparent; }
+        }
+
+        /* Small button spinner */
+        .btn .spinner-inline {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.6);
+            border-top-color: rgba(255,255,255,0.95);
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Status select animations and colors */
+        .issue-status-select {
+            transition: background-color 300ms ease, transform 150ms ease;
+            padding: 6px; border-radius: 8px; border: 1px solid #e6e9ef; background: #fff;
+        }
+        .issue-status-select.status-pending { background: #fff7ed; }
+        .issue-status-select.status-in_progress { background: #eef2ff; }
+        .issue-status-select.status-resolved { background: #ecfdf5; }
+        .issue-status-select:focus { transform: scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', system-ui, sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6d28d9 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #1f2937;
+            overflow-x: hidden;
+        }
+
+        /* ========================================
+           LOGIN PAGE - GLASSMORPHISM
+        ======================================== */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated Moving Shapes Background */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -150px;
+            right: -150px;
+            animation: floatDiagonal 15s ease-in-out infinite;
+        }
+
+        .login-container::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: -100px;
+            left: -100px;
+            animation: floatWave 12s ease-in-out infinite reverse;
+        }
+
+        /* Multiple Animated Particles */
+        .animated-particle {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .particle-1 {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+            top: 20%;
+            left: 10%;
+            animation: moveUpDown 8s ease-in-out infinite;
+        }
+
+        .particle-2 {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08));
+            top: 60%;
+            right: 15%;
+            animation: moveLeftRight 10s ease-in-out infinite;
+        }
+
+        .particle-3 {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05));
+            bottom: 25%;
+            left: 20%;
+            animation: moveDiagonal 14s ease-in-out infinite;
+        }
+
+        .particle-4 {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.28), rgba(255,255,255,0.1));
+            top: 40%;
+            right: 25%;
+            animation: moveCircular 16s linear infinite;
+        }
+
+        .particle-5 {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.07));
+            bottom: 40%;
+            right: 10%;
+            animation: moveZigzag 11s ease-in-out infinite;
+        }
+
+        /* Animation Keyframes */
+        @keyframes floatDiagonal {
+            0%, 100% { 
+                transform: translate(0, 0) rotate(0deg) scale(1); 
+            }
+            25% { 
+                transform: translate(50px, 50px) rotate(90deg) scale(1.1); 
+            }
+            50% { 
+                transform: translate(100px, -50px) rotate(180deg) scale(0.9); 
+            }
+            75% { 
+                transform: translate(-50px, 100px) rotate(270deg) scale(1.05); 
+            }
+        }
+
+        @keyframes floatWave {
+            0%, 100% { 
+                transform: translate(0, 0) rotate(0deg); 
+            }
+            33% { 
+                transform: translate(-80px, -60px) rotate(120deg); 
+            }
+            66% { 
+                transform: translate(60px, 80px) rotate(240deg); 
+            }
+        }
+
+        @keyframes moveUpDown {
+            0%, 100% { 
+                transform: translateY(0) scale(1); 
+            }
+            50% { 
+                transform: translateY(-80px) scale(1.15); 
+            }
+        }
+
+        @keyframes moveLeftRight {
+            0%, 100% { 
+                transform: translateX(0) rotate(0deg); 
+            }
+            50% { 
+                transform: translateX(-100px) rotate(180deg); 
+            }
+        }
+
+        @keyframes moveDiagonal {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1); 
+            }
+            50% { 
+                transform: translate(120px, -120px) scale(1.2); 
+            }
+        }
+
+        @keyframes moveCircular {
+            0% { 
+                transform: rotate(0deg) translateX(100px) rotate(0deg); 
+            }
+            100% { 
+                transform: rotate(360deg) translateX(100px) rotate(-360deg); 
+            }
+        }
+
         @keyframes moveZigzag {
             0%, 100% { 
                 transform: translate(0, 0); 
@@ -1168,13 +1416,22 @@
         .modal-header { font-weight: 700; margin-bottom: 8px; }
     .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top: 12px; }
     .modal.show { display:block; }
-    /* Chat rows (styling only) */
+    /* Chat rows */
     .chat-row { padding:8px 10px; border-radius:8px; max-width:85%; }
     .chat-row.user { align-self:flex-end; background: linear-gradient(90deg,#7c3aed,#a78bfa); color:#fff; }
     .chat-row.bot { align-self:flex-start; background:#f3f4f6; color:#111827; }
-    /* Chatbot UI removed per user request - floating/modal CSS removed */
+    /* Chatbot floating button and modal positioning */
+    /* global floating chatbot removed (inline Issues-panel help used instead) */
+    .chatbot-modal { position: fixed; bottom: 90px; right: 22px; z-index: 11000; width:380px; max-width:92%; }
+    /* Floating chatbot button (viewport fixed bottom-right) */
+    .chatbot-button { position: fixed; bottom: 22px; right: 22px; z-index: 11001; width:56px; height:56px; border-radius:50%; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,0.18); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0; transform: translateY(6px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
+    .chatbot-button svg { display:block; }
+    .chatbot-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
+    /* Inline chatbot button placed inside a tab (shown near the issues table) */
+    .chatbot-inline-button { position: absolute; right: 18px; bottom: 68px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(10px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
+    .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
@@ -1214,7 +1471,35 @@
             <!-- Emergency admin reset removed for production safety -->
         </div>
     </div>
-        <!-- Chat UI removed per user request -->
+        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
+        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot">
+            <!-- Bot SVG icon -->
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
+            </svg>
+        </button>
+
+        <!-- Chatbot Modal (anchored bottom-right) -->
+        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
+            <div class="modal chatbot-modal" style="margin:0;">
+                <div class="modal-header">Help Chat</div>
+                <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
+                </div>
+                <div class="chatbot-suggestions">
+                    <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
+                    <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
+                    <button onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
+                    <button onclick="sendSuggestion('Export issues CSV')">Export issues</button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
+                </div>
+            </div>
+        </div>
 
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
@@ -1271,7 +1556,9 @@
                                 <input id="issuesSearch" placeholder="Search ticket/phone/message" style="padding:6px;border-radius:6px;border:1px solid #ddd;margin-right:8px;" />
                                 <button class="btn-sm" onclick="applyIssuesSearch()">Search</button>
                                 <button class="btn-sm" onclick="clearIssuesSearch()">Clear</button>
-                                <!-- Export CSV removed per user request -->
+                                <button class="btn-sm btn-success" onclick="exportData('issues')">
+                                    Export CSV
+                                </button>
                                 <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
                         </div>
@@ -1294,7 +1581,8 @@
                                 <tbody id="issues-tbody"></tbody>
                             </table>
                         </div>
-                        <!-- Inline chatbot removed per user request -->
+                        <!-- Inline chatbot trigger anchored to the issues panel (appears bottom-right of the panel) -->
+                        <button id="chatbotInlineBtn" class="chatbot-inline-button" title="Help" onclick="showChatbot()">?</button>
                     </div>
 
                     <!-- Bursaries Tab -->
@@ -1302,7 +1590,9 @@
                         <div class="content-header">
                             <h2 class="content-title">Bursary Applications</h2>
                             <div class="content-actions">
-                                <!-- Export CSV removed per user request -->
+                                <button class="btn-sm btn-success" onclick="exportData('bursaries')">
+                                    Export CSV
+                                </button>
                             </div>
                         </div>
                         <div class="table-container">
@@ -1328,7 +1618,9 @@
                         <div class="content-header">
                             <h2 class="content-title">Registered Constituents</h2>
                             <div class="content-actions">
-                                <!-- Export CSV removed per user request -->
+                                <button class="btn-sm btn-success" onclick="exportData('constituents')">
+                                    Export CSV
+                                </button>
                             </div>
                         </div>
                         <div class="table-container">
@@ -1379,7 +1671,7 @@
                         <div class="content-header">
                             <h2 class="content-title">USSD Interactions</h2>
                             <div class="content-actions">
-                                <!-- Export CSV removed per user request -->
+                                <button class="btn-sm btn-success" onclick="exportData('ussd')">Export CSV</button>
                             </div>
                         </div>
                         <div class="table-container">
@@ -1588,7 +1880,11 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    // Chatbot UI removed — no DOM changes required on logout
+                    // hide chatbot when logged out
+                    const cb = document.getElementById('chatbotBtn');
+                    if (cb) cb.style.display = 'none';
+                    const cib = document.getElementById('chatbotInlineBtn');
+                    if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
             }
@@ -1615,7 +1911,12 @@
             // Load initial data
             loadStats();
             loadIssues();
-            // Inline chatbot and Edit Help UI removed per user request — no DOM actions
+            // show inline chatbot in issues panel by default (issues tab is the default)
+            const cib = document.getElementById('chatbotInlineBtn');
+            if (cib) cib.classList.add('visible');
+            // show edit help button only for MCA
+            const eh = document.getElementById('editHelpBtn');
+            if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
         }
 
         function setupDashboard() {
@@ -1712,6 +2013,7 @@
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
         }
+>>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
         // ========================================
         // STATISTICS
@@ -1869,54 +2171,17 @@
 
                             try {
                             const r = await apiRequest(`/api/admin/issues/${id}`, {
-                                method: 'PATCH',
-                                body: JSON.stringify({ status: sel.value, action_note: note })
-                            });
-                            if (!r.ok) {
-                                const err = await r.json();
-                                throw new Error(err.error || 'save failed');
-                            }
-
-                            // Success UX: animate row, show saved state
-                            row.classList.add('row-updated');
-                            btn.textContent = 'Saved';
-                            setTimeout(() => {
-                                btn.textContent = originalText;
-                                btn.disabled = false;
-                                // remove animation class after it finishes
-                                row.classList.remove('row-updated');
-                            }, 900);
-
-                            // Refresh stats and related views in background
-                            try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
-                            try { loadUssd(); } catch(e) { /* ignore */ }
-                            try { loadConstituents(); } catch(e) { /* ignore */ }
-                        } catch (e) {
-                            showToast('Save failed: '+e.message, 'error');
-                            btn.disabled = false;
-                            btn.textContent = originalText;
-                        } finally {
-                            // clean up spinner if still present
-                            if (spinner && spinner.parentNode) spinner.parentNode.removeChild(spinner);
-                        }
-                    });
-                });
-
-            } catch (err) {
-                tbody.innerHTML = `<tr><td colspan="10" class="empty-state"><div class="empty-state-text">Error: ${err.message}</div></td></tr>`;
-            }
-        }
-
-        function applyIssuesSearch() { loadIssues(); }
-        function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
-
-        // Open a specific ticket row and highlight it
-        function openTicket(ticket) {
-            // reload issues then try to find the row
-            loadIssues();
-            setTimeout(() => {
-                const rows = document.querySelectorAll('#issues-tbody tr');
-                for (const r of rows) {
+                                <!doctype html>
+                                <html>
+                                    <head>
+                                        <meta charset="utf-8" />
+                                        <meta http-equiv="refresh" content="0; url=/admin-dashboard.html" />
+                                        <title>Redirecting to Admin Dashboard</title>
+                                    </head>
+                                    <body>
+                                        <p>Redirecting to the canonical admin dashboard. If you are not redirected automatically, <a href="/admin-dashboard.html">click here</a>.</p>
+                                    </body>
+                                    </html>
                     if (r.innerText && r.innerText.indexOf(ticket) !== -1) {
                         r.classList.add('row-updated');
                         r.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2009,30 +2274,7 @@
             }
         }
 
-        // In-dashboard chatbot helper removed per user request (front-end only)
-
-        function openTab(tab) {
-            // Hide all content
-            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
-            // Remove active class from tabs
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-
-            // Show selected content
-            const content = document.getElementById(tab + '-content');
-            if (content) content.style.display = 'block';
-
-            // Try to set the corresponding tab button active
-            const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
-            if (btn) btn.classList.add('active');
-
-            // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
-            else if (tab === 'ussd') loadUssd();
-            else if (tab === 'users') loadUsers();
-        }
+        // Chat UI and helper functions removed per user request (front-end only)
 
         // Profile modal helpers
         // Profile modal helpers (enhanced)
@@ -2159,7 +2401,35 @@
             applyProfileSettings(s);
         }
 
-        // Chat messaging removed in this copy per user request
+<<<<<<< HEAD
+    // KB editor removed — chatbot uses OpenAI when configured; no client-side KB editing available
+
+        // Chat messaging helpers removed from this copy per user request
+=======
+        // KB editor removed — chatbot uses OpenAI when configured; no client-side KB editing available
+
+        async function sendChatbotMessage() {
+            const input = document.getElementById('chatbot-input');
+            const text = (input.value || '').trim();
+            if (!text) return;
+            appendChatMessage('user', text);
+            input.value = '';
+            try {
+                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: text }) });
+                const data = await res.json();
+                if (res.ok && data && data.reply) appendChatMessage('bot', data.reply);
+                else appendChatMessage('bot', 'Sorry, I could not process that. Try "help".');
+            } catch (e) {
+                appendChatMessage('bot', 'Error contacting help service: ' + e.message);
+            }
+        }
+
+        function sendSuggestion(text) {
+            const input = document.getElementById('chatbot-input');
+            input.value = text;
+            sendChatbotMessage();
+        }
+>>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
         // ========================================
         // USSD INTERACTIONS
@@ -2498,14 +2768,7 @@
             // Inline chatbot removed per user request — no-op
         }
 
-        // ========================================
-        // EXPORT DATA
-        // ========================================
-        // Export disabled in UI per user request
-        function exportData(type) {
-            console.warn('Export disabled by admin UI cleanup.');
-            showToast('Export disabled in this build.', 'info');
-        }
+        // Chat history and export functionality removed/disabled (front-end) per user request
 
         // ========================================
         // INITIALIZATION

@@ -2,10 +2,33 @@
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
+<<<<<<< HEAD
 const fs = require('fs');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 const KB_PATH = path.join(__dirname, 'chatbot_kb.json');
 
+// Helper: lightweight DB connector for on-demand stats (reused connection)
+let _mongoClient;
+async function getDb() {
+  if (_mongoClient && _mongoClient.topology && _mongoClient.topology.isConnected && _mongoClient.topology.isConnected()) {
+    try { return _mongoClient.db(); } catch (e) { /* fall through to reconnect */ }
+  }
+  const uri = process.env.MONGO_URI;
+  if (!uri) return null;
+  _mongoClient = new MongoClient(uri, { serverSelectionTimeoutMS: 5000 });
+  await _mongoClient.connect();
+  // extract db name from URI
+  try {
+    const url = new URL(uri);
+    const pathDb = (url.pathname || '').replace(/^\//, '') || 'voo_ward';
+    return _mongoClient.db(pathDb);
+  } catch (e) {
+    return _mongoClient.db();
+  }
+}
+
+// Helper to load KB fresh each call to reflect admin edits
 function loadKB() {
   try {
     if (!fs.existsSync(KB_PATH)) return [];
@@ -31,35 +54,53 @@ function fallbackReply(text) {
     }
   }
 
+  // USSD specific canned answers
   if (t.includes('ussd') || t.includes('ussd interactions') || t.includes('parsed_text')) {
-    return 'USSD interactions are logged under the USSD tab. You can export them as CSV or ask me how many interactions exist.';
+    return 'USSD interactions are logged under the USSD tab. You can export them as CSV using Export > USSD Interactions, or ask me how many interactions exist.';
   }
 
-  if (t.includes('help') || t === 'hi' || t === 'hello') return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions".';
+  // Fallback hard-coded answers if KB didn't match
+  if (t.includes('help') || t === 'hi' || t === 'hello') return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
   return 'Sorry — I did not understand that. Try: "resolve issues", "export issues", or "change password".';
 }
 
+=======
+>>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 async function generateReply(message, user) {
   const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
   const model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
   const text = (message || '').toString().trim();
+<<<<<<< HEAD
   const ltext = text.toLowerCase();
 
-  // Try DB-powered answers for simple queries when possible
+  // Try a small, safe DB-powered answer for specific queries if DB available
   try {
     if (ltext.includes('how many ussd') || ltext.includes('ussd count') || ltext.includes('number of ussd')) {
-        const db = await (async () => {
-          try { const { MongoClient } = require('mongodb'); const c = new MongoClient(process.env.MONGO_URI, { serverSelectionTimeoutMS: 3000 }); await c.connect(); const url = new URL(process.env.MONGO_URI); const pathDb = (url.pathname||'').replace(/^\//,'')||'voo_ward'; return c.db(pathDb); } catch (e) { return null; }
-        })();
-        if (!db) return { reply: fallbackReply(text), source: 'kb' };
-        const count = await db.collection('ussd_interactions').countDocuments();
-        return { reply: `There are currently ${count} USSD interactions recorded in the database.`, source: 'db' };
-      }
+      const db = await getDb();
+      if (!db) return fallbackReply(text);
+      const count = await db.collection('ussd_interactions').countDocuments();
+      return { reply: `There are currently ${count} USSD interactions recorded in the database.`, source: 'db' };
+    }
+    if (ltext.includes('recent ussd') || ltext.includes('latest ussd') || ltext.includes('recent interactions')) {
+      const db = await getDb();
+      if (!db) return fallbackReply(text);
+      const rows = await db.collection('ussd_interactions').find({}).sort({ created_at: -1 }).limit(5).toArray();
+      if (!rows || rows.length === 0) return 'No USSD interactions found.';
+      const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0,60)}`).join('\n');
+      return { reply: `Latest USSD interactions (top ${rows.length}):\n${summary}`, source: 'db' };
+    }
   } catch (dbErr) {
     console.warn('Chatbot DB lookup failed:', dbErr && dbErr.message);
   }
 
+  // If OpenAI not configured, fall back to local KB replies
   if (!OPENAI_API_KEY) return { reply: fallbackReply(text), source: 'kb' };
+=======
+  if (!OPENAI_API_KEY) {
+    // Enforce OpenAI usage only. If key not configured, return clear guidance to operator.
+    return 'Chatbot is not configured: set OPENAI_API_KEY on the server to enable assistant responses.';
+  }
+>>>>>>> 0b411d0 (fix: resolve all merge conflicts and restore production-ready code)
 
   try {
     const payload = {
@@ -93,4 +134,4 @@ async function generateReply(message, user) {
   }
 }
 
-module.exports = { generateReply };
+module.exports = { generateReply }; 

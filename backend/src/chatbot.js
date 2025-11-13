@@ -1,7 +1,7 @@
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
-const fs = require('fs'); // This line is unchanged
+const fs = require('fs');
 const path = require('path');
 const { MongoClient } = require('mongodb');
 const KB_PATH = path.join(__dirname, 'chatbot_kb.json');
