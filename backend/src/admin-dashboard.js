@@ -1791,11 +1791,11 @@ app.get('/api/admin/export', requireAuth, async (req, res) => {
   }
 });
 
-// Serve admin dashboard HTML
-app.use(express.static(path.join(__dirname, "../public")));
+// Serve admin dashboard HTML (use canonical repository public directory)
+app.use(express.static(path.join(__dirname, "..", "..", "public")));
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
+  res.sendFile(path.join(__dirname, "..", "..", "public", "admin-dashboard.html"));
 });
 
 // Initialize default MCA admin user on startup

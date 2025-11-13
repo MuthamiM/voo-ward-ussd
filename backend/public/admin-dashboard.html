@@ -1,87 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    // Chat UI and helper functions removed per user request (front-end only)
-            0%, 100% { 
-                transform: translate(0, 0); 
-            }
-            25% { 
-                transform: translate(60px, -60px); 
-            }
-            50% { 
-                transform: translate(-40px, -100px); 
-            }
-            75% { 
-                transform: translate(80px, -40px); 
-            }
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(180deg); }
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.15);
-            if (res.status === 401) {
-                // Token expired or invalid
-                logout();
-                throw new Error('Session expired. Please login again.');
-            }
-            
-            return res;
-        }
-
-        // ========================================
-        // PASSWORD CHANGE
-        // ========================================
-        function showChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.add('show');
-            document.getElementById('changePasswordError').innerHTML = '';
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword1').value = '';
-            document.getElementById('newPassword2').value = '';
-        }
-
-        function closeChangePasswordModal() {
-            document.getElementById('changePasswordModal').classList.remove('show');
-            document.getElementById('changePasswordError').innerHTML = '';
-        }
-
-        async function changePassword() {
-            const current = document.getElementById('currentPassword').value;
-            const new1 = document.getElementById('newPassword1').value;
-            const new2 = document.getElementById('newPassword2').value;
-            const errorDiv = document.getElementById('changePasswordError');
-            errorDiv.innerHTML = '';
-            if (!current || !new1 || !new2) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">All fields are required</div>';
-                return;
-            }
-            if (new1 !== new2) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">New passwords do not match</div>';
-                return;
-            }
-            if (new1.length < 6) {
-                errorDiv.innerHTML = '<div class="alert alert-danger">New password must be at least 6 characters</div>';
-                return;
-            }
-            try {
-                const res = await apiRequest('/api/auth/change-password', {
-                    method: 'POST',
-                    body: JSON.stringify({ current_password: current, new_password: new1 })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to change password'}</div>`;
-                    return;
-                }
-                closeChangePasswordModal();
-                showToast('Password changed successfully! Please use your new password next time.', 'success');
-            } catch (err) {
-                errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
-            }
-        }
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content="0; url=/admin-dashboard.html" />
+    <title>Redirecting to Admin Dashboard</title>
+  </head>
+  <body>
+    <p>Redirecting to the canonical admin dashboard. If you are not redirected automatically, <a href="/admin-dashboard.html">click here</a>.</p>
+  </body>
+</html>
 
         // ========================================
         // STATISTICS
