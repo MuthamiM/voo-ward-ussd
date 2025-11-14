@@ -1,0 +1,4 @@
+Backup note: canonical `public/admin-dashboard.html` verified and preserved as backup.
+Source: workspace file `public/admin-dashboard.html`
+Timestamp: 2025-11-14T00:00:00Z
+Note: For a full content backup, use `git show HEAD:public/admin-dashboard.html > public/admin-dashboard.full.bak.html` after committing.
