@@ -66,8 +66,10 @@ router.post('/api/auth/login', async (req, res) => {
     if (username === okUser && password === okPass) {
       const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
       // store a minimal session so subsequent requireAuth can validate this token
-      sessions.set(token, { user: { username: okUser, role: 'MCA', fullName: okUser }, created_at: Date.now() });
-      return res.json({ token, fullAccess: true });
+      const userObj = { username: okUser, role: 'MCA', fullName: okUser };
+      sessions.set(token, { user: userObj, created_at: Date.now() });
+      // return both token and user so client can populate UI without extra round-trip
+      return res.json({ token, fullAccess: true, user: userObj });
     }
     return res.status(401).json({ error: 'Invalid credentials' });
   } catch (e) {
