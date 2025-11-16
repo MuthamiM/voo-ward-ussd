@@ -118,3 +118,26 @@ app.get(/.*/, (req, res, next) => {
   if (p.startsWith('/api') || p.startsWith('/ussd') || p.startsWith('/uploads') || p.startsWith('/images')) return next();
   return res.sendFile(path.join(__dirname, '../public/admin-dashboard.html'));
 });
+
+// Debug endpoint: report whether admin routes (like /api/auth/login) are registered
+app.get('/__debug/admin-routes', (req, res) => {
+  try {
+    const routes = [];
+    // traverse app router stack
+    (app._router && app._router.stack || []).forEach((layer) => {
+      if (layer.route && layer.route.path) {
+        routes.push({ path: layer.route.path, methods: Object.keys(layer.route.methods) });
+      } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+        layer.handle.stack.forEach((r) => {
+          if (r.route && r.route.path) {
+            routes.push({ path: r.route.path, methods: Object.keys(r.route.methods) });
+          }
+        });
+      }
+    });
+    const hasLogin = routes.some(r => r.path === '/api/auth/login' || r.path === 'api/auth/login');
+    res.json({ ok: true, hasLogin, routeCount: routes.length, routes });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e && e.message });
+  }
+});
