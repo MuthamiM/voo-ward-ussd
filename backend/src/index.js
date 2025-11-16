@@ -153,6 +153,30 @@ app.get('/__debug/admin-routes', (req, res) => {
   }
 });
 
+// Deeper admin module diagnostics — attempt to require the admin module
+app.get('/__debug/admin-full', (req, res) => {
+  try {
+    let info = { ok: true };
+    try {
+      // require fresh copy from disk (may re-run bootstrap)
+      const adminMod = require('./admin-dashboard');
+      info.exportType = typeof adminMod;
+      info.hasRouter = !!(adminMod && adminMod.router);
+      try {
+        info.routerStackLength = adminMod && adminMod.router && adminMod.router.stack ? adminMod.router.stack.length : null;
+      } catch (e) { info.routerStackLength = null; }
+      info.keys = adminMod && typeof adminMod === 'object' ? Object.keys(adminMod) : null;
+      info.connectDB = !!(adminMod && adminMod.connectDB);
+    } catch (e) {
+      info.ok = false;
+      info.error = e && e.message;
+    }
+    res.json(info);
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e && e.message });
+  }
+});
+
 // SPA fallback: serve admin-dashboard for any non-API/static route to avoid 404s
 // Use a regex route to avoid path-to-regexp parsing issues with plain '*'.
 app.get(/.*/, (req, res, next) => {
