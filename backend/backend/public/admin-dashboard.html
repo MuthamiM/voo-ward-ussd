@@ -1935,9 +1935,9 @@
             // show inline chatbot in issues panel by default (issues tab is the default)
             const cib = document.getElementById('chatbotInlineBtn');
             if (cib) cib.classList.add('visible');
-            // ensure floating chatbot button is visible for logged-in users
+            // ensure floating chatbot button is hidden on the login page; will be shown after login
             const cb = document.getElementById('chatbotBtn');
-            if (cb) cb.style.display = 'flex';
+            if (cb) cb.style.display = 'none';
             // add AI mode badge to chatbot button
             try {
                 if (cb && !document.getElementById('assistantModeBadge')) {

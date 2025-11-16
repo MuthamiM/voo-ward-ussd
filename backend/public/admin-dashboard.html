@@ -2063,9 +2063,9 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    // keep chatbot visible (always floating)
+                    // hide chatbot on logout (removed from login page)
                     const cb = document.getElementById('chatbotBtn');
-                    if (cb) cb.style.display = 'flex';
+                    if (cb) cb.style.display = 'none';
                     const cib = document.getElementById('chatbotInlineBtn');
                     if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
@@ -3355,9 +3355,9 @@
                 if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
                 showDashboard();
             }
-            // ensure chatbot is visible (always floating)
+            // hide chatbot on the login page; it will be shown after login
             const cb = document.getElementById('chatbotBtn');
-            if (cb) cb.style.display = 'flex';
+            if (cb) cb.style.display = 'none';
             const cib = document.getElementById('chatbotInlineBtn');
             if (cib) cib.classList.remove('visible');
         });
