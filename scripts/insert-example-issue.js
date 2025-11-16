@@ -10,7 +10,7 @@ async function main() {
     process.exit(1);
   }
 
-  const client = new MongoClient(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+  const client = new MongoClient(MONGO_URI);
   try {
     await client.connect();
     const url = new URL(MONGO_URI);

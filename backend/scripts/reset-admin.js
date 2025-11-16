@@ -35,7 +35,7 @@ function isBcryptHash(s) {
     const DRY_RUN = !!process.env.DRY_RUN;
 
     console.log('Connecting to MongoDB...');
-    const client = new MongoClient(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(MONGO_URI);
     await client.connect();
     // Use the default DB from the connection string, or 'voo_ward' as fallback
     const db = client.db();

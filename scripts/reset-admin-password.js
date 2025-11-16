@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 (async () => {
   const uri = process.env.MONGO_URI;
   if (!uri) return console.error('MONGO_URI not set in env');
-  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  const client = new MongoClient(uri);
   try {
     await client.connect();
     const url = new URL(uri);

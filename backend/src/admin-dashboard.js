@@ -42,7 +42,7 @@ async function connectDB() {
   const uri = process.env.MONGO_URI;
   if (!uri) return null;
   try {
-    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+    const client = new MongoClient(uri);
     await client.connect();
     const db = client.db(process.env.MONGO_DB || 'voo');
     db._client = client;
