@@ -182,6 +182,6 @@ app.get('/__debug/admin-full', (req, res) => {
 app.get(/.*/, (req, res, next) => {
   const p = req.path || '';
   // Allow API, USSD, uploads and static asset paths to continue
-  if (p.startsWith('/api') || p.startsWith('/ussd') || p.startsWith('/uploads') || p.startsWith('/images')) return next();
+  if (p.startsWith('/api') || p.startsWith('/ussd') || p.startsWith('/uploads') || p.startsWith('/images') || p.startsWith('/__debug')) return next();
   return res.sendFile(path.join(__dirname, '../public/admin-dashboard.html'));
 });
