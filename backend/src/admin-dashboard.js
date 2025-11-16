@@ -523,7 +523,7 @@ router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
         const payload = {
           model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a concise assistant that helps with the VOO Kyamatu Ward admin dashboard. Answer briefly and avoid exposing secrets.' },
+            { role: 'system', content: 'You are Mai — a concise, helpful assistant for the VOO Kyamatu Ward admin dashboard. Identify yourself as "Mai" when appropriate, answer briefly, avoid exposing secrets, and provide actionable next steps when possible.' },
             { role: 'user', content: msg }
           ],
           max_tokens: 400,
