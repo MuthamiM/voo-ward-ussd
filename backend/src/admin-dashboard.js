@@ -667,17 +667,9 @@ router.get("/api/admin/stats", async (req, res) => {
   }
 });
 
-// Simple chatbot/help endpoint to guide admins in using the dashboard
-router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
-  try {
-    const { message } = req.body || {};
-    const reply = await chatbotSvc.generateReply(message, req.user);
-    res.json({ reply });
-  } catch (err) {
-    console.error('Chatbot error', err && err.message);
-    res.status(500).json({ error: 'chatbot error' });
-  }
-});
+// The chatbot route is implemented earlier and proxies to OpenAI when
+// `OPENAI_API_KEY` is set. Keep that implementation (above) and avoid
+// defining a second '/api/admin/chatbot' route which would override it.
 
 // Admin: get chatbot KB (for editor UI)
 router.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
