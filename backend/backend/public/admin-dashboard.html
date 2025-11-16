@@ -1376,6 +1376,35 @@
         </div>
     </div>
 
+        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
+        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot" style="position:fixed; right:18px; bottom:18px; z-index:99999; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#7c3aed,#a78bfa); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,0.18); cursor:pointer;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
+            </svg>
+        </button>
+
+        <!-- Chatbot Modal (anchored bottom-right) -->
+        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
+            <div class="modal chatbot-modal" style="margin:0; max-width:420px; width:92%;">
+                <div class="modal-header">Help Chat</div>
+                <div id="chatbot-messages" style="max-height:260px; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:8px; background:#fff; border-radius:6px; margin-top:8px;">
+                </div>
+                <div class="chatbot-suggestions" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                    <button class="btn-sm" onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
+                    <button class="btn-sm" onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
+                    <button class="btn-sm" onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
+                    <button class="btn-sm" onclick="sendSuggestion('Export issues CSV')">Export issues</button>
+                </div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <input id="chatbot-input" placeholder="Ask about dashboard usage (eg. export issues)" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
+                </div>
+            </div>
+        </div>
+
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
         <!-- Navbar -->
