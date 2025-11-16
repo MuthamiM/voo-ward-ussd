@@ -82,8 +82,10 @@ try {
   // support either an express Router/function or a module that starts its own server
   if (typeof adminDashboard === 'function') {
     app.use(adminDashboard);
+    app.locals.adminMounted = true;
   } else if (adminDashboard && adminDashboard.router) {
     app.use(adminDashboard.router);
+    app.locals.adminMounted = true;
   } else {
     console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
   }
