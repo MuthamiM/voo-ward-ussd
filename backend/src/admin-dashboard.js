@@ -508,6 +508,62 @@ router.delete('/api/auth/users/:id', requireAuth, requireMCA, async (req, res) =
   }
 });
 
+// Chatbot proxy endpoint
+// If OPENAI_API_KEY is present, forward message to OpenAI Chat Completions API.
+// Otherwise return a concise local summary (safe fallback).
+router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+  try {
+    const msg = (req.body && req.body.message) ? String(req.body.message) : '';
+    if (!msg) return res.status(400).json({ error: 'message is required' });
+
+    const OPENAI_KEY = process.env.OPENAI_API_KEY;
+    if (OPENAI_KEY) {
+      // Use OpenAI Chat Completions endpoint (server-side proxy)
+      try {
+        const payload = {
+          model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: 'You are a concise assistant that helps with the VOO Kyamatu Ward admin dashboard. Answer briefly and avoid exposing secrets.' },
+            { role: 'user', content: msg }
+          ],
+          max_tokens: 400,
+          temperature: 0.2
+        };
+
+        const r = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + OPENAI_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const j = await r.json();
+        const reply = (j && j.choices && j.choices[0] && (j.choices[0].message?.content || j.choices[0].text)) || JSON.stringify(j);
+        return res.json({ ok: true, reply });
+      } catch (e) {
+        console.error('/api/admin/chatbot openai proxy error', e && e.message);
+        return res.status(500).json({ error: 'OpenAI proxy error: ' + (e && e.message) });
+      }
+    }
+
+    // Local fallback: summarize known local state
+    try {
+      const summary = [];
+      summary.push(`connectDB available: ${!!connectDB}`);
+      summary.push(`in-memory users: ${fallbackUsers.length}`);
+      summary.push(`sessions: ${sessions.size}`);
+      return res.json({ ok: true, reply: summary.join(' | ') });
+    } catch (e) {
+      return res.status(500).json({ error: e && e.message });
+    }
+  } catch (e) {
+    console.error('/api/admin/chatbot error', e && e.message);
+    return res.status(500).json({ error: e && e.message });
+  }
+});
+
 // Create announcement (PA and MCA can access)
 router.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
