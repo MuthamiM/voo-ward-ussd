@@ -3325,6 +3325,20 @@
             }
         }, 30000);
     </script>
+        <script>
+            // Remove any stray help button that displays only a question mark
+            (function(){
+                try{
+                    setTimeout(()=>{
+                        document.querySelectorAll('button,div,span,a').forEach(el=>{
+                            if(!el) return;
+                            const text = (el.textContent||'').trim();
+                            if(text === '?') el.remove();
+                        });
+                    }, 300);
+                }catch(e){/* ignore */}
+            })();
+        </script>
     <!-- Toast container -->
     <div id="toasts" aria-live="polite" aria-atomic="true"></div>
 
