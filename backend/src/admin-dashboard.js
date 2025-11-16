@@ -1,10 +1,39 @@
 // Clean admin-dashboard router implementation.
 const express = require('express');
 const { MongoClient } = require('mongodb');
+const crypto = require('crypto');
+const multer = require('multer');
 require('dotenv').config();
 
 const router = express.Router();
 router.use(express.json());
+
+// Minimal session store and helpers so the router can validate tokens.
+// This is a lightweight shim used for the fallback env-based login.
+const sessions = new Map();
+const upload = multer({ storage: multer.memoryStorage() });
+
+function generateSessionToken() {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+function requireAuth(req, res, next) {
+  try {
+    const token = req.headers.authorization && req.headers.authorization.replace(/^Bearer\s+/i, '');
+    if (!token) return res.status(401).json({ error: 'Authentication required' });
+    const session = sessions.get(token);
+    if (!session) return res.status(401).json({ error: 'Invalid or expired session' });
+    req.user = session.user;
+    return next();
+  } catch (e) {
+    return res.status(401).json({ error: 'Authentication failed' });
+  }
+}
+
+function requireMCA(req, res, next) {
+  if (!req.user || req.user.role !== 'MCA') return res.status(403).json({ error: 'Access denied. MCA role required.' });
+  return next();
+}
 
 // Lightweight DB connector (returns null when no MONGO_URI)
 async function connectDB() {
@@ -33,6 +62,8 @@ router.post('/api/auth/login', async (req, res) => {
     const okPass = (process.env.ADMIN_PASS || 'admin123').toString();
     if (username === okUser && password === okPass) {
       const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
+      // store a minimal session so subsequent requireAuth can validate this token
+      sessions.set(token, { user: { username: okUser, role: 'MCA', fullName: okUser }, created_at: Date.now() });
       return res.json({ token, fullAccess: true });
     }
     return res.status(401).json({ error: 'Invalid credentials' });
