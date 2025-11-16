@@ -1412,8 +1412,7 @@
     /* Ensure tab content can be the positioning context for inline widgets */
     .tab-content { position: relative; }
     /* Inline chatbot button placed inside a tab (shown near the issues table) */
-    .chatbot-inline-button { position: absolute; right: 18px; bottom: 68px; z-index: 10500; width:48px; height:48px; border-radius:10px; background: linear-gradient(135deg,#7c3aed,#a78bfa); color:#fff; border:none; box-shadow:0 6px 16px rgba(0,0,0,0.12); cursor:pointer; font-size:16px; opacity:0; transform: translateY(10px) scale(0.98); transition: opacity 260ms ease, transform 260ms cubic-bezier(0.2,0.8,0.2,1); pointer-events: none; }
-    .chatbot-inline-button.visible { opacity:1; transform: translateY(0) scale(1); pointer-events: auto; }
+    /* inline chatbot removed */
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
@@ -1567,7 +1566,7 @@
                             </table>
                         </div>
                         <!-- Inline chatbot trigger anchored to the issues panel (appears bottom-right of the panel) -->
-                        <button id="chatbotInlineBtn" class="chatbot-inline-button" title="Help" onclick="showChatbot()">?</button>
+                        <!-- inline chatbot button removed -->
                     </div>
 
                     <!-- Bursaries Tab -->
