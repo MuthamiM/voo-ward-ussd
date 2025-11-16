@@ -2911,11 +2911,17 @@
             // Check if already logged in
             const storedToken = localStorage.getItem('authToken');
             const storedUser = localStorage.getItem('currentUser');
-            
+
             if (storedToken && storedUser) {
                 authToken = storedToken;
-                currentUser = JSON.parse(storedUser);
-                try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
+                try {
+                    currentUser = JSON.parse(storedUser);
+                } catch (e) {
+                    console.warn('Failed to parse stored currentUser, clearing localStorage key', e && e.message);
+                    localStorage.removeItem('currentUser');
+                    currentUser = null;
+                }
+                try { if (currentUser) applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
                 // ensure avatar uses server-saved thumb/webp when available
                 const pav = document.getElementById('profileAvatar');
                 if (pav && currentUser) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';

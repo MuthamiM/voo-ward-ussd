@@ -2383,8 +2383,14 @@
             
             if (storedToken && storedUser) {
                 authToken = storedToken;
-                currentUser = JSON.parse(storedUser);
-                showDashboard();
+                try {
+                    currentUser = JSON.parse(storedUser);
+                } catch (e) {
+                    console.warn('Failed to parse stored currentUser, clearing localStorage key', e && e.message);
+                    localStorage.removeItem('currentUser');
+                    currentUser = null;
+                }
+                if (currentUser) showDashboard();
             }
         });
 
