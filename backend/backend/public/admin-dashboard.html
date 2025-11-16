@@ -1926,6 +1926,12 @@
             // Load initial data
             loadStats();
             loadIssues();
+            // show inline chatbot in issues panel by default (issues tab is the default)
+            const cib = document.getElementById('chatbotInlineBtn');
+            if (cib) cib.classList.add('visible');
+            // ensure floating chatbot button is visible for logged-in users
+            const cb = document.getElementById('chatbotBtn');
+            if (cb) cb.style.display = 'flex';
         }
 
         function setupDashboard() {

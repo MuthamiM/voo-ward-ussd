@@ -1913,6 +1913,9 @@
             // show inline chatbot in issues panel by default (issues tab is the default)
             const cib = document.getElementById('chatbotInlineBtn');
             if (cib) cib.classList.add('visible');
+            // ensure floating chatbot button is visible for logged-in users
+            const cb = document.getElementById('chatbotBtn');
+            if (cb) cb.style.display = 'flex';
             // show edit help button only for MCA
             const eh = document.getElementById('editHelpBtn');
             if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
