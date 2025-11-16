@@ -507,27 +507,28 @@
         }
 
         .btn-logout {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border-radius: 50%;
             border: none;
-            padding: 10px 24px;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.25);
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
+
+        .btn-logout svg { display: block; }
 
         .btn-logout:hover {
-            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 10px 24px rgba(239, 68, 68, 0.35);
         }
 
-        .btn-logout:active {
-            transform: translateY(0);
-        }
+        .btn-logout:active { transform: translateY(0); }
 
         .container {
             max-width: 1400px;
@@ -2374,6 +2375,125 @@
             else if (tab === 'constituents') loadConstituents();
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'users') loadUsers();
+        }
+
+        // ========================================
+        // AI Assistant (lightweight)
+        // - Client-side assistant that summarizes local debug endpoints
+        // - Does not call external LLMs; it queries server debug endpoints
+        // ========================================
+        function showChatbot() {
+            const modal = document.getElementById('chatbotModal');
+            if (!modal) return;
+            modal.style.display = 'flex';
+            const input = document.getElementById('chatbot-input');
+            if (input) input.focus();
+        }
+
+        function hideChatbot() {
+            const modal = document.getElementById('chatbotModal');
+            if (!modal) return;
+            modal.style.display = 'none';
+        }
+
+        function sendSuggestion(text) {
+            const input = document.getElementById('chatbot-input');
+            if (!input) return;
+            input.value = text;
+            sendChatbotMessage();
+        }
+
+        function appendBotMessage(text) {
+            const container = document.getElementById('chatbot-messages');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'toast info';
+            el.style.background = '#f8fafc';
+            el.style.color = '#0f172a';
+            el.style.borderLeft = '4px solid #0ea5e9';
+            el.style.padding = '8px';
+            el.textContent = text;
+            container.appendChild(el);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendUserMessage(text) {
+            const container = document.getElementById('chatbot-messages');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.style.background = '#111827';
+            el.style.color = 'white';
+            el.style.textAlign = 'right';
+            el.style.padding = '8px';
+            el.textContent = text;
+            container.appendChild(el);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendChatbotMessage() {
+            const input = document.getElementById('chatbot-input');
+            if (!input) return;
+            const q = (input.value || '').trim();
+            if (!q) return;
+            appendUserMessage(q);
+            input.value = '';
+
+            // quick debug/status shortcut
+            if (q.toLowerCase() === 'debug' || q.toLowerCase() === 'status') {
+                appendBotMessage('Fetching debug overview...');
+                try {
+                    const [fullRes, routesRes] = await Promise.all([
+                        fetch('/__debug/admin-full').then(r=>r.json()).catch(()=>null),
+                        fetch('/__debug/admin-routes').then(r=>r.json()).catch(()=>null)
+                    ]);
+
+                    let reply = '';
+                    if (fullRes) {
+                        reply += `Admin export type: ${fullRes.exportType || 'unknown'}. `;
+                        reply += fullRes.connectDB ? 'connectDB present. ' : 'connectDB missing. ';
+                    }
+                    if (routesRes) {
+                        reply += `Admin mounted: ${routesRes.adminMounted ? 'yes' : 'no'}. `;
+                        reply += `Route count: ${routesRes.routeCount ?? 'n/a'}. `;
+                        if (routesRes.routes && routesRes.routes.length) reply += `Routes: ${routesRes.routes.map(r=>r.path).slice(0,6).join(', ')}.`;
+                    }
+                    if (!reply) reply = 'No debug information available from server.';
+                    appendBotMessage(reply);
+                } catch (e) {
+                    appendBotMessage('Failed to fetch debug endpoints: ' + (e && e.message));
+                }
+                return;
+            }
+
+            appendBotMessage('Thinking... (gathering local data)');
+            try {
+                const [fullRes, routesRes] = await Promise.all([
+                    fetch('/__debug/admin-full').then(r=>r.json()).catch(()=>null),
+                    fetch('/__debug/admin-routes').then(r=>r.json()).catch(()=>null)
+                ]);
+
+                const ql = q.toLowerCase();
+                if (ql.includes('routes') || ql.includes('mounted') || ql.includes('admin routes')) {
+                    if (routesRes) {
+                        appendBotMessage(`Admin mounted: ${routesRes.adminMounted ? 'yes' : 'no'}. Route count: ${routesRes.routeCount}.`);
+                        return;
+                    }
+                }
+
+                if (ql.includes('login') || ql.includes('auth') || ql.includes('token')) {
+                    appendBotMessage('Login endpoint: POST /api/auth/login. Token is stored in localStorage `authToken`.');
+                    return;
+                }
+
+                const summary = ['System summary:'];
+                if (fullRes) summary.push('Export type: ' + (fullRes.exportType||'n/a'));
+                if (routesRes) summary.push('Routes: ' + (routesRes.routeCount ?? 'n/a'));
+                summary.push('Page title: ' + document.title);
+                appendBotMessage(summary.join(' '));
+            } catch (e) {
+                appendBotMessage('Error while answering: ' + (e && e.message));
+            }
         }
 
         // ========================================
