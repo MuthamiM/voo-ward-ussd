@@ -1421,7 +1421,13 @@
                         <span class="user-info-name" id="userFullName">Loading...</span>
                         <span class="user-info-role" id="userRole">...</span>
                     </div>
-                        <button id="logoutBtn" class="btn-logout" aria-label="Logout" title="Logout" onclick="logout()">Logout</button>
+                        <button id="logoutBtn" class="btn-logout" aria-label="Logout" title="Logout" onclick="logout()">
+                            <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M6 3a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-.5.5h-6A.5.5 0 0 1 6 13V3z" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                <path d="M1 8h8" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 5l-3 3 3 3" stroke="#fff" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
                 </div>
             </div>
         </nav>
@@ -2601,6 +2607,42 @@
                             if(!el) return;
                             const text = (el.textContent||'').trim();
                             if(text === '?') el.remove();
+                        });
+                    }, 300);
+                }catch(e){/* ignore */}
+            })();
+        </script>
+
+        <script>
+            // Enhanced cleanup: also check ::after content and small floating purple buttons
+            (function(){
+                try{
+                    function isSmallFloating(el){
+                        try{
+                            const cs = window.getComputedStyle(el);
+                            const w = parseFloat(cs.width) || el.offsetWidth || 0;
+                            const h = parseFloat(cs.height) || el.offsetHeight || 0;
+                            const br = (cs.borderRadius || '').replace('px','');
+                            return (w>12 && w<=80 && h>12 && h<=80) && (br && parseFloat(br) >= 8);
+                        }catch(e){return false}
+                    }
+                    setTimeout(()=>{
+                        document.querySelectorAll('button,div,span,a').forEach(el=>{
+                            if(!el) return;
+                            const text = (el.textContent||'').trim();
+                            if(text === '?') { el.remove(); return; }
+                            try{
+                                const after = window.getComputedStyle(el, '::after').getPropertyValue('content') || '';
+                                if(after.replace(/"|'/g,'').trim() === '?') { el.remove(); return; }
+                            }catch(e){}
+                            try{
+                                const cs = window.getComputedStyle(el);
+                                const bg = (cs.backgroundImage || '') + (cs.background || '');
+                                if(isSmallFloating(el) && /7c3aed|a78bfa|linear-gradient\(135deg/i.test(bg)){
+                                    const title = (el.title||'').trim();
+                                    if(title === '?' || (el.getAttribute && el.getAttribute('aria-label')==='Help') || /\?/.test(title) ) { el.remove(); return; }
+                                }
+                            }catch(e){}
                         });
                     }, 300);
                 }catch(e){/* ignore */}
