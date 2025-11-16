@@ -119,20 +119,35 @@ app.get('/__debug/admin-routes', (req, res) => {
   try {
     const routes = [];
     // traverse app router stack
-    (app._router && app._router.stack || []).forEach((layer) => {
+    const appStack = (app._router && app._router.stack) || [];
+    appStack.forEach((layer) => {
       if (layer.route && layer.route.path) {
         routes.push({ path: layer.route.path, methods: Object.keys(layer.route.methods) });
       } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+        // router mounted; inspect its stack
         layer.handle.stack.forEach((r) => {
           if (r.route && r.route.path) {
             routes.push({ path: r.route.path, methods: Object.keys(r.route.methods) });
           }
         });
+      } else {
+        // generic layer - include its name for diagnostics
+        routes.push({ path: null, layer: layer.name || 'unknown' });
       }
     });
     const hasLogin = routes.some(r => r.path === '/api/auth/login' || r.path === 'api/auth/login');
     const adminMounted = !!app.locals.adminMounted;
-    res.json({ ok: true, hasLogin, adminMounted, routeCount: routes.length, routes });
+    const appStackLength = appStack.length;
+    // provide extra router diagnostics when available
+    const routerDiagnostics = [];
+    appStack.forEach((layer, idx) => {
+      if (layer.name === 'router' && layer.handle && layer.handle.stack) {
+        routerDiagnostics.push({ index: idx, name: layer.name, stackLength: layer.handle.stack.length });
+      }
+    });
+    // if adminDashboard exported a router, try to report its stack length
+    const adminRouterStack = (typeof adminDashboard === 'object' && adminDashboard && adminDashboard.router && adminDashboard.router.stack) ? adminDashboard.router.stack.length : null;
+    res.json({ ok: true, hasLogin, adminMounted, routeCount: routes.length, routes, appStackLength, routerDiagnostics, adminRouterStack });
   } catch (e) {
     res.status(500).json({ ok: false, error: e && e.message });
   }

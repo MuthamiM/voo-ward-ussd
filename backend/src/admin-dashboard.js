@@ -59,6 +59,7 @@ router.get('/health', (req, res) => res.json({ ok: true, service: 'admin-dashboa
 // Simple env-backed login for when DB is not configured
 router.post('/api/auth/login', async (req, res) => {
   try {
+    console.log('admin-dashboard: login attempt', { ip: req.ip, body: req.body && { username: req.body.username ? 'REDACTED' : undefined } });
     const { username, password } = req.body || {};
     const okUser = (process.env.ADMIN_USER || 'admin').toString();
     const okPass = (process.env.ADMIN_PASS || 'admin123').toString();
