@@ -112,13 +112,6 @@ app.listen(PORT, () => {
 });
 // SPA fallback: serve admin-dashboard for any non-API/static route to avoid 404s
 // Use a regex route to avoid path-to-regexp parsing issues with plain '*'.
-app.get(/.*/, (req, res, next) => {
-  const p = req.path || '';
-  // Allow API, USSD, uploads and static asset paths to continue
-  if (p.startsWith('/api') || p.startsWith('/ussd') || p.startsWith('/uploads') || p.startsWith('/images')) return next();
-  return res.sendFile(path.join(__dirname, '../public/admin-dashboard.html'));
-});
-
 // Debug endpoint: report whether admin routes (like /api/auth/login) are registered
 app.get('/__debug/admin-routes', (req, res) => {
   try {
@@ -140,4 +133,13 @@ app.get('/__debug/admin-routes', (req, res) => {
   } catch (e) {
     res.status(500).json({ ok: false, error: e && e.message });
   }
+});
+
+// SPA fallback: serve admin-dashboard for any non-API/static route to avoid 404s
+// Use a regex route to avoid path-to-regexp parsing issues with plain '*'.
+app.get(/.*/, (req, res, next) => {
+  const p = req.path || '';
+  // Allow API, USSD, uploads and static asset paths to continue
+  if (p.startsWith('/api') || p.startsWith('/ussd') || p.startsWith('/uploads') || p.startsWith('/images')) return next();
+  return res.sendFile(path.join(__dirname, '../public/admin-dashboard.html'));
 });
