@@ -1,12 +1,10 @@
-// Minimal admin-dashboard router (single-file authoritative version)
+// Minimal, clean admin-dashboard router (safe to require)
 const express = require('express');
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 const router = express.Router();
 router.use(express.json());
-
-const sessions = new Map();
 
 async function connectDB() {
   const uri = process.env.MONGO_URI;
@@ -15,40 +13,112 @@ async function connectDB() {
     const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
     await client.connect();
     const db = client.db(process.env.MONGO_DB || 'voo');
-    db._client = client;
+    db._client = client; // expose client for callers that want to close
     return db;
   } catch (e) {
-    console.warn('Admin dashboard: MongoDB connect failed:', e && e.message);
+    console.warn('admin-dashboard: connectDB failed:', e && e.message);
     return null;
   }
 }
 
-module.exports = router;
-module.exports.connectDB = connectDB;
-
+// Health
 router.get('/health', (req, res) => res.json({ ok: true, service: 'admin-dashboard', ts: new Date().toISOString() }));
 
+// Simple env-backed login for when DB is not configured
 router.post('/api/auth/login', async (req, res) => {
-  const { username, password } = req.body || {};
-  const okUser = process.env.ADMIN_USER || 'admin';
-  const okPass = process.env.ADMIN_PASS || 'admin123';
-  if (username === okUser && password === okPass) {
-    const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
-    sessions.set(token, { user: { username: okUser, fullAccess: true }, createdAt: Date.now() });
-    return res.json({ token, fullAccess: true });
+  try {
+    const { username, password } = req.body || {};
+    const okUser = (process.env.ADMIN_USER || 'admin').toString();
+    const okPass = (process.env.ADMIN_PASS || 'admin123').toString();
+    if (username === okUser && password === okPass) {
+      const token = (Math.random().toString(36).slice(2) + Date.now().toString(36));
+      return res.json({ token, fullAccess: true });
+    }
+    return res.status(401).json({ error: 'Invalid credentials' });
+  } catch (e) {
+    console.error('login error', e && e.message);
+    return res.status(500).json({ error: 'Internal error' });
   }
-  return res.status(401).json({ error: 'Invalid credentials' });
 });
 
+// Minimal stats endpoint: attempts to use DB if available, otherwise returns zeros.
 router.get('/api/admin/stats', async (req, res) => {
   const stats = { constituents: { total: 0 }, issues: { total: 0 }, bursaries: { total: 0 }, announcements: { total: 0 } };
   try {
     const db = await connectDB();
     if (db) {
-      stats.constituents.total = await db.collection('constituents').countDocuments();
-      stats.issues.total = await db.collection('issues').countDocuments();
-      stats.bursaries.total = await db.collection('bursaries').countDocuments();
-      stats.announcements.total = await db.collection('announcements').countDocuments();
+      try {
+        stats.constituents.total = await db.collection('constituents').countDocuments();
+        stats.issues.total = await db.collection('issues').countDocuments();
+        stats.bursaries.total = await db.collection('bursaries').countDocuments();
+        stats.announcements.total = await db.collection('announcements').countDocuments();
+      } catch (e) {
+        console.warn('admin/stats: query failed', e && e.message);
+      }
+      try { if (db._client) await db._client.close(); } catch (e) {}
+    }
+  } catch (e) {
+    console.warn('admin/stats failed:', e && e.message);
+  }
+  res.json(stats);
+});
+
+// Legacy /old: redirect to static file served by parent app
+router.get('/old', (req, res) => {
+  res.redirect('/admin-dashboard.html');
+});
+
+// Expose connectDB for other modules
+router.connectDB = connectDB;
+
+// Best-effort bootstrap (do not start HTTP server here)
+(async function bootstrapAdmin() {
+  try {
+    const db = await connectDB();
+    if (db) {
+      console.log('admin-dashboard: MongoDB connected (bootstrap)');
+      try { if (db._client) await db._client.close(); } catch (e) {}
+    } else {
+      console.log('admin-dashboard: MongoDB not configured');
+    }
+  } catch (e) {
+    console.warn('admin-dashboard bootstrap failed:', e && e.message);
+  }
+})();
+
+module.exports = router;
+module.exports.connectDB = connectDB;
+// Minimal admin-dashboard router (single-file authoritative version)
+const express = require('express');
+const { MongoClient } = require('mongodb');
+require('dotenv').config();
+
+const router = express.Router();
+router.use(express.json());
+
+// Legacy /old route: redirect to the static `admin-dashboard.html`
+router.get('/old', (req, res) => {
+  res.redirect('/admin-dashboard.html');
+});
+
+// Bootstrap default admin on module load (best-effort). Do not start a separate
+// HTTP server here — the main `src/index.js` mounts this router.
+(async function bootstrapAdmin() {
+  try {
+    const database = await connectDB();
+    if (database) {
+      await initializeAdmin();
+      console.log(` MongoDB Connected: Ready to view data`);
+    } else {
+      console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
+    }
+
+    console.log(`\n Ready to view issues, bursaries & constituents!\n`);
+    console.log(` Login with: admin / admin123 (Change after first login!)\n`);
+  } catch (e) {
+    console.warn('bootstrapAdmin failed:', e && e.message);
+  }
+})();
       try { if (db._client) await db._client.close(); } catch (e) {}
     }
   } catch (e) { console.warn('admin/stats failed:', e && e.message); }
@@ -66,7 +136,7 @@ router.post('/api/auth/logout', (req, res) => {
 // ============================================
 
 // Login
-app.post("/api/auth/login", loginLimiter, async (req, res) => {
+router.post("/api/auth/login", loginLimiter, async (req, res) => {
   try {
     const { username, password } = req.body;
     
@@ -153,19 +223,19 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
 });
 
 // Logout
-app.post("/api/auth/logout", requireAuth, (req, res) => {
+router.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   sessions.delete(token);
   res.json({ success: true, message: "Logged out successfully" });
 });
 
 // Get current user
-app.get("/api/auth/me", requireAuth, (req, res) => {
+router.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
 // Change password (authenticated)
-app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+router.post('/api/auth/change-password', requireAuth, async (req, res) => {
   try {
     const { current_password, new_password } = req.body || {};
     if (!current_password || !new_password) {
@@ -208,7 +278,7 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
 });
 
 // Create user (MCA only)
-app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+router.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const { username, password, fullName, role } = req.body;
     
@@ -279,7 +349,7 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all users (MCA only)
-app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -299,7 +369,7 @@ app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Delete user (MCA only)
-app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
+router.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -343,7 +413,7 @@ app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
 // ============================================
 
 // Get all reported issues (PA and MCA can access)
-app.get("/api/admin/issues", requireAuth, async (req, res) => {
+router.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -363,7 +433,7 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
 });
 
 // Get all bursary applications (MCA only)
-app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -383,7 +453,7 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all constituents (MCA only)
-app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -403,7 +473,7 @@ app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => 
 });
 
 // Get all announcements (PA and MCA can access)
-app.get("/api/admin/announcements", requireAuth, async (req, res) => {
+router.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -423,7 +493,7 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Update issue status and action note (PA and MCA can access)
-app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
+router.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, action_note } = req.body;
@@ -481,7 +551,7 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
 });
 
 // Bulk-resolve (or bulk update status) for multiple issues (MCA only)
-app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, res) => {
+router.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, res) => {
   try {
     let { issueIds, status, action_note } = req.body || {};
     if (!Array.isArray(issueIds) || issueIds.length === 0) {
@@ -602,7 +672,7 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
 // If you need a safe administrative endpoint in the future, re-add intentionally with appropriate access controls.
 
 // Update bursary status (MCA only)
-app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
+router.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
@@ -639,7 +709,7 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
 });
 
 // Create announcement (PA and MCA can access)
-app.post("/api/admin/announcements", requireAuth, async (req, res) => {
+router.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
     
@@ -668,7 +738,7 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Delete announcement
-app.delete("/api/admin/announcements/:id", async (req, res) => {
+router.delete("/api/admin/announcements/:id", async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -694,7 +764,7 @@ app.delete("/api/admin/announcements/:id", async (req, res) => {
 });
 
 // Dashboard statistics
-app.get("/api/admin/stats", async (req, res) => {
+router.get("/api/admin/stats", async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -742,7 +812,7 @@ app.get("/api/admin/stats", async (req, res) => {
 });
 
 // Simple chatbot/help endpoint to guide admins in using the dashboard
-app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
   try {
     const { message } = req.body || {};
     const reply = await chatbotSvc.generateReply(message, req.user);
@@ -754,7 +824,7 @@ app.post('/api/admin/chatbot', requireAuth, async (req, res) => {
 });
 
 // Admin: get chatbot KB (for editor UI)
-app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+router.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
   try {
     const kbPath = path.join(__dirname, 'chatbot_kb.json');
     if (!fs.existsSync(kbPath)) return res.json([]);
@@ -768,7 +838,7 @@ app.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
 });
 
 // Admin: update chatbot KB (replace entire KB)
-app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
+router.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
   try {
     const kb = req.body;
     const kbPath = path.join(__dirname, 'chatbot_kb.json');
@@ -782,7 +852,7 @@ app.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
 
 // Admin: update current user's profile
 // Accept multipart/form-data with an optional 'photo' file and optional 'settings' JSON string
-app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, res) => {
+router.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, res) => {
   try {
     // fullName and phone_number may come from form-data or JSON
     const fullName = req.body.fullName || req.body.full_name || undefined;

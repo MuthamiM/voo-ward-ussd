@@ -2419,7 +2419,7 @@
             }
         }
 
-<<<<<<< Updated upstream
+        // Issue search helpers
         function applyIssuesSearch() { loadIssues(); }
         function clearIssuesSearch() { document.getElementById('issuesSearch').value = ''; loadIssues(); }
 
@@ -2519,7 +2519,11 @@
                 try { loadConstituents(); } catch(e) {}
             } catch (e) {
                 showToast('Bulk resolve failed: ' + e.message, 'error');
-=======
+            }
+
+        }
+
+        // Update a single issue status
         async function updateIssueStatus(issueId, newStatus) {
             try {
                 const res = await apiRequest(`/api/admin/issues/${issueId}/status`, {
@@ -2535,7 +2539,6 @@
                 loadStats();
             } catch (err) {
                 if (typeof showToast === 'function') showToast('Error updating status: ' + err.message, 'error'); else console.error('Error updating status:', err);
->>>>>>> Stashed changes
             }
         }
 
@@ -2999,11 +3002,7 @@
                 closeCreateAnnouncementModal();
                 loadAnnouncements();
                 loadStats();
-<<<<<<< Updated upstream
-                showToast('Announcement published successfully!', 'success');
-=======
                 if (typeof showToast === 'function') showToast('Announcement published successfully!', 'success'); else console.log('Announcement published successfully!');
->>>>>>> Stashed changes
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -3083,11 +3082,7 @@
                 
                 closeAddUserModal();
                 loadUsers();
-<<<<<<< Updated upstream
-                showToast('User created successfully!', 'success');
-=======
                 if (typeof showToast === 'function') showToast('User created successfully!', 'success'); else console.log('User created successfully!');
->>>>>>> Stashed changes
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             }
@@ -3105,24 +3100,14 @@
                 const data = await res.json();
 
                 if (!res.ok) {
-<<<<<<< Updated upstream
-                    showToast(data.error || 'Failed to delete user', 'error');
-=======
                     if (typeof showToast === 'function') showToast(data.error || 'Failed to delete user', 'error'); else console.warn(data.error || 'Failed to delete user');
->>>>>>> Stashed changes
                     return;
                 }
 
                 loadUsers();
-<<<<<<< Updated upstream
-                showToast('User deleted successfully!', 'success');
-            } catch (err) {
-                showToast('Error: ' + err.message, 'error');
-=======
                 if (typeof showToast === 'function') showToast('User deleted successfully!', 'success'); else console.log('User deleted successfully!');
             } catch (err) {
                 if (typeof showToast === 'function') showToast('Error: ' + err.message, 'error'); else console.warn('Error: ' + err.message);
->>>>>>> Stashed changes
             }
         }
 
