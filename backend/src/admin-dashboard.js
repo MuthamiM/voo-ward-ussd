@@ -511,13 +511,24 @@ router.delete('/api/auth/users/:id', requireAuth, requireMCA, async (req, res) =
 // Chatbot proxy endpoint
 // If OPENAI_API_KEY is present, forward message to OpenAI Chat Completions API.
 // Otherwise return a concise local summary (safe fallback).
-router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
+// Allow optional auth for the chatbot: unauthenticated requests receive safe local answers;
+// authenticated requests may use OpenAI when `OPENAI_API_KEY` is set. This keeps the
+// assistant useful on the login page while avoiding unauthenticated OpenAI usage.
+router.post('/api/admin/chatbot', async (req, res) => {
   try {
     const msg = (req.body && req.body.message) ? String(req.body.message) : '';
     if (!msg) return res.status(400).json({ error: 'message is required' });
 
+    // detect optional bearer token and attach req.user when possible
+    const authHeader = req.headers.authorization && req.headers.authorization.replace(/^Bearer\s+/i, '');
+    let isAuthed = false;
+    if (authHeader) {
+      const session = sessions.get(authHeader);
+      if (session) { req.user = session.user; isAuthed = true; }
+    }
+
     const OPENAI_KEY = process.env.OPENAI_API_KEY;
-    if (OPENAI_KEY) {
+    if (isAuthed && OPENAI_KEY) {
       // Use OpenAI Chat Completions endpoint (server-side proxy)
       try {
         const payload = {
@@ -548,13 +559,21 @@ router.post('/api/admin/chatbot', requireAuth, async (req, res) => {
       }
     }
 
-    // Local fallback: summarize known local state
+    // If unauthenticated, provide a safe canned/helpful response (no OpenAI usage).
     try {
-      const summary = [];
-      summary.push(`connectDB available: ${!!connectDB}`);
-      summary.push(`in-memory users: ${fallbackUsers.length}`);
-      summary.push(`sessions: ${sessions.size}`);
-      return res.json({ ok: true, reply: summary.join(' | ') });
+      const q = (msg || '').toLowerCase();
+      // Simple keyword-based answers
+      if (q.includes('how') && q.includes('view') && q.includes('ussd')) {
+        return res.json({ ok: true, reply: 'Go to the "USSD Interactions" tab on the dashboard to view USSD sessions.' });
+      }
+      if (q.includes('export') && q.includes('issues')) {
+        return res.json({ ok: true, reply: 'Use the "Export CSV" button on the Issues tab to download issues as CSV.' });
+      }
+      if (q.includes('login') || q.includes('auth') || q.includes('token')) {
+        return res.json({ ok: true, reply: 'Sign in using your admin username and password. After login, Mai can perform admin actions and see protected info.' });
+      }
+      // Generic fallback for unauthenticated users
+      return res.json({ ok: true, reply: 'Hi — this is Mai. To get detailed help I may need you to sign in. Try logging in or ask a simple question like "how to view USSD interactions".' });
     } catch (e) {
       return res.status(500).json({ error: e && e.message });
     }
