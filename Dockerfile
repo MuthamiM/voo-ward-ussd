@@ -18,7 +18,10 @@ FROM base as build
 # Copy package files
 COPY backend/package*.json ./
 # Install dependencies
-RUN npm ci --include=dev
+# Use `npm install` here instead of `npm ci` to avoid build failures
+# when package-lock.json and package.json are out of sync on the server.
+# This makes the Docker build more resilient during restores/reverts.
+RUN npm install --include=dev --no-audit --no-fund
 
 # Copy application code
 COPY backend/ .
