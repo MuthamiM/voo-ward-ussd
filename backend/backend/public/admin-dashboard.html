@@ -1378,9 +1378,7 @@
 
         <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
         <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot" style="position:fixed; right:18px; bottom:18px; z-index:99999; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#7c3aed,#a78bfa); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,0.18); cursor:pointer;">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M12 2C9.243 2 7 4.243 7 7v1H6a2 2 0 00-2 2v4a2 2 0 002 2h1v1a3 3 0 003 3h4a3 3 0 003-3v-1h1a2 2 0 002-2v-4a2 2 0 00-2-2h-1V7c0-2.757-2.243-5-5-5zM9.5 10a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm5 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z" fill="#fff"/>
-            </svg>
+            <img id="assistantIcon" src="/images/assistant-icon.png" alt="AI Assistant" style="width:30px;height:30px;border-radius:8px;object-fit:cover;" onerror="this.onerror=null;this.src='/images/assistant-placeholder.svg'" />
         </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
