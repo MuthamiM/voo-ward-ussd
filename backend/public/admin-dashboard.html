@@ -2129,6 +2129,29 @@
                     badge.textContent = 'AI: checking';
                     badge.title = 'Assistant mode';
                     cb.appendChild(badge);
+                    badge.style.cursor = 'pointer';
+                    badge.addEventListener('click', function(e){ e.stopPropagation(); try { showChatbot(); } catch(err) { console.warn('showChatbot not defined', err); } });
+                    document.addEventListener('click', function docBadgeHandler(ev){
+                        const t = ev.target;
+                        if (!t) return;
+                        if (t.id === 'assistantModeBadge' || (t.closest && t.closest('#assistantModeBadge'))) {
+                            try { showChatbot(); } catch(e) {}
+                        }
+                    });
+                    // Fallback: if an overlapping stray widget prevents clicking the badge, allow clicks
+                    // near the chatbot button area to open the chatbot.
+                    document.addEventListener('click', function docAreaHandler(ev){
+                        try {
+                            const cbRect = cb.getBoundingClientRect();
+                            const x = ev.clientX, y = ev.clientY;
+                            const pad = 20;
+                            if (x >= cbRect.left - pad && x <= cbRect.right + pad && y >= cbRect.top - pad && y <= cbRect.bottom + pad) {
+                                const tag = ev.target && ev.target.tagName && ev.target.tagName.toLowerCase();
+                                if (tag === 'input' || tag === 'textarea' || tag === 'a' || tag === 'button') return;
+                                showChatbot();
+                            }
+                        } catch(e) { }
+                    });
                     // ask server whether OpenAI is enabled
                     fetch(API_BASE + '/__debug/openai', { headers: { 'Authorization': 'Bearer ' + authToken } })
                         .then(r => r.json()).then(j => {

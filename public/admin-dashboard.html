@@ -1929,6 +1929,33 @@
                     badge.textContent = 'AI: checking';
                     badge.title = 'Assistant mode';
                     cb.appendChild(badge);
+                    // make the badge clickable and open the chatbot when tapped
+                    badge.style.cursor = 'pointer';
+                    badge.addEventListener('click', function(e){ e.stopPropagation(); try { showChatbot(); } catch(err) { console.warn('showChatbot not defined', err); } });
+                    // delegated fallback: if badge exists but something overlays the button,
+                    // listen for clicks on document and open the chatbot when the badge is clicked
+                    document.addEventListener('click', function docBadgeHandler(ev){
+                        const t = ev.target;
+                        if (!t) return;
+                        if (t.id === 'assistantModeBadge' || (t.closest && t.closest('#assistantModeBadge'))) {
+                            try { showChatbot(); } catch(e) {}
+                        }
+                    });
+                    // If some stray widget overlays the badge (like a stray '?'), open the chatbot when
+                    // the user clicks near the chatbot button area (tolerance in px) so the UI responds.
+                    document.addEventListener('click', function docAreaHandler(ev){
+                        try {
+                            const cbRect = cb.getBoundingClientRect();
+                            const x = ev.clientX, y = ev.clientY;
+                            const pad = 20; // expand clickable area
+                            if (x >= cbRect.left - pad && x <= cbRect.right + pad && y >= cbRect.top - pad && y <= cbRect.bottom + pad) {
+                                // avoid hijacking form inputs and links
+                                const tag = ev.target && ev.target.tagName && ev.target.tagName.toLowerCase();
+                                if (tag === 'input' || tag === 'textarea' || tag === 'a' || tag === 'button') return;
+                                showChatbot();
+                            }
+                        } catch(e) { /* ignore */ }
+                    });
                     // ask server whether OpenAI is enabled
                     fetch(API_BASE + '/__debug/openai', { headers: { 'Authorization': 'Bearer ' + authToken } })
                         .then(r => r.json()).then(j => {
