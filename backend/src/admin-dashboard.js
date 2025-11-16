@@ -724,7 +724,7 @@ router.post('/api/admin/profile', requireAuth, upload.single('photo'), async (re
 });
 
 // Delete current user's avatar (remove files and DB fields)
-app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
+router.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
@@ -788,7 +788,7 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
 });
 
 // Export issues as CSV (PA and MCA can access)
-app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
+router.get("/api/admin/export/issues", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -826,7 +826,7 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
 });
 
 // Persist USSD interactions (public endpoint used by USSD gateway)
-app.post('/api/ussd', async (req, res) => {
+router.post('/api/ussd', async (req, res) => {
   try {
     const { phone, text, response, ref_code, parsed_text } = req.body || {};
     const database = await connectDB();
@@ -851,7 +851,7 @@ app.post('/api/ussd', async (req, res) => {
 });
 
 // Admin: list USSD interactions
-app.get('/api/admin/ussd', requireAuth, async (req, res) => {
+router.get('/api/admin/ussd', requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
@@ -869,7 +869,7 @@ app.get('/api/admin/ussd', requireAuth, async (req, res) => {
 });
 
 // Admin: export USSD interactions as CSV
-app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
+router.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
@@ -901,7 +901,7 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
 });
 
 // Export bursaries as CSV (MCA only)
-app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -928,7 +928,7 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
 });
 
 // Export constituents as CSV (MCA only)
-app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
+router.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {
@@ -955,9 +955,9 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
 });
 
 // Serve admin dashboard HTML
-app.use(express.static(path.join(__dirname, "../public")));
+router.use(express.static(path.join(__dirname, "../public")));
 
-app.get("/", (req, res) => {
+router.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
 });
 
@@ -1019,11 +1019,6 @@ async function initializeAdmin() {
 }
 
 // OLD HTML: served from static file in ../public/admin-dashboard.html
-// ...existing code...
-    }
-  }
-  }
-})();
 router.get("/old", (req, res) => {
   res.send(`
 <!DOCTYPE html>
