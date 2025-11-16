@@ -1450,10 +1450,16 @@ if (require.main === module) {
     process.exit(1);
   });
 } else {
-  // Export the Express app so a parent application can mount it (e.g. app.use('/admin', adminApp))
-  module.exports = app;
+  // For parent apps we export a Router that mounts the internal Express `app`.
+  // This makes the admin routes visible as a mounted router on the parent app's stack
+  // (instead of exporting an Express `app` which does not surface routes the same way).
+  const wrapperRouter = require('express').Router();
+  wrapperRouter.use('/', app);
+
+  module.exports = wrapperRouter;
   // expose connectDB for parent apps that may want to reuse the DB connection
   try { module.exports.connectDB = connectDB; } catch (e) { /* noop */ }
+
   // Also attempt a best-effort DB connect + admin init when required (non-blocking)
   (async () => {
     try {
