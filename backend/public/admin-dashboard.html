@@ -2053,7 +2053,6 @@
                 await fetch(API_BASE + '/api/auth/logout', {
                     method: 'POST',
                     headers: { 'Authorization': 'Bearer ' + authToken }
-<<<<<<< Updated upstream
                 }).finally(() => {
                     localStorage.removeItem('authToken');
                     localStorage.removeItem('currentUser');
@@ -2069,8 +2068,6 @@
                     const cib = document.getElementById('chatbotInlineBtn');
                     if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
-=======
->>>>>>> Stashed changes
                 });
             } catch (e) {
                 // continue with local cleanup even if API call fails
