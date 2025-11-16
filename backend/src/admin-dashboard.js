@@ -72,6 +72,9 @@ router.get('/old', (req, res) => {
 // Expose connectDB for other modules
 router.connectDB = connectDB;
 
+// Export router so parent app can mount admin routes
+module.exports = router;
+
 // Best-effort bootstrap (do not start HTTP server here)
 (async function bootstrapAdmin() {
   try {
