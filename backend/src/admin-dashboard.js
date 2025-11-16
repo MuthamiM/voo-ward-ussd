@@ -15,6 +15,16 @@ router.use(express.json());
 const sessions = new Map();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// In-memory fallback user store (used when no DB configured)
+const fallbackUsers = [];
+// Seed fallback admin user from env for convenience
+const seedAdminUser = () => {
+  const u = (process.env.ADMIN_USER || 'admin').toString();
+  const now = new Date();
+  fallbackUsers.push({ _id: (new ObjectId()).toString(), username: u, full_name: u, role: 'MCA', created_at: now.toISOString() });
+};
+seedAdminUser();
+
 function generateSessionToken() {
   return crypto.randomBytes(16).toString('hex');
 }
@@ -426,6 +436,75 @@ router.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, re
   } catch (err) {
     console.error("Error updating bursary:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// USER MANAGEMENT (fallback DB-aware)
+// ============================================
+// List users (MCA only)
+router.get('/api/auth/users', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const db = await connectDB();
+    if (db) {
+      const docs = await db.collection('admin_users').find({}).toArray();
+      // normalize to client shape
+      const out = docs.map(d => ({ _id: d._id.toString(), username: d.username, full_name: d.full_name || d.fullName || d.fullname || d.full_name, role: d.role, created_at: d.created_at || d.createdAt || d.created_at }));
+      try { if (db._client) await db._client.close(); } catch (e) {}
+      return res.json(out);
+    }
+
+    // fallback to in-memory users
+    return res.json(fallbackUsers);
+  } catch (e) {
+    console.error('/api/auth/users error', e && e.message);
+    return res.status(500).json({ error: e && e.message });
+  }
+});
+
+// Create user (MCA only)
+router.post('/api/auth/users', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { username, fullName, password, role } = req.body || {};
+    if (!username || !fullName || !role) return res.status(400).json({ error: 'username, fullName and role are required' });
+    const db = await connectDB();
+    if (db) {
+      const doc = { username, full_name: fullName, role, created_at: new Date().toISOString() };
+      const r = await db.collection('admin_users').insertOne(doc);
+      try { if (db._client) await db._client.close(); } catch (e) {}
+      return res.json({ _id: r.insertedId.toString(), ...doc });
+    }
+
+    // fallback
+    const newUser = { _id: (new ObjectId()).toString(), username, full_name: fullName, role, created_at: new Date().toISOString() };
+    fallbackUsers.push(newUser);
+    return res.json(newUser);
+  } catch (e) {
+    console.error('create user error', e && e.message);
+    return res.status(500).json({ error: e && e.message });
+  }
+});
+
+// Delete user (MCA only)
+router.delete('/api/auth/users/:id', requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectDB();
+    if (db) {
+      const oid = ObjectId.isValid(id) ? new ObjectId(id) : id;
+      const r = await db.collection('admin_users').deleteOne({ _id: oid });
+      try { if (db._client) await db._client.close(); } catch (e) {}
+      if (r.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
+      return res.json({ success: true });
+    }
+
+    const idx = fallbackUsers.findIndex(u => u._id === id);
+    if (idx === -1) return res.status(404).json({ error: 'User not found' });
+    fallbackUsers.splice(idx, 1);
+    return res.json({ success: true });
+  } catch (e) {
+    console.error('delete user error', e && e.message);
+    return res.status(500).json({ error: e && e.message });
   }
 });
 
