@@ -2614,6 +2614,7 @@
             const el = document.createElement('div');
             el.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
             // allow simple HTML for buttons
+            if (who === 'bot') text = formatMaiReply(text);
             el.innerHTML = text.replace(/</g,'&lt;');
             c.appendChild(el);
 
@@ -2623,6 +2624,14 @@
             }
 
             c.scrollTop = c.scrollHeight;
+        }
+
+        function formatMaiReply(text) {
+            if (!text) return text;
+            try {
+                if (/—\s*Mai$|\-\s*Mai$|Mai\s*$/i.test(text.trim())) return text;
+                return text + ' — Mai';
+            } catch (e) { return text; }
         }
 
         function attachActionButtons(containerEl, text) {
@@ -3231,7 +3240,7 @@
             el.style.color = '#0f172a';
             el.style.borderLeft = '4px solid #0ea5e9';
             el.style.padding = '8px';
-            el.textContent = text;
+            el.textContent = (text && typeof text === 'string') ? formatMaiReply(text) : text;
             container.appendChild(el);
             container.scrollTop = container.scrollHeight;
         }
