@@ -1875,12 +1875,22 @@
         }
 
         function showDashboard() {
-            document.getElementById('loginPage').style.display = 'none';
-            document.getElementById('dashboardPage').style.display = 'block';
+                    // If we don't have a currentUser (e.g. corrupted localStorage), fall back to login
+                    if (!currentUser) {
+                        console.warn('showDashboard called without currentUser; falling back to login');
+                        try {
+                            document.getElementById('loginPage').style.display = 'flex';
+                            document.getElementById('dashboardPage').style.display = 'none';
+                        } catch (e) { /* ignore DOM errors */ }
+                        return;
+                    }
+
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('dashboardPage').style.display = 'block';
             
-            // Update user info
-            document.getElementById('userFullName').textContent = currentUser.fullName;
-            document.getElementById('userRole').textContent = currentUser.role;
+                    // Update user info
+                    document.getElementById('userFullName').textContent = currentUser.fullName;
+                    document.getElementById('userRole').textContent = currentUser.role;
             
             // Setup dashboard based on role
             setupDashboard();
