@@ -87,7 +87,6 @@ router.connectDB = connectDB;
   }
 })();
 
-module.exports = router;
 module.exports.connectDB = connectDB;
 
 
