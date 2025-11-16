@@ -2561,33 +2561,21 @@
                 return;
             }
 
-            appendBotMessage('Thinking... (gathering local data)');
+            appendBotMessage('Thinking...');
             try {
-                const [fullRes, routesRes] = await Promise.all([
-                    fetch('/__debug/admin-full').then(r=>r.json()).catch(()=>null),
-                    fetch('/__debug/admin-routes').then(r=>r.json()).catch(()=>null)
-                ]);
-
-                const ql = q.toLowerCase();
-                if (ql.includes('routes') || ql.includes('mounted') || ql.includes('admin routes')) {
-                    if (routesRes) {
-                        appendBotMessage(`Admin mounted: ${routesRes.adminMounted ? 'yes' : 'no'}. Route count: ${routesRes.routeCount}.`);
-                        return;
-                    }
+                // send to server-side chatbot proxy which may use OpenAI when configured
+                const res = await apiRequest('/api/admin/chatbot', { method: 'POST', body: JSON.stringify({ message: q }) });
+                const data = await res.json();
+                if (res.ok && data && data.reply) {
+                    appendBotMessage(data.reply);
+                } else {
+                    const msg = data && data.error ? data.error : `Status ${res.status}`;
+                    appendBotMessage('Assistant error: ' + msg);
+                    console.warn('chatbot error response', res.status, data);
                 }
-
-                if (ql.includes('login') || ql.includes('auth') || ql.includes('token')) {
-                    appendBotMessage('Login endpoint: POST /api/auth/login. Token is stored in localStorage `authToken`.');
-                    return;
-                }
-
-                const summary = ['System summary:'];
-                if (fullRes) summary.push('Export type: ' + (fullRes.exportType||'n/a'));
-                if (routesRes) summary.push('Routes: ' + (routesRes.routeCount ?? 'n/a'));
-                summary.push('Page title: ' + document.title);
-                appendBotMessage(summary.join(' '));
-            } catch (e) {
-                appendBotMessage('Error while answering: ' + (e && e.message));
+            } catch (err) {
+                appendBotMessage('Error contacting assistant: ' + (err && err.message));
+                console.error('sendChatbotMessage exception', err);
             }
         }
 
