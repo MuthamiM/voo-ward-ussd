@@ -1378,7 +1378,7 @@
 
         <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
         <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot" style="position:fixed; right:18px; bottom:18px; z-index:99999; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#7c3aed,#a78bfa); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,0.18); cursor:pointer;">
-            <img id="assistantIcon" src="/images/assistant-icon.svg" alt="AI Assistant" style="width:30px;height:30px;border-radius:8px;object-fit:cover;" onerror="this.onerror=null;this.src='/images/assistant-placeholder.svg'" />
+            <img id="assistantIcon" src="/images/assistant-icon.png" alt="AI Assistant" style="width:30px;height:30px;border-radius:8px;object-fit:cover;" onerror="if(!this.dataset.fallback){this.dataset.fallback='svg'; this.src='/images/assistant-icon.svg';} else if(this.dataset.fallback==='svg'){this.dataset.fallback='placeholder'; this.src='/images/assistant-placeholder.svg';} else { this.onerror=null; }" />
         </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
@@ -2451,17 +2451,29 @@
             if (input) input.focus();
         }
 
-        function hideChatbot() {
-            const modal = document.getElementById('chatbotModal');
-            if (!modal) return;
-            modal.style.display = 'none';
+        function showChatbot() {
+            document.getElementById('chatbotModal').style.display = 'flex';
+            // also reveal the inner modal panel (was hidden via inline style)
+            const panel = document.querySelector('.chatbot-modal');
+            if (panel) panel.style.display = 'block';
+
+            const convo = document.getElementById('chatbot-messages');
+            if (!convo.children.length) {
+                appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
+            }
+            const input = document.getElementById('chatbot-input');
+            if (input) {
+                input.focus();
+                input.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendChatbotMessage(); } };
+            }
         }
 
-        function sendSuggestion(text) {
+        function hideChatbot() {
+            document.getElementById('chatbotModal').style.display = 'none';
+            const panel = document.querySelector('.chatbot-modal');
+            if (panel) panel.style.display = 'none';
             const input = document.getElementById('chatbot-input');
-            if (!input) return;
-            input.value = text;
-            sendChatbotMessage();
+            if (input) input.onkeydown = null;
         }
 
         function appendBotMessage(text) {
