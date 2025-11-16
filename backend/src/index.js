@@ -131,7 +131,8 @@ app.get('/__debug/admin-routes', (req, res) => {
       }
     });
     const hasLogin = routes.some(r => r.path === '/api/auth/login' || r.path === 'api/auth/login');
-    res.json({ ok: true, hasLogin, routeCount: routes.length, routes });
+    const adminMounted = !!app.locals.adminMounted;
+    res.json({ ok: true, hasLogin, adminMounted, routeCount: routes.length, routes });
   } catch (e) {
     res.status(500).json({ ok: false, error: e && e.message });
   }
