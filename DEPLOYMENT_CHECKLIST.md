@@ -216,3 +216,19 @@ Render's free PostgreSQL expires after 90 days:
 **Result**: Production-ready USSD service! 🚀
 
 Good luck with your deployment!
+
+---
+
+## OpenAI assistant (admin)
+
+- To enable OpenAI-powered replies from the admin assistant set the following env vars in your deployment:
+   - `OPENAI_API_KEY` = your OpenAI API key (secret)
+   - `OPENAI_MODEL` = optional (defaults to `gpt-4o-mini` in the code)
+
+- After adding `OPENAI_API_KEY`, click **Save, rebuild, and deploy** in your host UI so the server process picks up the variable.
+
+- Verify the assistant: log in to the admin dashboard, then check the bottom-right assistant button — a small badge will read `AI: OpenAI` when the key is active, otherwise `AI: Local`.
+
+- Quick test: use `scripts/test-chatbot.ps1` or run the PowerShell commands in the checklist to `POST /api/admin/chatbot` with a bearer token obtained from `/api/auth/login`.
+
+---

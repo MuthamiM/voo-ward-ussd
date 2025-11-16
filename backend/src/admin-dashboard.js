@@ -685,6 +685,15 @@ router.get('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) =>
   }
 });
 
+// Debug: report whether OpenAI key is present (requires auth)
+router.get('/__debug/openai', requireAuth, (req, res) => {
+  try {
+    return res.json({ openai: !!process.env.OPENAI_API_KEY });
+  } catch (e) {
+    return res.status(500).json({ error: 'failed' });
+  }
+});
+
 // Admin: update chatbot KB (replace entire KB)
 router.post('/api/admin/chatbot-kb', requireAuth, requireMCA, async (req, res) => {
   try {

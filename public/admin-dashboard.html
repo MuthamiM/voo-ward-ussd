@@ -1916,6 +1916,28 @@
             // ensure floating chatbot button is visible for logged-in users
             const cb = document.getElementById('chatbotBtn');
             if (cb) cb.style.display = 'flex';
+            // add AI mode badge to chatbot button
+            try {
+                if (cb && !document.getElementById('assistantModeBadge')) {
+                    const badge = document.createElement('span');
+                    badge.id = 'assistantModeBadge';
+                    badge.style.fontSize = '10px';
+                    badge.style.padding = '2px 6px';
+                    badge.style.borderRadius = '12px';
+                    badge.style.background = 'rgba(255,255,255,0.12)';
+                    badge.style.color = '#fff';
+                    badge.style.marginLeft = '8px';
+                    badge.textContent = 'AI: checking';
+                    badge.title = 'Assistant mode';
+                    cb.appendChild(badge);
+                    // ask server whether OpenAI is enabled
+                    fetch(API_BASE + '/__debug/openai', { headers: { 'Authorization': 'Bearer ' + authToken } })
+                        .then(r => r.json()).then(j => {
+                            if (j && j.openai) { badge.textContent = 'AI: OpenAI'; badge.style.background = '#10b981'; }
+                            else { badge.textContent = 'AI: Local'; badge.style.background = '#f59e0b'; }
+                        }).catch(() => { badge.textContent = 'AI: unknown'; badge.style.background = '#ef4444'; });
+                }
+            } catch (e) { /* ignore */ }
             // show edit help button only for MCA
             const eh = document.getElementById('editHelpBtn');
             if (eh) eh.style.display = (currentUser && currentUser.role === 'MCA') ? 'inline-block' : 'none';
