@@ -1162,6 +1162,9 @@ app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, 
       role: user.role,
       phone_number: user.phone_number,
       photo_url: user.photo_url || null,
+      photo_thumb: user.photo_thumb || null,
+      photo_webp: user.photo_webp || null,
+      photo_thumb_webp: user.photo_thumb_webp || null,
       settings: user.settings || {}
     };
 
