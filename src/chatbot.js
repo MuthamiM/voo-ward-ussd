@@ -72,15 +72,23 @@ function loadKB() {
 }
 
 function fallbackReply(text) {
-  const t = (text || '').toLowerCase();
+  const t = (text || '').toLowerCase().trim();
   if (!t) return 'Hi — tell me what you need help with. Try: "resolve issues", "export issues", "change password".';
+
+  // Enhanced greeting detection (handles hey, hi, hello, yo, sup, greetings, etc.)
+  const greetings = ['hey', 'hi', 'hello', 'yo', 'sup', 'greetings', 'good morning', 'good afternoon', 'good evening'];
+  if (greetings.some(g => t.startsWith(g) || t === g)) {
+    return 'Hi there! I\'m Mai, your Voo Kyamatu Ward AI Assistant. I can help with:\n• Resolving issues\n• Managing announcements\n• Exporting data\n• User management\n• USSD interactions\n• Dashboard features\n\nWhat would you like help with?';
+  }
 
   const KB = loadKB();
   if (Array.isArray(KB) && KB.length) {
     for (const entry of KB) {
       if (!entry.keys || !entry.reply) continue;
       for (const k of entry.keys) {
-        if (t.includes(k.toLowerCase())) return entry.reply;
+        // Fuzzy matching: check if keyword is contained in message OR message starts with keyword
+        const keyword = k.toLowerCase().trim();
+        if (t.includes(keyword) || t.startsWith(keyword)) return entry.reply;
       }
     }
   }
@@ -91,8 +99,8 @@ function fallbackReply(text) {
   }
 
   // Fallback hard-coded answers if KB didn't match
-  if (t.includes('help') || t === 'hi' || t === 'hello') return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
-  return 'Sorry — I did not understand that. Try: "resolve issues", "export issues", or "change password".';
+  if (t.includes('help')) return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
+  return 'I\'m not sure about that. Try asking about: resolving issues, managing announcements, exporting data, user management, or USSD interactions.';
 }
 
 async function generateReply(message, user) {
