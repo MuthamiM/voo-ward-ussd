@@ -2080,8 +2080,9 @@
     </div>
     
     <!-- Profile Picture Upload Modal -->
-    <div class="modal" id="profilePictureModal">
-        <div class="modal-content" style="max-width:500px;">
+    <div class="modal-backdrop" id="profilePictureModal" style="display:none;">
+        <div class="modal">
+            <div class="modal-content" style="max-width:500px;">
             <div class="modal-header">
                 <h3 class="modal-title">Update Profile Picture</h3>
             </div>
@@ -2103,6 +2104,7 @@
                 <button class="btn-sm btn-secondary" onclick="closeProfilePictureModal()">Cancel</button>
                 <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="min-width:100px; max-width:120px; transition:all 0.3s ease;">Upload</button>
             </div>
+        </div>
         </div>
     </div>
     
@@ -2547,7 +2549,6 @@
         function showProfilePictureModal() {
             const modal = document.getElementById('profilePictureModal');
             modal.style.display = 'flex';
-            setTimeout(() => modal.classList.add('show'), 10);
             // Set preview to current avatar
             const currentAvatar = document.getElementById('profileAvatar').src;
             document.getElementById('profilePreview').src = currentAvatar;
@@ -2555,7 +2556,6 @@
 
         function closeProfilePictureModal() {
             const modal = document.getElementById('profilePictureModal');
-            modal.classList.remove('show');
             modal.style.display = 'none';
             document.getElementById('profilePictureError').innerHTML = '';
             document.getElementById('profilePictureInput').value = '';
@@ -2824,31 +2824,38 @@
                             row.classList.add('row-updated');
                             btn.textContent = 'Saved';
                             
-                            // Auto-delete after 2 minutes if marked as resolved
+                            // Auto-delete immediately if marked as resolved
                             if (sel.value === 'resolved') {
-                                showToast('Issue will be auto-deleted in 2 minutes', 'info');
+                                showToast('Issue marked as resolved - deleting...', 'info');
+                                // Wait 2 seconds for user to see the "Saved" state, then delete
                                 setTimeout(async () => {
                                     try {
                                         const deleteRes = await apiRequest(`/api/admin/issues/${id}`, {
                                             method: 'DELETE'
                                         });
                                         if (deleteRes.ok) {
-                                            showToast('Resolved issue auto-deleted', 'success');
-                                            loadIssues();
-                                            loadStats();
+                                            // Fade out the row before removing
+                                            row.style.opacity = '0';
+                                            row.style.transition = 'opacity 0.5s ease-out';
+                                            setTimeout(() => {
+                                                showToast('Resolved issue deleted', 'success');
+                                                loadIssues();
+                                                loadStats();
+                                            }, 500);
                                         }
                                     } catch (err) {
                                         console.error('Auto-delete failed:', err);
+                                        showToast('Failed to delete resolved issue', 'error');
                                     }
-                                }, 120000); // 2 minutes
+                                }, 2000); // 2 seconds
+                            } else {
+                                setTimeout(() => {
+                                    btn.textContent = originalText;
+                                    btn.disabled = false;
+                                    // remove animation class after it finishes
+                                    row.classList.remove('row-updated');
+                                }, 900);
                             }
-                            
-                            setTimeout(() => {
-                                btn.textContent = originalText;
-                                btn.disabled = false;
-                                // remove animation class after it finishes
-                                row.classList.remove('row-updated');
-                            }, 900);
 
                             // Refresh stats and related views in background
                             try { loadStats(); } catch(e) { console.warn('loadStats failed', e); }
@@ -2963,10 +2970,27 @@
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Bulk resolve failed');
                 hideBulkResolveModal();
-                showToast(`Bulk resolved: ${data.updated} updated, ${data.failed} failed`, 'success');
-                try { loadIssues(); } catch(e) {}
-                try { loadUssd(); } catch(e) {}
-                try { loadConstituents(); } catch(e) {}
+                showToast(`Bulk resolved: ${data.updated} updated - deleting in 2 seconds...`, 'info');
+                
+                // Auto-delete all resolved issues after 2 seconds
+                setTimeout(async () => {
+                    try {
+                        for (const issueId of selected) {
+                            await apiRequest(`/api/admin/issues/${issueId}`, {
+                                method: 'DELETE'
+                            });
+                        }
+                        showToast(`${selected.length} resolved issues deleted`, 'success');
+                    } catch (err) {
+                        console.error('Bulk delete failed:', err);
+                        showToast('Some issues failed to delete', 'warning');
+                    } finally {
+                        try { loadIssues(); } catch(e) {}
+                        try { loadStats(); } catch(e) {}
+                        try { loadUssd(); } catch(e) {}
+                        try { loadConstituents(); } catch(e) {}
+                    }
+                }, 2000);
             } catch (e) {
                 showToast('Bulk resolve failed: ' + e.message, 'error');
             }
