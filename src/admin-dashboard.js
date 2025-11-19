@@ -337,6 +337,75 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
   res.json({ success: true, message: "Logged out successfully" });
 });
 
+// Public Registration (CLERK and PA only)
+app.post("/api/auth/register", loginLimiter, async (req, res) => {
+  try {
+    const { username, password, fullName, phone, role } = req.body;
+    
+    if (!username || !password || !fullName || !phone || !role) {
+      return res.status(400).json({ error: "All fields required" });
+    }
+    
+    // Only CLERK and PA can self-register
+    if (role !== 'CLERK' && role !== 'PA') {
+      return res.status(400).json({ error: "Only CLERK and PA roles can register. MCA users must be created by existing admins." });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: "Password must be at least 6 characters" });
+    }
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    // Check if username exists
+    const existing = await database.collection("admin_users").findOne({ 
+      username: username.toLowerCase() 
+    });
+    
+    if (existing) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+
+    // Enforce a maximum number of PAs (Personal Assistants)
+    if (role === 'PA') {
+      const paCount = await database.collection('admin_users').countDocuments({ role: 'PA' });
+      if (paCount >= 3) {
+        return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
+      }
+    }
+    
+    // Create user with bcrypt hash
+    const newUser = {
+      username: username.toLowerCase(),
+      password: await bcrypt.hash(password, 10),
+      full_name: fullName,
+      phone: phone,
+      role: role,
+      created_at: new Date(),
+      self_registered: true
+    };
+    
+    const result = await database.collection("admin_users").insertOne(newUser);
+    
+    res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      user: {
+        id: result.insertedId.toString(),
+        username: newUser.username,
+        fullName: newUser.full_name,
+        role: newUser.role
+      }
+    });
+  } catch (err) {
+    console.error("Registration error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get current user
 app.get("/api/auth/me", requireAuth, (req, res) => {
   res.json({ user: req.user });
