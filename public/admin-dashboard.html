@@ -2214,24 +2214,7 @@
             }
             
             try {
-                // First create constituent record
-                const constituentRes = await fetch(API_BASE + '/api/members', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: fullName,
-                        phone: phone,
-                        role: role
-                    })
-                });
-                
-                if (!constituentRes.ok) {
-                    const constituentData = await constituentRes.json();
-                    errorDiv.innerHTML = `<div class="alert alert-danger">${constituentData.error || 'Failed to create constituent profile'}</div>`;
-                    return;
-                }
-                
-                // Then create user account
+                // Create user account
                 const userRes = await fetch(API_BASE + '/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -2283,6 +2266,10 @@
                 }, 1500);
                 
             } catch (err) {
+                console.error('Signup error:', err);
+                errorDiv.innerHTML = `<div class="alert alert-danger">Connection error. Please try again.</div>`;
+            }
+        });
                 errorDiv.innerHTML = `<div class="alert alert-danger">Connection error. Please try again.</div>`;
             }
         });

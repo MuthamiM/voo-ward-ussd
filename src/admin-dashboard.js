@@ -368,14 +368,6 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
-
-    // Enforce a maximum number of PAs (Personal Assistants)
-    if (role === 'PA') {
-      const paCount = await database.collection('admin_users').countDocuments({ role: 'PA' });
-      if (paCount >= 3) {
-        return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
-      }
-    }
     
     // Create user with bcrypt hash
     const newUser = {
@@ -483,13 +475,6 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
       return res.status(409).json({ error: "Username already exists" });
     }
 
-    // Enforce a maximum number of PAs (Personal Assistants)
-    if (role === 'PA') {
-      const paCount = await database.collection('admin_users').countDocuments({ role: 'PA' });
-      if (paCount >= 3) {
-        return res.status(400).json({ error: 'Maximum number of PA users reached (3)' });
-      }
-    }
     // Enforce only one MCA (main administrator)
     if (role === 'MCA') {
       const mcaCount = await database.collection('admin_users').countDocuments({ role: 'MCA' });
