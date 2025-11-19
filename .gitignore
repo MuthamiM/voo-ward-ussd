@@ -10,6 +10,11 @@ yarn-error.log*
 .env.production
 *.env
 
+# Unused legacy folders (do not deploy)
+frontend/
+voo-admin-v2/
+backend/
+
 # Database
 *.db
 *.sqlite

@@ -1,0 +1,22 @@
+# Exclude unnecessary folders from Render deployment
+frontend/
+voo-admin-v2/
+backend/
+
+# Development files
+*.md
+!README.md
+.vscode/
+.github/
+test/
+examples/
+handover/
+web-simulator/
+
+# Scripts
+scripts/
+bin/migrate.js
+db/migrations/
+
+# Duplicate public folders
+backend/public/
