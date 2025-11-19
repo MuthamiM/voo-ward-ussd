@@ -1472,16 +1472,6 @@
             <!-- Emergency admin reset removed for security -->
         </div>
     </div>
-        <!-- Floating AI Assistant Button (modern robot icon) -->
-        <button id="chatbotBtn" class="chatbot-button" title="AI Assistant - Mai" onclick="showChatbot()" aria-label="AI Assistant" style="position:fixed; right:20px; bottom:20px; z-index:99999; width:64px; height:64px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 12px 40px rgba(102,126,234,0.4); cursor:pointer; opacity:1; pointer-events:auto; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
-                <path d="M12 2C10.3431 2 9 3.34315 9 5V6H7C5.89543 6 5 6.89543 5 8V18C5 19.1046 5.89543 20 7 20H17C18.1046 20 19 19.1046 19 18V8C19 6.89543 18.1046 6 17 6H15V5C15 3.34315 13.6569 2 12 2Z" fill="white" fill-opacity="0.9"/>
-                <circle cx="9" cy="11" r="1.5" fill="#667eea"/>
-                <circle cx="15" cy="11" r="1.5" fill="#667eea"/>
-                <path d="M9 15C9 15 10 16.5 12 16.5C14 16.5 15 15 15 15" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
-                <rect x="10" y="19" width="4" height="2" rx="1" fill="white" fill-opacity="0.8"/>
-            </svg>
-        </button>
         
         <style>
             #chatbotBtn:hover {
@@ -2527,7 +2517,7 @@
 
         // In-dashboard chatbot helper
         function showChatbot() {
-            document.getElementById('chatbotModal').style.display = 'block';
+            document.getElementById('chatbotModal').style.display = 'flex';
             // also reveal the inner modal panel (was hidden via inline style)
             const panel = document.querySelector('.chatbot-modal');
             if (panel) panel.style.display = 'flex';
@@ -2536,6 +2526,8 @@
             if (!convo.children.length) {
                 appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
             }
+        }
+
         function toggleChatbot() {
             const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
