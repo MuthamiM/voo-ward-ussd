@@ -1490,9 +1490,9 @@
             }
         </style>
 
-        <!-- AI Assistant Chat Modal (modern glassmorphism) -->
-        <div id="chatbotModal" style="display:none; z-index:100000;">
-            <div class="chatbot-modal" style="position:fixed; right:20px; bottom:100px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:24px; padding:20px; box-shadow:0 16px 48px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:440px; width:92%; display:none; z-index:100000; flex-direction:column;">
+        <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right -->
+        <div id="chatbotModal" style="display:flex; position:fixed; right:0; bottom:0; z-index:100000; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
+            <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:24px; padding:20px; box-shadow:0 16px 48px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:440px; width:92%; display:none; z-index:100000; flex-direction:column; pointer-events:all;">
                 <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.3);">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div style="width:32px; height:32px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
@@ -1555,8 +1555,9 @@
                                     <div id="userFullName" style="font-weight:700; cursor:pointer;" onclick="showProfileModal()">Loading...</div>
                                     <div id="userRole" style="font-size:12px; color:#6b7280;">...</div>
                                 </div>
-                                <button id="profileAvatarBtn" onclick="showProfileModal()" title="Your profile" style="border: none; background: transparent; padding:0; cursor:pointer;">
-                                    <img id="profileAvatar" src="/images/avatar-placeholder.svg" alt="avatar" style="width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.14);background:linear-gradient(135deg,#7c3aed,#a78bfa);"/>
+                                <button id="profileAvatarBtn" onclick="showProfilePictureModal()" title="Click to upload profile picture" style="border: none; background: transparent; padding:0; cursor:pointer; position:relative;">
+                                    <img id="profileAvatar" src="/images/avatar-placeholder.svg" alt="avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.5);background:linear-gradient(135deg,#667eea,#764ba2); transition:all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"/>
+                                    <div style="position:absolute; bottom:-2px; right:-2px; width:16px; height:16px; background:#10b981; border:2px solid white; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
                                 </button>
                             </div>
                         </div>
@@ -1780,6 +1781,34 @@
             </div>
         </div>
     </div>
+    
+    <!-- Profile Picture Upload Modal -->
+    <div class="modal" id="profilePictureModal">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Update Profile Picture</h3>
+            </div>
+            <div class="modal-body">
+                <div id="profilePictureError"></div>
+                <div style="text-align:center; margin-bottom:24px;">
+                    <img id="profilePreview" src="/images/avatar-placeholder.svg" alt="Preview" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:4px solid rgba(102,126,234,0.3); box-shadow:0 8px 24px rgba(0,0,0,0.1);"/>
+                </div>
+                <div class="form-group">
+                    <label for="profilePictureInput" style="display:block; text-align:center; margin-bottom:12px; font-weight:600; color:#1f2937;">Choose Image from Gallery</label>
+                    <input type="file" id="profilePictureInput" accept="image/*" style="display:none;" onchange="previewProfilePicture(event)"/>
+                    <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px;">
+                        📷 Select from Gallery
+                    </button>
+                    <p style="font-size:13px; color:#6b7280; text-align:center; margin-top:12px;">Supported: JPG, PNG, GIF (max 5MB)</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-sm btn-secondary" onclick="closeProfilePictureModal()">Cancel</button>
+                <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn">✓ Upload</button>
+            </div>
+        </div>
+    </div>
+    
             <!-- Add User Modal -->
     <div class="modal" id="addUserModal">
         <div class="modal-content">
@@ -2104,6 +2133,103 @@
         }
 
         // ========================================
+        // PROFILE PICTURE UPLOAD
+        // ========================================
+        function showProfilePictureModal() {
+            document.getElementById('profilePictureModal').classList.add('show');
+            // Set preview to current avatar
+            const currentAvatar = document.getElementById('profileAvatar').src;
+            document.getElementById('profilePreview').src = currentAvatar;
+        }
+
+        function closeProfilePictureModal() {
+            document.getElementById('profilePictureModal').classList.remove('show');
+            document.getElementById('profilePictureError').innerHTML = '';
+            document.getElementById('profilePictureInput').value = '';
+        }
+
+        function previewProfilePicture(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validate file size (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                document.getElementById('profilePictureError').innerHTML = '<div class="alert alert-danger">File too large. Maximum size is 5MB</div>';
+                return;
+            }
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                document.getElementById('profilePictureError').innerHTML = '<div class="alert alert-danger">Please select an image file</div>';
+                return;
+            }
+            
+            // Preview image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profilePreview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function uploadProfilePicture() {
+            const fileInput = document.getElementById('profilePictureInput');
+            const file = fileInput.files[0];
+            const errorDiv = document.getElementById('profilePictureError');
+            const uploadBtn = document.getElementById('uploadProfileBtn');
+            
+            if (!file) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">Please select an image first</div>';
+                return;
+            }
+            
+            errorDiv.innerHTML = '';
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '⏳ Uploading...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('photo', file);
+                
+                const res = await fetch('/api/admin/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: formData
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Upload failed'}</div>`;
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = '✓ Upload';
+                    return;
+                }
+                
+                // Update current user object
+                if (data.user) {
+                    currentUser = data.user;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    // Update avatar in navbar
+                    const avatar = document.getElementById('profileAvatar');
+                    avatar.src = data.user.photo_thumb_webp || data.user.photo_thumb || data.user.photo_webp || data.user.photo_url || '/images/avatar-placeholder.svg';
+                }
+                
+                closeProfilePictureModal();
+                showToast('Profile picture updated successfully!', 'success');
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '✓ Upload';
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '✓ Upload';
+            }
+        }
+
+        // ========================================
         // STATISTICS
         // ========================================
         async function loadStats() {
@@ -2411,16 +2537,29 @@
             if (!convo.children.length) {
                 appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export issues", "change password".');
             }
-            const input = document.getElementById('chatbot-input');
-            if (input) {
-                // focus and ensure Enter sends the message (replace any previous handler)
-                input.focus();
-                input.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendChatbotMessage(); } };
+        function toggleChatbot() {
+            const modal = document.getElementById('chatbotModal');
+            const panel = document.querySelector('.chatbot-modal');
+            
+            // Always keep chatbot visible at bottom right, just toggle the panel
+            modal.style.display = 'flex';
+            
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'flex';
+                const input = document.getElementById('chatbot-input');
+                if (input) {
+                    input.focus();
+                    input.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendChatbotMessage(); } };
+                }
+            } else {
+                panel.style.display = 'none';
+                const input = document.getElementById('chatbot-input');
+                if (input) input.onkeydown = null;
             }
         }
 
         function hideChatbot() {
-            document.getElementById('chatbotModal').style.display = 'none';
+            // Just hide the panel, keep button visible
             const panel = document.querySelector('.chatbot-modal');
             if (panel) panel.style.display = 'none';
             const input = document.getElementById('chatbot-input');
