@@ -15,6 +15,23 @@ frontend/
 voo-admin-v2/
 backend/
 
+# Development/test files (not needed in production)
+examples/
+handover/
+scripts/backup.*
+scripts/*-temp-admin.js
+scripts/seed*.js
+scripts/insert-example-issue.js
+scripts/trigger_and_poll_render.js
+scripts/fetch_deploy_events.js
+scripts/get_service.js
+scripts/try_logs.js
+scripts/check_endpoints.js
+web-simulator/
+fly.toml
+nodemon.json
+.hintrc
+
 # Database
 *.db
 *.sqlite

@@ -81,10 +81,8 @@ app.post("/ussd", async (req, res) => {
 // Defensive: Try multiple candidate paths for admin-dashboard and inspect file contents
 const fs = require('fs');
 const candidatePaths = [
-  path.resolve(process.cwd(), 'backend/src/admin-dashboard.js'),
-  path.resolve(__dirname, '../backend/src/admin-dashboard.js'),
-  path.resolve(process.cwd(), 'backend/admin-dashboard.js'),
-  path.resolve(process.cwd(), 'admin-dashboard.js')
+  path.resolve(__dirname, 'admin-dashboard.js'),
+  path.resolve(process.cwd(), 'src/admin-dashboard.js')
 ];
 
 console.log('[DEBUG] CWD:', process.cwd());
