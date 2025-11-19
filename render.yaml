@@ -5,8 +5,8 @@ services:
     servicePreviews: node
     region: oregon
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    buildCommand: npm install --production
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
