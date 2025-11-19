@@ -1490,20 +1490,19 @@
             }
         </style>
 
-        <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right -->
-        <div id="chatbotModal" style="display:flex; position:fixed; right:0; bottom:0; z-index:100000; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
+        <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right on dashboard only -->
+        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:100000; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
             <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:24px; padding:20px; box-shadow:0 16px 48px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:440px; width:92%; display:none; z-index:100000; flex-direction:column; pointer-events:all;">
                 <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.3);">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <div style="width:32px; height:32px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <circle cx="12" cy="12" r="10" fill="white" fill-opacity="0.9"/>
-                                <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
-                                <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
-                                <path d="M9 14C9 14 10 15 12 15C14 15 15 14 15 14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="width:40px; height:40px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(102,126,234,0.4);">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
+                                <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                                <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                             </svg>
                         </div>
-                        <span style="font-weight:700; font-size:18px; background:linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Mai AI Assistant</span>
+                        <span style="font-weight:800; font-size:20px; letter-spacing:2px; color:#1f2937;">CHATBOT</span>
                     </div>
                     <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.3); border:none; width:32px; height:32px; border-radius:50%; font-size:20px; cursor:pointer; color:#666; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">&times;</button>
                 </div>
@@ -1515,8 +1514,8 @@
                     <button onclick="sendSuggestion('Export issues CSV')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">📥 Export CSV</button>
                 </div>
                 <div style="margin-top:8px; display:flex; gap:10px;">
-                    <input id="chatbot-input" placeholder="Ask Mai anything..." style="flex:1; padding:12px 16px; border-radius:16px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); font-size:14px;" />
-                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()" style="padding:12px 24px; border-radius:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; color:white; font-weight:600; cursor:pointer; transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Send</button>
+                    <input id="chatbot-input" placeholder="Type your message..." style="flex:1; padding:14px 18px; border-radius:16px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); font-size:14px; font-weight:500; color:#1f2937;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()" style="padding:14px 28px; border-radius:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; color:white; font-weight:700; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(102,126,234,0.4);" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)'">Send</button>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-sm" onclick="hideChatbot()">Close</button>
@@ -1936,13 +1935,10 @@
                     currentUser = null;
                     document.getElementById('loginPage').style.display = 'flex';
                     document.getElementById('dashboardPage').style.display = 'none';
+                    // Hide chatbot on logout
+                    document.getElementById('chatbotModal').style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
-                    // hide chatbot on logout (removed from login page per request)
-                    const cb = document.getElementById('chatbotBtn');
-                    if (cb) cb.style.display = 'none';
-                    const cib = document.getElementById('chatbotInlineBtn');
-                    if (cib) cib.classList.remove('visible');
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
                 });
             }
@@ -1963,6 +1959,9 @@
 
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('dashboardPage').style.display = 'block';
+            
+                    // Show chatbot when dashboard loads
+                    document.getElementById('chatbotModal').style.display = 'flex';
             
                     // Update user info
                     document.getElementById('userFullName').textContent = currentUser.fullName;
