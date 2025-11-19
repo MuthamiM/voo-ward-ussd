@@ -80,6 +80,30 @@
             }
         }
 
+        /* Morphing gradient background */
+        @keyframes morphGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Floating particles animation */
+        @keyframes floatParticle {
+            0%, 100% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0.3; }
+            25% { transform: translateY(-20px) translateX(10px) rotate(90deg); opacity: 0.6; }
+            50% { transform: translateY(-40px) translateX(-10px) rotate(180deg); opacity: 0.8; }
+            75% { transform: translateY(-20px) translateX(10px) rotate(270deg); opacity: 0.6; }
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(167, 139, 250, 0.6);
+            border-radius: 50%;
+            animation: floatParticle 8s ease-in-out infinite;
+        }
+
         input:focus, textarea:focus, select:focus {
             outline: none;
             animation: neonGlow 2s ease-in-out infinite;
@@ -572,20 +596,25 @@
 
         .navbar {
             background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(30px) saturate(200%);
-            -webkit-backdrop-filter: blur(30px) saturate(200%);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+            backdrop-filter: blur(40px) saturate(200%);
+            -webkit-backdrop-filter: blur(40px) saturate(200%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             padding: 0;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15), 0 4px 12px rgba(124, 58, 237, 0.1);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2), 
+                        0 4px 12px rgba(124, 58, 237, 0.15),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.3);
             transition: all 0.3s ease;
         }
 
         .navbar:hover {
-            background: rgba(255, 255, 255, 0.12);
-            box-shadow: 0 12px 48px rgba(31, 38, 135, 0.2), 0 4px 16px rgba(124, 58, 237, 0.15);
+            background: rgba(255, 255, 255, 0.14);
+            box-shadow: 0 12px 48px rgba(31, 38, 135, 0.25), 
+                        0 4px 16px rgba(124, 58, 237, 0.2),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                        0 0 30px rgba(167, 139, 250, 0.15);
         }
 
         .navbar-content {
@@ -819,8 +848,11 @@
 
         .stat-card:hover {
             transform: translateY(-12px) scale(1.03) rotateX(2deg);
-            box-shadow: 0 20px 60px rgba(124, 58, 237, 0.25), 0 8px 16px rgba(0, 0, 0, 0.1), 0 0 40px rgba(124, 58, 237, 0.15);
-            border-color: var(--primary-light);
+            box-shadow: 0 20px 60px rgba(124, 58, 237, 0.4), 
+                        0 8px 16px rgba(0, 0, 0, 0.15), 
+                        0 0 40px rgba(124, 58, 237, 0.25),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            border-color: rgba(255, 255, 255, 0.6);
         }
 
         @keyframes fadeInUp {
@@ -1638,8 +1670,9 @@
             </div>
             
             <div id="loginError"></div>
+            <div id="signupError"></div>
             
-            <form id="loginForm">
+            <form id="loginForm" style="display:block;">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" class="form-input" placeholder="Enter your username" required autocomplete="username">
@@ -1652,6 +1685,44 @@
                 
                 <button type="submit" class="btn btn-primary">Sign In</button>
             </form>
+            
+            <form id="signupForm" style="display:none;">
+                <div class="form-group">
+                    <label for="signupFullName">Full Name</label>
+                    <input type="text" id="signupFullName" class="form-input" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPhone">Phone Number</label>
+                    <input type="tel" id="signupPhone" class="form-input" placeholder="0712345678" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupUsername">Username</label>
+                    <input type="text" id="signupUsername" class="form-input" placeholder="Choose a username" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" class="form-input" placeholder="Choose a password" required autocomplete="new-password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupRole">Role</label>
+                    <select id="signupRole" class="form-input" required>
+                        <option value="">Select your role</option>
+                        <option value="CLERK">Clerk</option>
+                        <option value="PA">Personal Assistant (PA)</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Create Account</button>
+            </form>
+            
+            <div style="text-align:center; margin-top:20px; font-size:14px; color:rgba(255,255,255,0.8);">
+                <span id="authToggleText">Don't have an account?</span>
+                <button id="authToggleBtn" onclick="toggleAuthMode()" style="background:none; border:none; color:#a78bfa; font-weight:600; cursor:pointer; text-decoration:underline; margin-left:5px;">Sign Up</button>
+            </div>
             <!-- Emergency admin reset removed for security -->
         </div>
     </div>
@@ -2121,6 +2192,129 @@
             }
         });
 
+        // ========================================
+        // SIGNUP HANDLER
+        // ========================================
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('signupFullName').value;
+            const phone = document.getElementById('signupPhone').value;
+            const username = document.getElementById('signupUsername').value;
+            const password = document.getElementById('signupPassword').value;
+            const role = document.getElementById('signupRole').value;
+            const errorDiv = document.getElementById('loginError');
+            
+            errorDiv.innerHTML = '';
+            
+            // Validate role (only CLERK or PA allowed for signup)
+            if (role !== 'CLERK' && role !== 'PA') {
+                errorDiv.innerHTML = `<div class="alert alert-danger">Invalid role. Only CLERK and PA can sign up.</div>`;
+                return;
+            }
+            
+            try {
+                // First create constituent record
+                const constituentRes = await fetch(API_BASE + '/api/members', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: fullName,
+                        phone: phone,
+                        role: role
+                    })
+                });
+                
+                if (!constituentRes.ok) {
+                    const constituentData = await constituentRes.json();
+                    errorDiv.innerHTML = `<div class="alert alert-danger">${constituentData.error || 'Failed to create constituent profile'}</div>`;
+                    return;
+                }
+                
+                // Then create user account
+                const userRes = await fetch(API_BASE + '/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        fullName,
+                        phone,
+                        role
+                    })
+                });
+                
+                const userData = await userRes.json();
+                
+                if (!userRes.ok) {
+                    errorDiv.innerHTML = `<div class="alert alert-danger">${userData.error || 'Registration failed'}</div>`;
+                    return;
+                }
+                
+                // Success - auto login
+                errorDiv.innerHTML = `<div class="alert alert-success">Account created successfully! Logging you in...</div>`;
+                
+                setTimeout(async () => {
+                    // Auto-login after signup
+                    const loginRes = await fetch(API_BASE + '/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    
+                    const loginData = await loginRes.json();
+                    
+                    if (loginRes.ok) {
+                        authToken = loginData.token;
+                        currentUser = loginData.user;
+                        localStorage.setItem('authToken', authToken);
+                        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                        
+                        try { applyProfileSettings(currentUser.settings || {}); } catch (e) { /* ignore */ }
+                        
+                        const pav = document.getElementById('profileAvatar');
+                        if (pav) pav.src = currentUser.photo_thumb_webp || currentUser.photo_thumb || currentUser.photo_webp || currentUser.photo_url || '/images/avatar-placeholder.svg';
+                        
+                        showDashboard();
+                    } else {
+                        errorDiv.innerHTML = `<div class="alert alert-success">Account created! Please log in.</div>`;
+                        toggleForms(); // Switch to login form
+                    }
+                }, 1500);
+                
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-danger">Connection error. Please try again.</div>`;
+            }
+        });
+
+        // Toggle between login and signup forms
+        function toggleForms() {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const toggleText = document.getElementById('authToggleText');
+            const toggleBtn = document.getElementById('authToggleBtn');
+            
+            if (loginForm.style.display === 'none') {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+                toggleText.textContent = "Don't have an account?";
+                toggleBtn.textContent = "Sign Up";
+            } else {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+                toggleText.textContent = "Already have an account?";
+                toggleBtn.textContent = "Login";
+            }
+            
+            // Clear error messages when toggling
+            document.getElementById('loginError').innerHTML = '';
+        }
+        
+        // Alias for backward compatibility
+        function toggleAuthMode() {
+            toggleForms();
+        }
+
         function logout(force = false) {
             if (force || confirm('Are you sure you want to logout?')) {
                 fetch(API_BASE + '/api/auth/logout', {
@@ -2395,7 +2589,7 @@
                 const res = await fetch('/api/admin/profile', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${authToken}`
                     },
                     body: formData
                 });
