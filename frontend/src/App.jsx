@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
+import Chatbot from "./components/Chatbot";
 
 const API_BASE = "http://localhost:4000";
 
@@ -590,6 +591,7 @@ export default function App() {
 
   return (
     <div className="dashboard-wrapper">
+      <Chatbot apiBase={API_BASE} token={token} />
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">

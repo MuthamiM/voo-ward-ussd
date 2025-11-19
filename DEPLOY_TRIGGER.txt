@@ -1,2 +1,0 @@
-Redeploy trigger created to force Render to pick latest commit.
-Timestamp: 2025-11-08T16:58:00Z
