@@ -260,6 +260,8 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
       return res.status(503).json({ error: 'Database not connected' });
     }
     
+    console.log(`Login attempt for user: ${username}`);
+    
     // PRODUCTION: Use database authentication
     // Find user
     const user = await database.collection("admin_users").findOne({
