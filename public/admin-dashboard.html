@@ -74,12 +74,20 @@
         }
 
         body {
-            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Inter', 'Roboto', system-ui, sans-serif;
-            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #581c87 75%, #6d28d9 100%);
+            font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
             background-attachment: fixed;
             min-height: 100vh;
             color: #1f2937;
             overflow-x: hidden;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         /* ========================================
@@ -457,14 +465,15 @@
         }
 
         .navbar {
-            background: linear-gradient(135deg, #ffffff 0%, #faf5ff 100%);
-            border-bottom: 2px solid rgba(124, 58, 237, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.25);
             padding: 0;
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: 0 4px 16px rgba(124, 58, 237, 0.12);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
         }
 
         .navbar-content {
@@ -577,19 +586,20 @@
         ======================================== */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 24px;
-            margin-bottom: 32px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 28px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
-            background: linear-gradient(145deg, #ffffff 0%, #fafafa 100%);
-            border-radius: 20px;
-            padding: 28px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
-            animation: scaleIn 0.5s ease-out backwards;
+            border: 1px solid rgba(255, 255, 255, 0.3);
             position: relative;
             overflow: hidden;
         }
@@ -930,8 +940,12 @@
         ======================================== */
         .table-container {
             overflow-x: auto;
-            border-radius: 12px;
-            background: white;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.2);
         }
 
         table {
@@ -940,7 +954,7 @@
         }
 
         thead {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
         th {
@@ -1458,28 +1472,51 @@
             <!-- Emergency admin reset removed for security -->
         </div>
     </div>
-        <!-- Floating Chatbot Button (fixed to viewport bottom-right) -->
-        <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot" style="position:fixed; right:18px; bottom:18px; z-index:99999; width:56px; height:56px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#7c3aed,#a78bfa); box-shadow:0 12px 30px rgba(0,0,0,0.18); cursor:pointer; opacity:1; pointer-events:auto;">
-            <img id="assistantIcon" src="/images/assistant-placeholder.svg" alt="Mai assistant" style="width:30px;height:30px;border-radius:8px;object-fit:cover;" onerror="if(!this.dataset.fallback){this.dataset.fallback='svg'; this.src='/images/assistant-icon.svg';} else if(this.dataset.fallback==='svg'){this.dataset.fallback='placeholder'; this.src='/images/assistant-placeholder.svg';} else { this.onerror=null; }" />
+        <!-- Floating AI Assistant Button (modern robot icon) -->
+        <button id="chatbotBtn" class="chatbot-button" title="AI Assistant - Mai" onclick="showChatbot()" aria-label="AI Assistant" style="position:fixed; right:20px; bottom:20px; z-index:99999; width:64px; height:64px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 12px 40px rgba(102,126,234,0.4); cursor:pointer; opacity:1; pointer-events:auto; transition: all 0.3s cubic-bezier(0.4,0,0.2,1);">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));">
+                <path d="M12 2C10.3431 2 9 3.34315 9 5V6H7C5.89543 6 5 6.89543 5 8V18C5 19.1046 5.89543 20 7 20H17C18.1046 20 19 19.1046 19 18V8C19 6.89543 18.1046 6 17 6H15V5C15 3.34315 13.6569 2 12 2Z" fill="white" fill-opacity="0.9"/>
+                <circle cx="9" cy="11" r="1.5" fill="#667eea"/>
+                <circle cx="15" cy="11" r="1.5" fill="#667eea"/>
+                <path d="M9 15C9 15 10 16.5 12 16.5C14 16.5 15 15 15 15" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+                <rect x="10" y="19" width="4" height="2" rx="1" fill="white" fill-opacity="0.8"/>
+            </svg>
         </button>
+        
+        <style>
+            #chatbotBtn:hover {
+                transform: scale(1.1) rotate(5deg);
+                box-shadow: 0 16px 48px rgba(102,126,234,0.5);
+            }
+        </style>
 
-        <!-- Chatbot Modal (anchored bottom-right) -->
+        <!-- AI Assistant Chat Modal (modern glassmorphism) -->
         <div id="chatbotModal" style="display:none; z-index:100000;">
-            <div class="chatbot-modal" style="position:fixed; right:18px; bottom:88px; margin:0; background:#fff; border-radius:12px; padding:12px; box-shadow:0 12px 30px rgba(0,0,0,0.12); max-width:420px; width:92%; display:none; z-index:100000; flex-direction:column;">
-                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Mai</span>
-                    <button onclick="hideChatbot()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#666;">&times;</button>
+            <div class="chatbot-modal" style="position:fixed; right:20px; bottom:100px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:24px; padding:20px; box-shadow:0 16px 48px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:440px; width:92%; display:none; z-index:100000; flex-direction:column;">
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.3);">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:32px; height:32px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" fill="white" fill-opacity="0.9"/>
+                                <circle cx="9" cy="10" r="1.5" fill="#667eea"/>
+                                <circle cx="15" cy="10" r="1.5" fill="#667eea"/>
+                                <path d="M9 14C9 14 10 15 12 15C14 15 15 14 15 14" stroke="#667eea" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <span style="font-weight:700; font-size:18px; background:linear-gradient(135deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">Mai AI Assistant</span>
+                    </div>
+                    <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.3); border:none; width:32px; height:32px; border-radius:50%; font-size:20px; cursor:pointer; color:#666; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">&times;</button>
                 </div>
-                <div id="chatbot-messages" style="flex:1; min-height:200px; max-height:400px; overflow-y:auto; margin-bottom:10px; padding:10px; background:#f9fafb; border-radius:8px;"></div>
-                <div class="chatbot-suggestions">
-                    <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
-                    <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
-                    <button onclick="sendSuggestion('How to resolve issues')">How to resolve issues</button>
-                    <button onclick="sendSuggestion('Export issues CSV')">Export issues</button>
+                <div id="chatbot-messages" style="flex:1; min-height:240px; max-height:420px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.15); border-radius:16px; border:1px solid rgba(255,255,255,0.2);"></div>
+                <div class="chatbot-suggestions" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                    <button onclick="sendSuggestion('How do I view USSD interactions?')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">📱 View USSD</button>
+                    <button onclick="sendSuggestion('What does parsed_text mean?')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">❓ What is parsed_text</button>
+                    <button onclick="sendSuggestion('How to resolve issues')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✅ Resolve issues</button>
+                    <button onclick="sendSuggestion('Export issues CSV')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">📥 Export CSV</button>
                 </div>
-                <div style="margin-top:8px; display:flex; gap:8px;">
-                    <input id="chatbot-input" placeholder="Ask about system or type 'debug'" style="flex:1; padding:8px; border-radius:6px; border:1px solid #ddd;" />
-                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()">Send</button>
+                <div style="margin-top:8px; display:flex; gap:10px;">
+                    <input id="chatbot-input" placeholder="Ask Mai anything..." style="flex:1; padding:12px 16px; border-radius:16px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); font-size:14px;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()" style="padding:12px 24px; border-radius:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; color:white; font-weight:600; cursor:pointer; transition:all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">Send</button>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-sm" onclick="hideChatbot()">Close</button>
