@@ -531,10 +531,25 @@ router.post('/api/admin/chatbot', async (req, res) => {
     if (isAuthed && OPENAI_KEY) {
       // Use OpenAI Chat Completions endpoint (server-side proxy)
       try {
+        const systemContext = `
+System: VOO Kyamatu Ward USSD Service Platform.
+Purpose: Citizen services (Registration, Issues, Bursaries, Announcements) via USSD (*340*75#) and Admin Dashboard.
+Tech Stack: Node.js (Express/Fastify), MongoDB Atlas, PostgreSQL, React Frontend.
+Live URL: https://voo-ward-ussd.onrender.com/ussd
+Features:
+- Constituents: Register via USSD.
+- Issues: Report roads, water, security, health issues.
+- Bursaries: Apply for education funds.
+- Announcements: Broadcast to ward.
+Security: AES-256-GCM, Rate Limiting, IP Blocking.
+Database: MongoDB (constituents, issues, bursary_applications, announcements).
+USSD Flow: 1. Language -> 2. Main Menu (Register, Report Issue, Announcements, Projects).
+`;
+
         const payload = {
           model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are Mai — a concise, helpful assistant for the VOO Kyamatu Ward admin dashboard. Identify yourself as "Mai" when appropriate, answer briefly, avoid exposing secrets, and provide actionable next steps when possible.' },
+            { role: 'system', content: `You are Mai, the AI assistant for the VOO Kyamatu Ward Admin Dashboard. Use the following system context to answer questions:\n${systemContext}\nIdentify yourself as "Mai", answer briefly, avoid exposing secrets, and provide actionable next steps.` },
             { role: 'user', content: msg }
           ],
           max_tokens: 400,
