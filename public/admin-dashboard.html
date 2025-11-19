@@ -1464,11 +1464,13 @@
         </button>
 
         <!-- Chatbot Modal (anchored bottom-right) -->
-        <div id="chatbotModal" class="modal-backdrop" style="display:none; align-items:flex-end; justify-content:flex-end;">
-            <div class="chatbot-modal" style="position:fixed; right:18px; bottom:88px; margin:0; background:#fff; border-radius:12px; padding:12px; box-shadow:0 12px 30px rgba(0,0,0,0.12); max-width:420px; width:92%; display:none; z-index:100000;">
-                <div class="modal-header">Mai</div>
-                    <button id="chatbotBtn" class="chatbot-button" title="Help" onclick="showChatbot()" aria-label="Help chatbot" style="position:fixed; right:18px; bottom:18px; z-index:99999; width:56px; height:56px; border-radius:50%; border:none; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#7c3aed,#a78bfa); box-shadow:0 12px 30px rgba(0,0,0,0.18); cursor:pointer; opacity:1; pointer-events:auto;">
+        <div id="chatbotModal" style="display:none; z-index:100000;">
+            <div class="chatbot-modal" style="position:fixed; right:18px; bottom:88px; margin:0; background:#fff; border-radius:12px; padding:12px; box-shadow:0 12px 30px rgba(0,0,0,0.12); max-width:420px; width:92%; display:none; z-index:100000; flex-direction:column;">
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Mai</span>
+                    <button onclick="hideChatbot()" style="background:none; border:none; font-size:20px; cursor:pointer; color:#666;">&times;</button>
                 </div>
+                <div id="chatbot-messages" style="flex:1; min-height:200px; max-height:400px; overflow-y:auto; margin-bottom:10px; padding:10px; background:#f9fafb; border-radius:8px;"></div>
                 <div class="chatbot-suggestions">
                     <button onclick="sendSuggestion('How do I view USSD interactions?')">View USSD interactions</button>
                     <button onclick="sendSuggestion('What does parsed_text mean?')">What is parsed_text?</button>
@@ -2362,10 +2364,10 @@
 
         // In-dashboard chatbot helper
         function showChatbot() {
-            document.getElementById('chatbotModal').style.display = 'flex';
+            document.getElementById('chatbotModal').style.display = 'block';
             // also reveal the inner modal panel (was hidden via inline style)
             const panel = document.querySelector('.chatbot-modal');
-            if (panel) panel.style.display = 'block';
+            if (panel) panel.style.display = 'flex';
 
             const convo = document.getElementById('chatbot-messages');
             if (!convo.children.length) {
@@ -2999,125 +3001,6 @@
         // ========================================
         function exportData(type) {
             window.location.href = API_BASE + '/api/admin/export/' + type;
-        }
-
-        // ========================================
-        // AI Assistant (lightweight)
-        // - Client-side assistant that summarizes local debug endpoints
-        // - Does not call external LLMs; it queries server debug endpoints
-        // ========================================
-        function showChatbot() {
-            const modal = document.getElementById('chatbotModal');
-            if (!modal) return;
-            modal.style.display = 'flex';
-            const input = document.getElementById('chatbot-input');
-            if (input) input.focus();
-        }
-
-        function hideChatbot() {
-            const modal = document.getElementById('chatbotModal');
-            if (!modal) return;
-            modal.style.display = 'none';
-        }
-
-        function sendSuggestion(text) {
-            const input = document.getElementById('chatbot-input');
-            if (!input) return;
-            input.value = text;
-            sendChatbotMessage();
-        }
-
-        function appendBotMessage(text) {
-            const container = document.getElementById('chatbot-messages');
-            if (!container) return;
-            const el = document.createElement('div');
-            el.className = 'toast info';
-            el.style.background = '#f8fafc';
-            el.style.color = '#0f172a';
-            el.style.borderLeft = '4px solid #0ea5e9';
-            el.style.padding = '8px';
-            el.textContent = (text && typeof text === 'string') ? formatMaiReply(text) : text;
-            container.appendChild(el);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function appendUserMessage(text) {
-            const container = document.getElementById('chatbot-messages');
-            if (!container) return;
-            const el = document.createElement('div');
-            el.className = 'toast';
-            el.style.background = '#111827';
-            el.style.color = 'white';
-            el.style.textAlign = 'right';
-            el.style.padding = '8px';
-            el.textContent = text;
-            container.appendChild(el);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function sendChatbotMessage() {
-            const input = document.getElementById('chatbot-input');
-            if (!input) return;
-            const q = (input.value || '').trim();
-            if (!q) return;
-            appendUserMessage(q);
-            input.value = '';
-
-            // quick debug/status shortcut
-            if (q.toLowerCase() === 'debug' || q.toLowerCase() === 'status') {
-                appendBotMessage('Fetching debug overview...');
-                try {
-                    const [fullRes, routesRes] = await Promise.all([
-                        fetch('/__debug/admin-full').then(r=>r.json()).catch(()=>null),
-                        fetch('/__debug/admin-routes').then(r=>r.json()).catch(()=>null)
-                    ]);
-
-                    let reply = '';
-                    if (fullRes) {
-                        reply += `Admin export type: ${fullRes.exportType || 'unknown'}. `;
-                        reply += fullRes.connectDB ? 'connectDB present. ' : 'connectDB missing. ';
-                    }
-                    if (routesRes) {
-                        reply += `Admin mounted: ${routesRes.adminMounted ? 'yes' : 'no'}. `;
-                        reply += `Route count: ${routesRes.routeCount ?? 'n/a'}. `;
-                        if (routesRes.routes && routesRes.routes.length) reply += `Routes: ${routesRes.routes.map(r=>r.path).slice(0,6).join(', ')}.`;
-                    }
-                    if (!reply) reply = 'No debug information available from server.';
-                    appendBotMessage(reply);
-                } catch (e) {
-                    appendBotMessage('Failed to fetch debug endpoints: ' + (e && e.message));
-                }
-                return;
-            }
-
-            appendBotMessage('Thinking... (gathering local data)');
-            try {
-                const [fullRes, routesRes] = await Promise.all([
-                    fetch('/__debug/admin-full').then(r=>r.json()).catch(()=>null),
-                    fetch('/__debug/admin-routes').then(r=>r.json()).catch(()=>null)
-                ]);
-
-                const ql = q.toLowerCase();
-                if (ql.includes('routes') || ql.includes('mounted') || ql.includes('admin routes')) {
-                    if (routesRes) {
-                        appendBotMessage(`Admin mounted: ${routesRes.adminMounted ? 'yes' : 'no'}. Route count: ${routesRes.routeCount}.`);
-                        return;
-                    }
-                }
-
-                if (ql.includes('login') || ql.includes('auth') || ql.includes('token')) {
-                    appendBotMessage('Login endpoint: POST /api/auth/login. Token is stored in localStorage `authToken`.');
-                    return;
-                }
-
-                const summary = ['System summary:'];
-                if (fullRes) summary.push('Export type: ' + (fullRes.exportType||'n/a'));
-                if (routesRes) summary.push('Routes: ' + (routesRes.routeCount ?? 'n/a'));
-                summary.push('Page title: ' + document.title);
-                appendBotMessage(summary.join(' '));
-            } catch (e) {
-                appendBotMessage('Error while answering: ' + (e && e.message));
-            }
         }
 
         // ========================================
