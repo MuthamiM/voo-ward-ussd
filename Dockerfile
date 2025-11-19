@@ -16,7 +16,7 @@ ENV NODE_ENV="production"
 FROM base as build
 
 # Copy package files
-COPY backend/package*.json ./
+COPY package*.json ./
 # Install dependencies
 # Use `npm install` here instead of `npm ci` to avoid build failures
 # when package-lock.json and package.json are out of sync on the server.
@@ -24,7 +24,7 @@ COPY backend/package*.json ./
 RUN npm install --include=dev --no-audit --no-fund
 
 # Copy application code
-COPY backend/ .
+COPY . .
 
 # Final stage for app image
 FROM base
