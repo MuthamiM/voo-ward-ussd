@@ -1488,9 +1488,10 @@ app.get('/old', (req, res) => {
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
 async function startServer() {
-  console.log(`\n  VOO WARD ADMIN DASHBOARD`);
+  console.log(`\n  VOO WARD ADMIN DASHBOARD v1.1`);
   console.log(` Dashboard: http://localhost:${PORT}`);
   console.log(`  Health: http://localhost:${PORT}/health`);
+  console.log(` Max Users: 3 (1 MCA + 2 PA/CLERK)`);
   
   // Test MongoDB connection
   const database = await connectDB();
