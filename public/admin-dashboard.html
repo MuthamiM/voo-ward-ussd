@@ -2423,7 +2423,7 @@
             const tabsNav = document.getElementById('tabsNav');
             
             if (currentUser.role === 'MCA') {
-                    // MCA sees everything
+                    // MCA has FULL ACCESS - sees everything
                     tabsNav.innerHTML = `
                         <button class="tab active" onclick="showTab('issues')">Issues</button>
                         <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
@@ -2433,7 +2433,8 @@
                         <button class="tab" onclick="showTab('users')">User Management</button>
                     `;
                 } else {
-                // PA sees: Issues, Bursaries, Announcements (NO Constituents, NO User Management)
+                // PA and CLERK have LIMITED ACCESS: Issues, Bursaries, Announcements only
+                // NO access to: Constituents, USSD Interactions, User Management
                 tabsNav.innerHTML = `
                     <button class="tab active" onclick="showTab('issues')">Issues</button>
                     <button class="tab" onclick="showTab('bursaries')">Bursaries</button>

@@ -360,6 +360,12 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
+    // Check total user count (max 3 users total)
+    const totalUsers = await database.collection('admin_users').countDocuments({});
+    if (totalUsers >= 3) {
+      return res.status(400).json({ error: 'Maximum number of users reached (3). Please contact MCA to create space.' });
+    }
+
     // Check if username exists
     const existing = await database.collection("admin_users").findOne({ 
       username: username.toLowerCase() 
@@ -466,6 +472,12 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
+    // Check total user count (max 3 users total)
+    const totalUsers = await database.collection('admin_users').countDocuments({});
+    if (totalUsers >= 3) {
+      return res.status(400).json({ error: 'Maximum number of users reached (3). Cannot create more users.' });
+    }
+
     // Check if username exists
     const existing = await database.collection("admin_users").findOne({ 
       username: username.toLowerCase() 
