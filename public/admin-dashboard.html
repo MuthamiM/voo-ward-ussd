@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOO Ward Admin Dashboard</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
         
         :root {
             --primary: #7c3aed;
@@ -74,7 +74,7 @@
         }
 
         body {
-            font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             background-size: 200% 200%;
             animation: gradientShift 15s ease infinite;
@@ -1512,6 +1512,16 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Floating Chatbot Button -->
+        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 8px 24px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:99999; transition:all 0.3s cubic-bezier(0.4,0,0.2,1);" onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 12px 32px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 24px rgba(102,126,234,0.4)'">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
+                <circle cx="9" cy="10" r="1" fill="#667eea"/>
+                <circle cx="12" cy="10" r="1" fill="#667eea"/>
+                <circle cx="15" cy="10" r="1" fill="#667eea"/>
+            </svg>
+        </button>
 
     <!-- DASHBOARD PAGE -->
     <div class="dashboard" id="dashboardPage" style="display: none;">
@@ -1927,6 +1937,8 @@
                     document.getElementById('dashboardPage').style.display = 'none';
                     // Hide chatbot on logout
                     document.getElementById('chatbotModal').style.display = 'none';
+                    const floatingBtn = document.getElementById('floatingChatbotBtn');
+                    if (floatingBtn) floatingBtn.style.display = 'none';
                     document.getElementById('username').value = '';
                     document.getElementById('password').value = '';
                     const pav = document.getElementById('profileAvatar'); if (pav) pav.src = '';
@@ -1950,8 +1962,10 @@
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('dashboardPage').style.display = 'block';
             
-                    // Show chatbot when dashboard loads
+                    // Show chatbot modal container and floating button
                     document.getElementById('chatbotModal').style.display = 'flex';
+                    const floatingBtn = document.getElementById('floatingChatbotBtn');
+                    if (floatingBtn) floatingBtn.style.display = 'flex';
             
                     // Update user info
                     document.getElementById('userFullName').textContent = currentUser.fullName;
