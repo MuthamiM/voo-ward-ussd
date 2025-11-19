@@ -723,8 +723,37 @@
             max-width: 1400px;
             margin: 0 auto;
             padding: 36px;
-            background: var(--gray-50);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             min-height: calc(100vh - 87px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 20% 50%, rgba(167, 139, 250, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+            animation: rotateGradient 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes rotateGradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* ========================================
@@ -2064,15 +2093,15 @@
                 <div class="form-group">
                     <label for="profilePictureInput" style="display:block; text-align:center; margin-bottom:12px; font-weight:600; color:#1f2937;">Choose Image from Gallery</label>
                     <input type="file" id="profilePictureInput" accept="image/*" style="display:none;" onchange="previewProfilePicture(event)"/>
-                    <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px;">
-                        📷 Select from Gallery
+                    <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; max-width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px; transition:all 0.3s ease;">
+                        Select Image
                     </button>
                     <p style="font-size:13px; color:#6b7280; text-align:center; margin-top:12px;">Supported: JPG, PNG, GIF (max 5MB)</p>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="btn-sm btn-secondary" onclick="closeProfilePictureModal()">Cancel</button>
-                <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn">✓ Upload</button>
+                <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="min-width:100px; max-width:120px; transition:all 0.3s ease;">Upload</button>
             </div>
         </div>
     </div>
@@ -2565,7 +2594,8 @@
             
             errorDiv.innerHTML = '';
             uploadBtn.disabled = true;
-            uploadBtn.textContent = '⏳ Uploading...';
+            uploadBtn.style.minWidth = uploadBtn.offsetWidth + 'px';
+            uploadBtn.textContent = 'Uploading...';
             
             try {
                 const formData = new FormData();
@@ -2583,8 +2613,6 @@
                 
                 if (!res.ok) {
                     errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Upload failed'}</div>`;
-                    uploadBtn.disabled = false;
-                    uploadBtn.textContent = '✓ Upload';
                     return;
                 }
                 
@@ -2600,12 +2628,12 @@
                 
                 closeProfilePictureModal();
                 showToast('Profile picture updated successfully!', 'success');
-                uploadBtn.disabled = false;
-                uploadBtn.textContent = '✓ Upload';
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = '✓ Upload';
+                uploadBtn.textContent = 'Upload';
+                uploadBtn.style.minWidth = '';
             }
         }
 
@@ -2777,6 +2805,26 @@
                             // Success UX: animate row, show saved state
                             row.classList.add('row-updated');
                             btn.textContent = 'Saved';
+                            
+                            // Auto-delete after 2 minutes if marked as resolved
+                            if (sel.value === 'resolved') {
+                                showToast('Issue will be auto-deleted in 2 minutes', 'info');
+                                setTimeout(async () => {
+                                    try {
+                                        const deleteRes = await apiRequest(`/api/admin/issues/${id}`, {
+                                            method: 'DELETE'
+                                        });
+                                        if (deleteRes.ok) {
+                                            showToast('Resolved issue auto-deleted', 'success');
+                                            loadIssues();
+                                            loadStats();
+                                        }
+                                    } catch (err) {
+                                        console.error('Auto-delete failed:', err);
+                                    }
+                                }, 120000); // 2 minutes
+                            }
+                            
                             setTimeout(() => {
                                 btn.textContent = originalText;
                                 btn.disabled = false;
