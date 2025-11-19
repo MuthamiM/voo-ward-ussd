@@ -2545,14 +2545,18 @@
         // PROFILE PICTURE UPLOAD
         // ========================================
         function showProfilePictureModal() {
-            document.getElementById('profilePictureModal').classList.add('show');
+            const modal = document.getElementById('profilePictureModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
             // Set preview to current avatar
             const currentAvatar = document.getElementById('profileAvatar').src;
             document.getElementById('profilePreview').src = currentAvatar;
         }
 
         function closeProfilePictureModal() {
-            document.getElementById('profilePictureModal').classList.remove('show');
+            const modal = document.getElementById('profilePictureModal');
+            modal.classList.remove('show');
+            modal.style.display = 'none';
             document.getElementById('profilePictureError').innerHTML = '';
             document.getElementById('profilePictureInput').value = '';
         }
@@ -2593,9 +2597,14 @@
             }
             
             errorDiv.innerHTML = '';
+            
+            // Fix button width before changing text to prevent glitching
+            const btnWidth = uploadBtn.offsetWidth;
+            uploadBtn.style.width = btnWidth + 'px';
+            uploadBtn.style.minWidth = btnWidth + 'px';
+            uploadBtn.style.maxWidth = btnWidth + 'px';
             uploadBtn.disabled = true;
-            uploadBtn.style.minWidth = uploadBtn.offsetWidth + 'px';
-            uploadBtn.textContent = 'Uploading...';
+            uploadBtn.innerHTML = '<span style="opacity:0.7">⏳</span> Uploading...';
             
             try {
                 const formData = new FormData();
@@ -2616,24 +2625,33 @@
                     return;
                 }
                 
-                // Update current user object
+                // Update current user object with all photo fields
                 if (data.user) {
-                    currentUser = data.user;
+                    // Merge new user data with existing currentUser to preserve all fields
+                    currentUser = { ...currentUser, ...data.user };
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
                     
-                    // Update avatar in navbar
+                    // Update avatar in navbar with priority: webp thumb > jpg thumb > webp > jpg > placeholder
                     const avatar = document.getElementById('profileAvatar');
                     avatar.src = data.user.photo_thumb_webp || data.user.photo_thumb || data.user.photo_webp || data.user.photo_url || '/images/avatar-placeholder.svg';
+                    
+                    // Update avatar button as well
+                    const avatarBtn = document.getElementById('profileAvatarBtn');
+                    if (avatarBtn && avatarBtn.querySelector('img')) {
+                        avatarBtn.querySelector('img').src = avatar.src;
+                    }
                 }
                 
                 closeProfilePictureModal();
-                showToast('Profile picture updated successfully!', 'success');
+                showToast('Profile picture uploaded and saved to database!', 'success');
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.textContent = 'Upload';
-                uploadBtn.style.minWidth = '';
+                uploadBtn.innerHTML = 'Upload';
+                uploadBtn.style.width = '';
+                uploadBtn.style.minWidth = '100px';
+                uploadBtn.style.maxWidth = '120px';
             }
         }
 
