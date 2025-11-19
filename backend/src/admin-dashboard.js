@@ -88,6 +88,18 @@ router.post('/api/auth/login', async (req, res) => {
   }
 });
 
+router.post('/api/auth/logout', (req, res) => {
+  try {
+    const token = req.headers.authorization && req.headers.authorization.replace(/^Bearer\s+/i, '');
+    if (token) {
+      sessions.delete(token);
+    }
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ error: 'Logout failed' });
+  }
+});
+
 // Minimal stats endpoint: attempts to use DB if available, otherwise returns zeros.
 router.get('/api/admin/stats', async (req, res) => {
   const stats = { constituents: { total: 0 }, issues: { total: 0 }, bursaries: { total: 0 }, announcements: { total: 0 } };
