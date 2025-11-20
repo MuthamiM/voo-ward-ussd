@@ -2489,8 +2489,8 @@
         </style>
 
         <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right on dashboard only -->
-        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:9999; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
-            <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:320px; width:320px; display:none; z-index:9999; flex-direction:column; pointer-events:all;">
+        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:9500; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
+            <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:320px; width:320px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
                 <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.3);">
                     <div style="display:flex; align-items:center; gap:10px;">
                         <div style="width:32px; height:32px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(102,126,234,0.4);">
@@ -2513,7 +2513,7 @@
         </div>
         
         <!-- Floating Chatbot Button -->
-        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 6px 20px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9998; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'">
+        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 6px 20px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
                 <circle cx="9" cy="10" r="1" fill="#667eea"/>
@@ -3251,53 +3251,58 @@
     </div>
     
     <!-- Profile Settings Modal -->
-    <div class="modal-backdrop" id="profileSettingsModal" style="display:none;">
-        <div class="modal">
-            <div class="modal-content" style="max-width:600px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Profile Settings</h3>
+    <div class="modal-backdrop" id="profileSettingsModal" style="display:none; background:rgba(0,0,0,0.8); backdrop-filter:blur(8px);">
+        <div class="modal" style="background:linear-gradient(145deg,rgba(0,0,0,0.95),rgba(15,15,15,0.9)); border:1px solid rgba(255,255,255,0.1); border-radius:20px; backdrop-filter:blur(40px); box-shadow:0 20px 40px rgba(0,0,0,0.5);">
+            <div class="modal-content" style="max-width:600px; color:white;">
+            <div class="modal-header" style="border-bottom:1px solid rgba(255,255,255,0.1); padding:24px; margin:0;">
+                <h3 class="modal-title" style="color:white; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; font-weight:600; margin:0;">Profile Settings</h3>
+                <button onclick="closeProfileSettingsModal()" style="background:none; border:none; color:rgba(255,255,255,0.7); font-size:24px; cursor:pointer; padding:0; line-height:1;" aria-label="Close">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="profileSettingsError"></div>
                 
                 <!-- Settings Tabs -->
-                <div style="display:flex; gap:8px; margin-bottom:24px; border-bottom:2px solid rgba(124,58,237,0.1); padding-bottom:8px;">
-                    <button onclick="switchSettingsTab('picture')" id="settingsTabPicture" class="settings-tab-btn active" style="flex:1; padding:12px; border:none; background:linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%); border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">
-                        🖼️ Profile Picture
+                <div style="display:flex; gap:8px; margin-bottom:24px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px; background:rgba(0,0,0,0.2); border-radius:12px; padding:8px;">
+                    <button onclick="switchSettingsTab('picture')" id="settingsTabPicture" class="settings-tab-btn active" style="flex:1; padding:14px 20px; border:none; background:linear-gradient(135deg, #1d4ed8 0%, #a855f7 100%); border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s ease; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:white; box-shadow:0 4px 12px rgba(29,78,216,0.3);">
+                        Profile Picture
                     </button>
-                    <button onclick="switchSettingsTab('password')" id="settingsTabPassword" class="settings-tab-btn" style="flex:1; padding:12px; border:none; background:transparent; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">
-                        🔒 Password
+                    <button onclick="switchSettingsTab('password')" id="settingsTabPassword" class="settings-tab-btn" style="flex:1; padding:14px 20px; border:none; background:rgba(255,255,255,0.1); border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s ease; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:rgba(255,255,255,0.7);">
+                        Password
                     </button>
-                    <button onclick="switchSettingsTab('theme')" id="settingsTabTheme" class="settings-tab-btn" style="flex:1; padding:12px; border:none; background:transparent; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">
+                    <button onclick="switchSettingsTab('theme')" id="settingsTabTheme" class="settings-tab-btn" style="flex:1; padding:14px 20px; border:none; background:rgba(255,255,255,0.1); border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s ease; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; color:rgba(255,255,255,0.7);">
                         Theme
                     </button>
                 </div>
 
                 <!-- Profile Picture Section -->
-                <div id="settingsPicture" class="settings-section">
+                <div id="settingsPicture" class="settings-section" style="background:rgba(0,0,0,0.3); border-radius:16px; padding:24px; border:1px solid rgba(255,255,255,0.1);">
                     <div style="text-align:center; margin-bottom:24px;">
-                        <img id="profilePreview" src="/images/avatar-placeholder.svg" alt="Preview" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:4px solid rgba(102,126,234,0.3); box-shadow:0 8px 24px rgba(0,0,0,0.1);"/>
+                        <div style="position:relative; display:inline-block;">
+                            <img id="profilePreview" src="/images/avatar-placeholder.svg" alt="Preview" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid rgba(29,78,216,0.5); box-shadow:0 8px 24px rgba(29,78,216,0.2); transition:all 0.3s ease;"/>
+                            <div style="position:absolute; bottom:5px; right:5px; width:24px; height:24px; background:linear-gradient(135deg,#1d4ed8,#a855f7); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer;" onclick="document.getElementById('profilePictureInput').click()">
+                                <svg width="12" height="12" fill="white" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                            </div>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="profilePictureInput" style="display:block; text-align:center; margin-bottom:12px; font-weight:600; color:#1f2937;">Choose Image from Gallery</label>
                         <input type="file" id="profilePictureInput" accept="image/*" style="display:none;" onchange="previewProfilePicture(event)"/>
-                        <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; max-width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px; transition:all 0.3s ease;">
-                            📁 Select Image
+                        <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn" style="width:100%; padding:14px 20px; font-size:14px; background:linear-gradient(135deg,#1d4ed8,#a855f7); border:none; border-radius:12px; transition:all 0.3s ease; color:white; font-weight:600; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; box-shadow:0 4px 12px rgba(29,78,216,0.3);">
+                            Select Image
                         </button>
-                        <p style="font-size:13px; color:#6b7280; text-align:center; margin-top:12px;">Supported: JPG, PNG, GIF (max 5MB)</p>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.6); text-align:center; margin-top:8px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Supported: JPG, PNG, GIF (max 5MB)</p>
                     </div>
-                    <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="width:100%; margin-top:16px; padding:14px; font-size:16px;">✓ Upload Picture</button>
+                    <button class="btn" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="width:100%; margin-top:16px; padding:14px 20px; font-size:14px; background:linear-gradient(135deg,#10b981,#059669); border:none; border-radius:12px; color:white; font-weight:600; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; box-shadow:0 4px 12px rgba(16,185,129,0.3);">Upload Picture</button>
                 </div>
 
                 <!-- Password Section -->
-                <div id="settingsPassword" class="settings-section" style="display:none;">
-                    <div class="form-group">
-                        <label for="currentPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
+                <div id="settingsPassword" class="settings-section" style="display:none; background:rgba(0,0,0,0.3); border-radius:16px; padding:24px; border:1px solid rgba(255,255,255,0.1);">
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <label for="currentPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
                     </div>
-                    <div class="form-group">
-                        <label for="newPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">New Password</label>
-                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
+                    <div class="form-group" style="margin-bottom:20px;">
+                        <label for="newPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
                     </div>
                     <div class="form-group">
                         <label for="confirmPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Confirm New Password</label>
@@ -4523,6 +4528,13 @@
             document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
             // Remove active class from tabs
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Remove active class from sidebar links
+            document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
+            
+            // Add active class to current sidebar link
+            const activeLink = document.querySelector(`.sidebar-link[data-tab="${tab}"]`);
+            if (activeLink) activeLink.classList.add('active');
 
             // Show selected content
             const content = document.getElementById(tab + '-content');
@@ -4539,7 +4551,23 @@
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
-            else if (tab === 'settings') loadSettings();
+            else if (tab === 'analytics') loadAnalytics();
+            else if (tab === 'map') loadMap(); 
+            else if (tab === 'settings') openSettingsModal();
+        }
+
+        function openSettingsModal() {
+            document.getElementById('profileSettingsModal').style.display = 'flex';
+            // Clear any previous errors
+            document.getElementById('profileSettingsError').innerHTML = '';
+            // Load current user data if available
+            if (currentUser && currentUser.photo_url) {
+                document.getElementById('profilePreview').src = currentUser.photo_url;
+            }
+        }
+
+        function closeProfileSettingsModal() {
+            document.getElementById('profileSettingsModal').style.display = 'none';
         }
 
         // Profile modal helpers
@@ -5145,18 +5173,8 @@
             if (cib) cib.classList.remove('visible');
         });
 
-        // Auto-refresh data every 30 seconds
-        setInterval(() => {
-            if (authToken && currentUser) {
-                loadStats();
-                const activeTab = document.querySelector('.tab.active')?.textContent.toLowerCase();
-                if (activeTab?.includes('issues')) loadIssues();
-                else if (activeTab?.includes('bursaries')) loadBursaries();
-                else if (activeTab?.includes('constituents')) loadConstituents();
-                else if (activeTab?.includes('announcements')) loadAnnouncements();
-                else if (activeTab?.includes('user')) loadUsers();
-            }
-        }, 30000);
+        // Auto-refresh removed for better performance
+        // Data loads on demand when tabs are opened
     </script>
     <script>
         // ========================================
@@ -5381,7 +5399,7 @@
         })();
     </script>
     <!-- Toast container -->
-    <div id="toasts" aria-live="polite" aria-atomic="true"></div>
+    <div id="toasts" aria-atomic="true"></div>
 
     <!-- Profile Modal -->
     <div id="profileModal" class="modal-backdrop" style="display:none;">
@@ -5466,7 +5484,6 @@
     <script src="/js/user-management.js"></script>
     <script src="/js/audit-trail.js"></script>
     <script src="/js/map-integration.js"></script>
-    <script src="/js/realtime-updates.js"></script>
     
     <script>
     // Toggle sidebar collapse on body
