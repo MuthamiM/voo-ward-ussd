@@ -16,9 +16,9 @@ const path = require('path');
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Redirect root to admin dashboard
+// Redirect root to admin dashboard  
 app.get('/', (req, res) => {
-  res.redirect('/admin-dashboard.html');
+  res.redirect('/admin');
 });
 
 // 1) Health first, no DB dependency
@@ -134,8 +134,8 @@ if (!chosenPath) {
   try {
     adminDashboard = require(chosenPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
-      app.use(adminDashboard);
-      console.log('[DEBUG] admin-dashboard mounted successfully from', chosenPath);
+      app.use('/admin', adminDashboard);
+      console.log('[DEBUG] admin-dashboard mounted successfully at /admin from', chosenPath);
     } else {
       console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
     }
