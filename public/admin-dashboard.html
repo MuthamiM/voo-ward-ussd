@@ -3202,6 +3202,16 @@
                     document.getElementById('loginPage').style.display = 'none';
                     document.getElementById('dashboardPage').style.display = 'block';
             
+                    // Initialize dashboard enhancements (sidebar, notifications, etc.)
+                    if (typeof window.DashboardEnhancements !== 'undefined') {
+                        try {
+                            window.DashboardEnhancements.Sidebar.init();
+                            window.DashboardEnhancements.Notifications.init();
+                        } catch (error) {
+                            console.error('Error initializing dashboard enhancements:', error);
+                        }
+                    }
+            
                     // Show chatbot modal container and floating button
                     document.getElementById('chatbotModal').style.display = 'flex';
                     const floatingBtn = document.getElementById('floatingChatbotBtn');
