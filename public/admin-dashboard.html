@@ -632,7 +632,7 @@
             padding: 20px 0;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 1000;
+            z-index: 10000;
             overflow-y: auto;
         }
 
@@ -2240,40 +2240,31 @@
         </style>
 
         <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right on dashboard only -->
-        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:100000; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
-            <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:24px; padding:20px; box-shadow:0 16px 48px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:440px; width:92%; display:none; z-index:100000; flex-direction:column; pointer-events:all;">
-                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.3);">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="width:40px; height:40px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(102,126,234,0.4);">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:9999; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
+            <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:320px; width:320px; display:none; z-index:9999; flex-direction:column; pointer-events:all;">
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.3);">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:32px; height:32px; background:linear-gradient(135deg,#667eea,#764ba2); border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(102,126,234,0.4);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
                                 <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                                 <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                             </svg>
                         </div>
-                        <span style="font-weight:800; font-size:20px; letter-spacing:2px; color:#1f2937;">CHATBOT</span>
+                        <span style="font-weight:700; font-size:16px; letter-spacing:1px; color:#1f2937;">AI Assistant</span>
                     </div>
-                    <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.3); border:none; width:32px; height:32px; border-radius:50%; font-size:20px; cursor:pointer; color:#666; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">&times;</button>
+                    <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.3); border:none; width:28px; height:28px; border-radius:50%; font-size:18px; cursor:pointer; color:#666; display:flex; align-items:center; justify-content:center; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">&times;</button>
                 </div>
-                <div id="chatbot-messages" style="flex:1; min-height:240px; max-height:420px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.15); border-radius:16px; border:1px solid rgba(255,255,255,0.2);"></div>
-                <div class="chatbot-suggestions" style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-                    <button onclick="sendSuggestion('How do I view USSD interactions?')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">📱 View USSD</button>
-                    <button onclick="sendSuggestion('What does parsed_text mean?')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">❓ What is parsed_text</button>
-                    <button onclick="sendSuggestion('How to resolve issues')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">✅ Resolve issues</button>
-                    <button onclick="sendSuggestion('Export issues CSV')" style="padding:8px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); cursor:pointer; font-size:13px; font-weight:500; transition:all 0.2s; color:#1f2937;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">📥 Export CSV</button>
-                </div>
-                <div style="margin-top:8px; display:flex; gap:10px;">
-                    <input id="chatbot-input" placeholder="Type your message..." style="flex:1; padding:14px 18px; border-radius:16px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); font-size:14px; font-weight:500; color:#1f2937;" />
-                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()" style="padding:14px 28px; border-radius:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; color:white; font-weight:700; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(102,126,234,0.4);" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)'">Send</button>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-sm" onclick="hideChatbot()">Close</button>
+                <div id="chatbot-messages" style="flex:1; min-height:180px; max-height:280px; overflow-y:auto; margin-bottom:10px; padding:10px; background:rgba(255,255,255,0.15); border-radius:12px; border:1px solid rgba(255,255,255,0.2);"></div>
+                <div style="margin-top:8px; display:flex; gap:8px;">
+                    <input id="chatbot-input" placeholder="Ask me anything..." style="flex:1; padding:10px 14px; border-radius:12px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.2); font-size:13px; font-weight:500; color:#1f2937;" />
+                    <button class="btn-sm btn-primary" onclick="sendChatbotMessage()" style="padding:10px 20px; border-radius:12px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; color:white; font-weight:600; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(102,126,234,0.4); font-size:13px;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.4)'">Send</button>
                 </div>
             </div>
         </div>
         
         <!-- Floating Chatbot Button -->
-        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 8px 24px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:99999; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" onmouseover="this.style.transform='scale(1.15) rotate(10deg)'; this.style.boxShadow='0 12px 40px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 8px 24px rgba(102,126,234,0.4)'">
+        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 6px 20px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9998; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
                 <circle cx="9" cy="10" r="1" fill="#667eea"/>
