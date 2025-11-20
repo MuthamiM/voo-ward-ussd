@@ -10,11 +10,17 @@ const Sidebar = {
     isCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
     
     init() {
+        console.log('Sidebar.init() called');
         this.render();
-        this.attachEvents();
-        if (this.isCollapsed) {
-            document.getElementById('sidebar')?.classList.add('collapsed');
-        }
+        
+        // Wait a tick for DOM to update
+        setTimeout(() => {
+            this.attachEvents();
+            if (this.isCollapsed) {
+                document.getElementById('sidebar')?.classList.add('collapsed');
+            }
+            console.log('Sidebar initialized:', document.getElementById('sidebar'));
+        }, 100);
     },
     
     render() {
@@ -85,13 +91,20 @@ const Sidebar = {
             </div>
         `;
         
-        // Insert before main container or at start of dashboard
-        const dashboard = document.getElementById('dashboardPage');
-        const navbar = dashboard?.querySelector('.navbar');
+        // Check if sidebar already exists
+        if (document.getElementById('sidebar')) {
+            console.log('Sidebar already exists');
+            return;
+        }
         
-        if (dashboard && navbar && !document.getElementById('sidebar')) {
-            // Insert after navbar
-            navbar.insertAdjacentHTML('afterend', sidebarHTML);
+        // Insert at the very start of dashboardPage
+        const dashboard = document.getElementById('dashboardPage');
+        
+        if (dashboard) {
+            dashboard.insertAdjacentHTML('afterbegin', sidebarHTML);
+            console.log('Sidebar HTML inserted');
+        } else {
+            console.error('Dashboard page not found!');
         }
     },
     
