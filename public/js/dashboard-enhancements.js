@@ -550,37 +550,31 @@ const TableSort = {
 // ========================================
 // INITIALIZE ALL MODULES
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
-    // Wait for dashboard to be visible
-    const initEnhancements = () => {
-        if (document.getElementById('dashboardPage')) {
-            try {
-                Sidebar.init();
-                Notifications.init();
-                
-                // Initialize table sorting for all tables
-                TableSort.init('issues-tbody');
-                TableSort.init('bursaries-tbody');
-                TableSort.init('constituents-tbody');
-            } catch (error) {
-                console.error('Error initializing dashboard enhancements:', error);
-            }
-        }
-    };
-    
-    // Try immediately
-    initEnhancements();
-    
-    // Also try after a delay in case dashboard renders later
-    setTimeout(initEnhancements, 500);
-    setTimeout(initEnhancements, 1000);
-});
+// Modules are now initialized manually from showDashboard() function
+// This prevents errors when modules try to init before dashboard is visible
 
 // Export for use in main dashboard
 window.DashboardEnhancements = {
     Sidebar,
     Notifications,
     Pagination,
+    TableSort
+};
+
+// Manual initialization function (called from showDashboard)
+window.initializeDashboardEnhancements = function() {
+    try {
+        Sidebar.init();
+        Notifications.init();
+        
+        // Initialize table sorting for all tables
+        TableSort.init('issues-tbody');
+        TableSort.init('bursaries-tbody');
+        TableSort.init('constituents-tbody');
+    } catch (error) {
+        console.error('Error initializing dashboard enhancements:', error);
+    }
+};
     TableSort
 };
 
