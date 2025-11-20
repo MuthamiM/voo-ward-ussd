@@ -2,7 +2,7 @@ services:
   # Backend API Service
   - type: web
     name: voo-ward-backend
-    servicePreviews: node
+    runtime: node
     region: oregon
     plan: free
     buildCommand: npm install --production
@@ -12,30 +12,16 @@ services:
       - key: NODE_ENV
         value: production
       - key: PORT
-        fromService:
-          type: web
-          name: voo-ward-backend
-          property: port
-      - key: DATABASE_URL
-        fromDatabase:
-          name: voo-ward-db
-          property: connectionString
+        value: 4000
       - key: JWT_SECRET
         generateValue: true
       - key: MONGO_URI
         sync: false
-    
-  # PostgreSQL Database
-  - type: pserv
-    name: voo-ward-db
-    runtime: image
-    image:
-      repository: postgres
-      tag: "13"
-    plan: free
-    region: oregon
-    ipAllowList:
-      - cidr: "0.0.0.0/0"
-      description: "Allow from anywhere"
-      - cidr: "YOUR_PUBLIC_IP/32" # replace YOUR_PUBLIC_IP with your actual public IP (e.g. 203.0.113.45)
-      description: "Your IP (allowlist entry)"
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SESSION_TIMEOUT_MS
+        value: 1800000
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100

@@ -3,12 +3,15 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
-# Environment variables
+# Environment variables - CRITICAL SECURITY
 .env
 .env.local
 .env.production
+.env.*.local
 *.env
+!.env.example
 
 # Unused legacy folders (do not deploy)
 frontend/
@@ -44,12 +47,16 @@ logs/
 # OS
 .DS_Store
 Thumbs.db
+ehthumbs.db
+desktop.ini
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*.sublime-project
+*.sublime-workspace
 
 # Build outputs
 dist/
@@ -58,11 +65,14 @@ build/
 
 # Testing
 coverage/
+.nyc_output/
+test-results/
 
 # Temporary files
 temp/
 tmp/
 *.tmp
+*.bak
 
 # Cloudflare
 cloudflare-tunnel.log
@@ -70,3 +80,16 @@ cloudflare-tunnel.log
 # Local config
 backend/config/local.js
 **/mongo_uri
+
+# Uploads (profile pictures should be in cloud storage)
+public/uploads/
+uploads/
+
+# Sensitive files
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+.secrets
+credentials.json
