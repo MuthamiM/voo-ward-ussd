@@ -23,7 +23,12 @@ app.get('/', (req, res) => {
 
 // 1) Health first, no DB dependency
 app.get("/health", (req, res) => {
-  res.json({ ok: true, service: "voo-kyamatu-ussd", ts: new Date().toISOString() });
+  res.json({ 
+    ok: true, 
+    service: "voo-kyamatu-ussd", 
+    ts: new Date().toISOString(),
+    deployment: "2025-11-20-fix-proxy" 
+  });
 });
 
 // parsers & logs
