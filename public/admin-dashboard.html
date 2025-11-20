@@ -2652,11 +2652,6 @@
 
         <!-- Main Content -->
         <div class="container">
-            <!-- Statistics Cards -->
-            <div class="stats-grid" id="statsGrid">
-                <!-- Stats will be loaded dynamically -->
-            </div>
-
             <!-- Tabs Container -->
             <div class="tabs-container">
                 <div class="tabs" id="tabsNav">
@@ -2664,8 +2659,21 @@
                 </div>
 
                 <div class="content">
+                    <!-- Dashboard Tab -->
+                    <div id="dashboard-content" class="tab-content" style="display: block;">
+                        <!-- Statistics Cards -->
+                        <div class="stats-grid" id="statsGrid">
+                            <!-- Stats will be loaded dynamically -->
+                        </div>
+                        
+                        <!-- Dashboard Welcome Content -->
+                        <div style="margin-top: 24px; padding: 24px; background: rgba(0,0,0,0.3); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                            <h3 style="color: rgba(255,255,255,0.9); font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; margin-bottom: 12px;">Welcome to VOO Kyamatu Ward Admin Dashboard</h3>
+                            <p style="color: rgba(255,255,255,0.7); font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; line-height: 1.6;">Use the navigation on the left to manage issues, bursaries, constituents, and other administrative tasks. The statistics above show real-time data about your ward.</p>
+                        </div>
+                    </div>
                     <!-- Issues Tab -->
-                    <div id="issues-content" class="tab-content">
+                    <div id="issues-content" class="tab-content" style="display: none;">
                         <div class="content-header">
                             <h2 class="content-title">Reported Issues</h2>
                             <div class="content-actions">
@@ -3655,6 +3663,9 @@
             
             // Load initial data
             loadStats();
+            
+            // Initialize dashboard tab as default
+            setTimeout(() => openTab('dashboard'), 100);
             loadIssues();
             // show inline chatbot in issues panel by default (issues tab is the default)
             const cib = document.getElementById('chatbotInlineBtn');
@@ -4538,7 +4549,14 @@
 
             // Show selected content
             const content = document.getElementById(tab + '-content');
-            if (content) content.style.display = 'block';
+            if (content) {
+                content.style.display = 'block';
+                
+                // Load stats only for dashboard
+                if (tab === 'dashboard') {
+                    loadStats();
+                }
+            }
 
             // Try to set the corresponding tab button active
             const btn = document.querySelector(`[onclick="showTab('${tab}')"]`);
