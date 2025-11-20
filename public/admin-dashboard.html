@@ -2041,6 +2041,9 @@
     .chatbot-suggestions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
     .chatbot-suggestions button { padding:6px 8px; border-radius:6px; border:1px solid #e6e6ef; background:white; cursor:pointer; font-size:13px; }
     </style>
+    
+    <!-- Dashboard Enhancements Stylesheet -->
+    <link rel="stylesheet" href="/css/dashboard-enhancements.css">
 </head>
 <body>
     <!-- LOGIN PAGE -->
@@ -2197,8 +2200,7 @@
                 
                         <div class="navbar-user">
                             <div style="display:flex; align-items:center; gap:10px;">
-                                <!-- Edit Help button removed for security -->
-                                <button id="changePwdSmallBtn" class="btn-sm btn-warning" style="margin-left:4px;" onclick="showChangePasswordModal()">Change</button>
+                                <!-- Change button removed - use profile settings modal instead -->
                                 <button id="logoutBtn" class="btn-logout" aria-label="Logout" title="Logout" onclick="logout()">
                                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                                         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -4437,5 +4439,8 @@
             </div>
         </div>
     </div>
+    
+    <!-- Dashboard Enhancements Script -->
+    <script src="/js/dashboard-enhancements.js"></script>
 </body>
 </html>
