@@ -3410,8 +3410,8 @@
                 <div id="changePasswordError"></div>
                 <form id="changePasswordForm">
                     <div class="form-group">
-                        <label for="currentPassword">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" required autocomplete="current-password" style="color: #1f2937;">
+                        <label for="adminCurrentPassword">Current Password</label>
+                        <input type="password" id="adminCurrentPassword" class="form-input" required autocomplete="current-password" style="color: #1f2937;">
                     </div>
                     <div class="form-group">
                         <label for="newPassword1">New Password</label>
@@ -3477,12 +3477,12 @@
                 <!-- Password Section -->
                 <div id="settingsPassword" class="settings-section" style="display:none; background:rgba(0,0,0,0.3); border-radius:16px; padding:24px; border:1px solid rgba(255,255,255,0.1);">
                     <div class="form-group" style="margin-bottom:20px;">
-                        <label for="currentPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Current Password</label>
-                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
+                        <label for="changeCurrentPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Current Password</label>
+                        <input type="password" id="changeCurrentPassword" class="form-input" placeholder="Enter current password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
                     </div>
                     <div class="form-group" style="margin-bottom:20px;">
-                        <label for="newPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">New Password</label>
-                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
+                        <label for="changeNewPassword" style="font-weight:600; color:rgba(255,255,255,0.9); margin-bottom:8px; display:block; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">New Password</label>
+                        <input type="password" id="changeNewPassword" class="form-input" placeholder="Enter new password" style="background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); color:#ffffff; border-radius:12px; padding:14px 18px; width:100%; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"/>
                     </div>
                     <div class="form-group">
                         <label for="confirmPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Confirm New Password</label>
@@ -3547,8 +3547,8 @@
                         <input type="text" id="newFullName" class="form-input" required style="color: #1f2937;">
                     </div>
                     <div class="form-group">
-                        <label for="newPassword">Password</label>
-                        <input type="password" id="newPassword" class="form-input" required style="color: #1f2937;">
+                        <label for="createNewPassword">Password</label>
+                        <input type="password" id="createNewPassword" class="form-input" required style="color: #1f2937;">
                     </div>
                     <div class="form-group">
                         <label for="newRole">Role</label>
@@ -3950,7 +3950,7 @@
         function showChangePasswordModal() {
             document.getElementById('changePasswordModal').classList.add('show');
             document.getElementById('changePasswordError').innerHTML = '';
-            document.getElementById('currentPassword').value = '';
+            document.getElementById('adminCurrentPassword').value = '';
             document.getElementById('newPassword1').value = '';
             document.getElementById('newPassword2').value = '';
         }
@@ -3961,7 +3961,7 @@
         }
 
         async function changePassword() {
-            const current = document.getElementById('currentPassword').value;
+            const current = document.getElementById('adminCurrentPassword').value;
             const new1 = document.getElementById('newPassword1').value;
             const new2 = document.getElementById('newPassword2').value;
             const errorDiv = document.getElementById('changePasswordError');
@@ -4019,8 +4019,8 @@
             document.getElementById('profileSettingsError').innerHTML = '';
             document.getElementById('profilePictureInput').value = '';
             // Clear password fields
-            document.getElementById('currentPassword').value = '';
-            document.getElementById('newPassword').value = '';
+            document.getElementById('changeCurrentPassword').value = '';
+            document.getElementById('changeNewPassword').value = '';
             document.getElementById('confirmPassword').value = '';
         }
 
@@ -4111,8 +4111,8 @@
         }
 
         async function changePassword() {
-            const current = document.getElementById('currentPassword').value;
-            const newPass = document.getElementById('newPassword').value;
+            const current = document.getElementById('changeCurrentPassword').value;
+            const newPass = document.getElementById('changeNewPassword').value;
             const confirm = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('profileSettingsError');
             const btn = document.getElementById('changePasswordBtn');
@@ -4150,8 +4150,8 @@
                 }
                 
                 // Clear fields
-                document.getElementById('currentPassword').value = '';
-                document.getElementById('newPassword').value = '';
+                document.getElementById('changeCurrentPassword').value = '';
+                document.getElementById('changeNewPassword').value = '';
                 document.getElementById('confirmPassword').value = '';
                 
                 showToast('Password changed successfully!', 'success');
@@ -5226,7 +5226,7 @@
             document.getElementById('addUserModal').classList.remove('show');
             document.getElementById('newUsername').value = '';
             document.getElementById('newFullName').value = '';
-            document.getElementById('newPassword').value = '';
+            document.getElementById('createNewPassword').value = '';
             document.getElementById('newRole').value = 'PA';
             document.getElementById('modalError').innerHTML = '';
         }
@@ -5234,7 +5234,7 @@
         async function createUser() {
             const username = document.getElementById('newUsername').value;
             const fullName = document.getElementById('newFullName').value;
-            const password = document.getElementById('newPassword').value;
+            const password = document.getElementById('createNewPassword').value;
             const role = document.getElementById('newRole').value;
             const errorDiv = document.getElementById('modalError');
             
