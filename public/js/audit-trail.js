@@ -381,12 +381,8 @@ window.AuditTrail = (function() {
 // Auto-initialize if on audit trail page
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.getElementById('auditTimeline')) {
-            AuditTrail.init();
-        }
+        // Don't auto-initialize, let dashboard call init when needed
     });
 } else {
-    if (document.getElementById('auditTimeline')) {
-        AuditTrail.init();
-    }
+    // Don't auto-initialize, let dashboard call init when needed
 }
