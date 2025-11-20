@@ -2210,10 +2210,10 @@
                             <!-- Profile avatar on the far right -->
                             <div style="display:flex; align-items:center; gap:12px;">
                                 <div style="text-align:right; margin-right:6px;">
-                                    <div id="userFullName" style="font-weight:700; cursor:pointer;" onclick="showProfileModal()">Loading...</div>
+                                    <div id="userFullName" style="font-weight:700; cursor:pointer;" onclick="showProfileSettingsModal()">Loading...</div>
                                     <div id="userRole" style="font-size:12px; color:#6b7280;">...</div>
                                 </div>
-                                <button id="profileAvatarBtn" onclick="showProfilePictureModal()" title="Click to upload profile picture" style="border: none; background: transparent; padding:0; cursor:pointer; position:relative;">
+                                <button id="profileAvatarBtn" onclick="showProfileSettingsModal()" title="Click for profile settings" style="border: none; background: transparent; padding:0; cursor:pointer; position:relative;">
                                     <img id="profileAvatar" src="/images/avatar-placeholder.svg" alt="avatar" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.5);background:linear-gradient(135deg,#667eea,#764ba2); transition:all 0.3s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"/>
                                     <div style="position:absolute; bottom:-2px; right:-2px; width:16px; height:16px; background:#10b981; border:2px solid white; border-radius:50%; box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
                                 </button>
@@ -2440,30 +2440,95 @@
         </div>
     </div>
     
-    <!-- Profile Picture Upload Modal -->
-    <div class="modal-backdrop" id="profilePictureModal" style="display:none;">
+    <!-- Profile Settings Modal -->
+    <div class="modal-backdrop" id="profileSettingsModal" style="display:none;">
         <div class="modal">
-            <div class="modal-content" style="max-width:500px;">
+            <div class="modal-content" style="max-width:600px;">
             <div class="modal-header">
-                <h3 class="modal-title">Update Profile Picture</h3>
+                <h3 class="modal-title">⚙️ Profile Settings</h3>
             </div>
             <div class="modal-body">
-                <div id="profilePictureError"></div>
-                <div style="text-align:center; margin-bottom:24px;">
-                    <img id="profilePreview" src="/images/avatar-placeholder.svg" alt="Preview" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:4px solid rgba(102,126,234,0.3); box-shadow:0 8px 24px rgba(0,0,0,0.1);"/>
-                </div>
-                <div class="form-group">
-                    <label for="profilePictureInput" style="display:block; text-align:center; margin-bottom:12px; font-weight:600; color:#1f2937;">Choose Image from Gallery</label>
-                    <input type="file" id="profilePictureInput" accept="image/*" style="display:none;" onchange="previewProfilePicture(event)"/>
-                    <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; max-width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px; transition:all 0.3s ease;">
-                        Select Image
+                <div id="profileSettingsError"></div>
+                
+                <!-- Settings Tabs -->
+                <div style="display:flex; gap:8px; margin-bottom:24px; border-bottom:2px solid rgba(124,58,237,0.1); padding-bottom:8px;">
+                    <button onclick="switchSettingsTab('picture')" id="settingsTabPicture" class="settings-tab-btn active" style="flex:1; padding:12px; border:none; background:linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%); border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s;">
+                        🖼️ Profile Picture
                     </button>
-                    <p style="font-size:13px; color:#6b7280; text-align:center; margin-top:12px;">Supported: JPG, PNG, GIF (max 5MB)</p>
+                    <button onclick="switchSettingsTab('password')" id="settingsTabPassword" class="settings-tab-btn" style="flex:1; padding:12px; border:none; background:transparent; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s;">
+                        🔒 Password
+                    </button>
+                    <button onclick="switchSettingsTab('theme')" id="settingsTabTheme" class="settings-tab-btn" style="flex:1; padding:12px; border:none; background:transparent; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s;">
+                        🎨 Theme
+                    </button>
+                </div>
+
+                <!-- Profile Picture Section -->
+                <div id="settingsPicture" class="settings-section">
+                    <div style="text-align:center; margin-bottom:24px;">
+                        <img id="profilePreview" src="/images/avatar-placeholder.svg" alt="Preview" style="width:150px; height:150px; border-radius:50%; object-fit:cover; border:4px solid rgba(102,126,234,0.3); box-shadow:0 8px 24px rgba(0,0,0,0.1);"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="profilePictureInput" style="display:block; text-align:center; margin-bottom:12px; font-weight:600; color:#1f2937;">Choose Image from Gallery</label>
+                        <input type="file" id="profilePictureInput" accept="image/*" style="display:none;" onchange="previewProfilePicture(event)"/>
+                        <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn-sm btn-primary" style="width:100%; max-width:100%; padding:14px; font-size:16px; background:linear-gradient(135deg,#667eea,#764ba2); border:none; border-radius:12px; transition:all 0.3s ease;">
+                            📁 Select Image
+                        </button>
+                        <p style="font-size:13px; color:#6b7280; text-align:center; margin-top:12px;">Supported: JPG, PNG, GIF (max 5MB)</p>
+                    </div>
+                    <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="width:100%; margin-top:16px; padding:14px; font-size:16px;">✓ Upload Picture</button>
+                </div>
+
+                <!-- Password Section -->
+                <div id="settingsPassword" class="settings-section" style="display:none;">
+                    <div class="form-group">
+                        <label for="currentPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Current Password</label>
+                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">New Password</label>
+                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Confirm New Password</label>
+                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
+                    </div>
+                    <button class="btn-sm btn-success" onclick="changePassword()" id="changePasswordBtn" style="width:100%; margin-top:16px; padding:14px; font-size:16px;">🔐 Update Password</button>
+                </div>
+
+                <!-- Theme Section -->
+                <div id="settingsTheme" class="settings-section" style="display:none;">
+                    <p style="text-align:center; color:#6b7280; margin-bottom:24px; font-size:14px;">Choose your preferred color theme</p>
+                    <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button onclick="setTheme('light')" class="theme-option" data-theme="light" style="padding:20px; border:2px solid rgba(124,58,237,0.2); border-radius:12px; background:linear-gradient(135deg, #ffffff 0%, #f9fafb 100%); cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:16px;">
+                            <div style="width:48px; height:48px; border-radius:10px; background:linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); display:flex; align-items:center; justify-content:center; font-size:24px;">☀️</div>
+                            <div style="flex:1; text-align:left;">
+                                <div style="font-weight:700; font-size:16px; color:#1f2937; margin-bottom:4px;">Light Theme</div>
+                                <div style="font-size:13px; color:#6b7280;">Bright and clean interface</div>
+                            </div>
+                            <div class="theme-checkmark" style="width:24px; height:24px; border-radius:50%; border:2px solid #d1d5db; display:none;"></div>
+                        </button>
+                        <button onclick="setTheme('dark')" class="theme-option" data-theme="dark" style="padding:20px; border:2px solid rgba(124,58,237,0.2); border-radius:12px; background:linear-gradient(135deg, #1f2937 0%, #111827 100%); cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:16px;">
+                            <div style="width:48px; height:48px; border-radius:10px; background:linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); display:flex; align-items:center; justify-content:center; font-size:24px;">🌙</div>
+                            <div style="flex:1; text-align:left;">
+                                <div style="font-weight:700; font-size:16px; color:#f9fafb; margin-bottom:4px;">Dark Theme</div>
+                                <div style="font-size:13px; color:#9ca3af;">Easy on the eyes at night</div>
+                            </div>
+                            <div class="theme-checkmark" style="width:24px; height:24px; border-radius:50%; border:2px solid #4b5563; display:none;"></div>
+                        </button>
+                        <button onclick="setTheme('system')" class="theme-option active" data-theme="system" style="padding:20px; border:2px solid rgba(124,58,237,0.5); border-radius:12px; background:linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%); cursor:pointer; transition:all 0.3s; display:flex; align-items:center; gap:16px;">
+                            <div style="width:48px; height:48px; border-radius:10px; background:linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); display:flex; align-items:center; justify-content:center; font-size:24px;">💻</div>
+                            <div style="flex:1; text-align:left;">
+                                <div style="font-weight:700; font-size:16px; color:#1f2937; margin-bottom:4px;">System Default</div>
+                                <div style="font-size:13px; color:#6b7280;">Follow your device settings</div>
+                            </div>
+                            <div class="theme-checkmark" style="width:24px; height:24px; border-radius:50%; border:2px solid #7c3aed; background:#7c3aed; display:flex; align-items:center; justify-content:center; color:white; font-size:14px;">✓</div>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn-sm btn-secondary" onclick="closeProfilePictureModal()">Cancel</button>
-                <button class="btn-sm btn-success" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="min-width:100px; max-width:120px; transition:all 0.3s ease;">Upload</button>
+                <button class="btn-sm btn-secondary" onclick="closeProfileSettingsModal()">Close</button>
             </div>
         </div>
         </div>
@@ -2732,6 +2797,10 @@
         // Emergency admin reset client removed for security. Use server-side tooling if needed.
 
         function showDashboard() {
+                    // Apply saved theme on dashboard load
+                    const savedTheme = localStorage.getItem('dashboardTheme') || 'system';
+                    applyTheme(savedTheme);
+                    
                     // If we don't have a currentUser (e.g. corrupted localStorage), fall back to login
                     if (!currentUser) {
                         console.warn('showDashboard called without currentUser; falling back to login');
@@ -2922,19 +2991,170 @@
         // ========================================
         // PROFILE PICTURE UPLOAD
         // ========================================
-        function showProfilePictureModal() {
-            const modal = document.getElementById('profilePictureModal');
+        // ========================================
+        // PROFILE SETTINGS MODAL
+        // ========================================
+        function showProfileSettingsModal() {
+            const modal = document.getElementById('profileSettingsModal');
             modal.style.display = 'flex';
             // Set preview to current avatar
             const currentAvatar = document.getElementById('profileAvatar').src;
             document.getElementById('profilePreview').src = currentAvatar;
+            // Switch to picture tab by default
+            switchSettingsTab('picture');
+            // Load current theme
+            loadCurrentTheme();
         }
 
-        function closeProfilePictureModal() {
-            const modal = document.getElementById('profilePictureModal');
+        function closeProfileSettingsModal() {
+            const modal = document.getElementById('profileSettingsModal');
             modal.style.display = 'none';
-            document.getElementById('profilePictureError').innerHTML = '';
+            document.getElementById('profileSettingsError').innerHTML = '';
             document.getElementById('profilePictureInput').value = '';
+            // Clear password fields
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        function switchSettingsTab(tab) {
+            // Hide all sections
+            document.querySelectorAll('.settings-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.style.background = 'transparent';
+                btn.classList.remove('active');
+            });
+            
+            // Show selected section
+            if (tab === 'picture') {
+                document.getElementById('settingsPicture').style.display = 'block';
+                document.getElementById('settingsTabPicture').style.background = 'linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%)';
+                document.getElementById('settingsTabPicture').classList.add('active');
+            } else if (tab === 'password') {
+                document.getElementById('settingsPassword').style.display = 'block';
+                document.getElementById('settingsTabPassword').style.background = 'linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%)';
+                document.getElementById('settingsTabPassword').classList.add('active');
+            } else if (tab === 'theme') {
+                document.getElementById('settingsTheme').style.display = 'block';
+                document.getElementById('settingsTabTheme').style.background = 'linear-gradient(135deg, rgba(124,58,237,0.1) 0%, rgba(167,139,250,0.1) 100%)';
+                document.getElementById('settingsTabTheme').classList.add('active');
+            }
+        }
+
+        function loadCurrentTheme() {
+            const savedTheme = localStorage.getItem('dashboardTheme') || 'system';
+            
+            // Update UI to show current selection
+            document.querySelectorAll('.theme-option').forEach(option => {
+                const theme = option.getAttribute('data-theme');
+                const checkmark = option.querySelector('.theme-checkmark');
+                
+                if (theme === savedTheme) {
+                    option.style.borderColor = 'rgba(124,58,237,0.5)';
+                    option.classList.add('active');
+                    if (checkmark) {
+                        checkmark.style.display = 'flex';
+                        checkmark.style.background = '#7c3aed';
+                        checkmark.style.borderColor = '#7c3aed';
+                        checkmark.style.color = 'white';
+                        checkmark.innerHTML = '✓';
+                    }
+                } else {
+                    option.style.borderColor = 'rgba(124,58,237,0.2)';
+                    option.classList.remove('active');
+                    if (checkmark) {
+                        checkmark.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function setTheme(theme) {
+            localStorage.setItem('dashboardTheme', theme);
+            applyTheme(theme);
+            loadCurrentTheme();
+            showToast(`Theme changed to ${theme === 'system' ? 'System Default' : theme.charAt(0).toUpperCase() + theme.slice(1)}`, 'success');
+        }
+
+        function applyTheme(theme) {
+            const body = document.body;
+            
+            if (theme === 'dark') {
+                body.style.background = 'linear-gradient(135deg, #1f2937 0%, #111827 100%)';
+                body.style.color = '#f9fafb';
+                // Add more dark theme styles as needed
+            } else if (theme === 'light') {
+                body.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)';
+                body.style.color = '#1f2937';
+                // Add more light theme styles as needed
+            } else {
+                // System default - detect user's preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    body.style.background = 'linear-gradient(135deg, #1f2937 0%, #111827 100%)';
+                    body.style.color = '#f9fafb';
+                } else {
+                    body.style.background = 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)';
+                    body.style.color = '#1f2937';
+                }
+            }
+        }
+
+        async function changePassword() {
+            const current = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const errorDiv = document.getElementById('profileSettingsError');
+            const btn = document.getElementById('changePasswordBtn');
+            
+            errorDiv.innerHTML = '';
+            
+            if (!current || !newPass || !confirm) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">All password fields are required</div>';
+                return;
+            }
+            
+            if (newPass !== confirm) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">New passwords do not match</div>';
+                return;
+            }
+            
+            if (newPass.length < 6) {
+                errorDiv.innerHTML = '<div class="alert alert-danger">New password must be at least 6 characters</div>';
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Updating...';
+            
+            try {
+                const res = await apiRequest('/api/auth/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({ current_password: current, new_password: newPass })
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    errorDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to change password'}</div>`;
+                    return;
+                }
+                
+                // Clear fields
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+                
+                showToast('Password changed successfully!', 'success');
+                setTimeout(() => closeProfileSettingsModal(), 1500);
+            } catch (err) {
+                errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🔐 Update Password';
+            }
         }
 
         function previewProfilePicture(event) {
@@ -2942,18 +3162,18 @@
             if (!file) return;
             
             // Clear any previous errors
-            document.getElementById('profilePictureError').innerHTML = '';
+            document.getElementById('profileSettingsError').innerHTML = '';
             
             // Validate file size (5MB)
             if (file.size > 5 * 1024 * 1024) {
-                document.getElementById('profilePictureError').innerHTML = '<div class="alert alert-danger">File too large. Maximum size is 5MB</div>';
+                document.getElementById('profileSettingsError').innerHTML = '<div class="alert alert-danger">File too large. Maximum size is 5MB</div>';
                 event.target.value = ''; // Clear the input
                 return;
             }
             
             // Validate file type
             if (!file.type.startsWith('image/')) {
-                document.getElementById('profilePictureError').innerHTML = '<div class="alert alert-danger">Please select an image file</div>';
+                document.getElementById('profileSettingsError').innerHTML = '<div class="alert alert-danger">Please select an image file</div>';
                 event.target.value = ''; // Clear the input
                 return;
             }
@@ -2974,7 +3194,7 @@
         async function uploadProfilePicture() {
             const fileInput = document.getElementById('profilePictureInput');
             const file = fileInput.files[0];
-            const errorDiv = document.getElementById('profilePictureError');
+            const errorDiv = document.getElementById('profileSettingsError');
             const uploadBtn = document.getElementById('uploadProfileBtn');
             
             if (!file) {
@@ -2984,11 +3204,6 @@
             
             errorDiv.innerHTML = '';
             
-            // Fix button width before changing text to prevent glitching
-            const btnWidth = uploadBtn.offsetWidth;
-            uploadBtn.style.width = btnWidth + 'px';
-            uploadBtn.style.minWidth = btnWidth + 'px';
-            uploadBtn.style.maxWidth = btnWidth + 'px';
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<span style="opacity:0.7">⏳</span> Uploading...';
             
@@ -3035,16 +3250,14 @@
                     document.getElementById('profilePreview').src = newAvatarUrl;
                 }
                 
-                closeProfilePictureModal();
-                showToast('Profile picture uploaded and saved to database!', 'success');
+                showToast('Profile picture uploaded successfully!', 'success');
+                // Clear file input
+                fileInput.value = '';
             } catch (err) {
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             } finally {
                 uploadBtn.disabled = false;
-                uploadBtn.innerHTML = 'Upload';
-                uploadBtn.style.width = '';
-                uploadBtn.style.minWidth = '100px';
-                uploadBtn.style.maxWidth = '120px';
+                uploadBtn.innerHTML = '✓ Upload Picture';
             }
         }
 
