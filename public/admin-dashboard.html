@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VOO Ward Admin Dashboard</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
         
         :root {
             --primary: #7c3aed;
@@ -174,7 +174,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
             background-size: 200% 200%;
             animation: gradientShift 15s ease infinite;
@@ -2350,9 +2350,9 @@
                                 <button class="btn-sm" onclick="applyIssuesSearch()" style="background:linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); color:white;">Search</button>
                                 <button class="btn-sm" onclick="clearIssuesSearch()" style="background:linear-gradient(135deg, rgba(156,163,175,0.9) 0%, rgba(107,114,128,0.9) 100%); color:white;">Clear</button>
                                 <button class="btn-sm btn-success" onclick="exportData('issues')">
-                                    📊 Export CSV
+                                    Export CSV
                                 </button>
-                                <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">✓ Resolve Selected</button>
+                                <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
                             </div>
                         </div>
                         <div class="table-container">
@@ -2514,7 +2514,7 @@
                     <!-- Analytics Tab -->
                     <div id="analytics-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">📊 Analytics Dashboard</h2>
+                            <h2 class="content-title">Analytics Dashboard</h2>
                             <div class="content-actions">
                                 <select id="analyticsDateRange" class="date-input" onchange="AnalyticsCharts.applyDateFilter(this.value)">
                                     <option value="all">All Time</option>
@@ -2593,7 +2593,7 @@
                         <div class="analytics-dashboard">
                             <div class="analytics-card" style="grid-column: 1 / -1;">
                                 <div class="analytics-card-header">
-                                    <span class="analytics-card-title">📈 Issues Timeline</span>
+                                    <span class="analytics-card-title">Issues Timeline</span>
                                 </div>
                                 <div class="chart-container">
                                     <canvas id="issuesTimelineChart"></canvas>
@@ -2611,7 +2611,7 @@
                             
                             <div class="analytics-card">
                                 <div class="analytics-card-header">
-                                    <span class="analytics-card-title">📊 Bursary Applications</span>
+                                    <span class="analytics-card-title">Bursary Applications</span>
                                 </div>
                                 <div class="chart-container">
                                     <canvas id="bursaryBarChart"></canvas>
@@ -2623,7 +2623,7 @@
                     <!-- User Management Tab (Enhanced) -->
                     <div id="user-management-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">👥 User Management</h2>
+                            <h2 class="content-title">User Management</h2>
                             <div class="content-actions">
                                 <input type="text" id="userSearchInput" placeholder="🔍 Search users..." 
                                        style="padding: 10px 14px; border-radius: 10px; border: 2px solid rgba(124, 58, 237, 0.2); margin-right: 10px; min-width: 200px;">
@@ -2681,7 +2681,7 @@
                     <!-- Issue Map Tab -->
                     <div id="map-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">🗺️ Issue Location Map</h2>
+                            <h2 class="content-title">Issue Location Map</h2>
                             <div class="content-actions">
                                 <select class="date-input" onchange="IssueMap.filterByStatus(this.value)" style="margin-right: 10px;">
                                     <option value="all">All Statuses</option>
@@ -2708,7 +2708,7 @@
                     <!-- Settings Content -->
                     <div id="settings-content" class="tab-content" style="display:none;">
                         <div class="content-header">
-                            <h2 class="content-title">⚙️ System Settings</h2>
+                            <h2 class="content-title">System Settings</h2>
                             <div class="content-actions">
                                 <button class="btn-sm btn-success" onclick="saveAllSettings()">
                                     <i class="fas fa-save"></i> Save All Settings
@@ -2932,7 +2932,7 @@
         <div class="modal">
             <div class="modal-content" style="max-width:600px;">
             <div class="modal-header">
-                <h3 class="modal-title">⚙️ Profile Settings</h3>
+                <h3 class="modal-title">Profile Settings</h3>
             </div>
             <div class="modal-body">
                 <div id="profileSettingsError"></div>
@@ -2946,7 +2946,7 @@
                         🔒 Password
                     </button>
                     <button onclick="switchSettingsTab('theme')" id="settingsTabTheme" class="settings-tab-btn" style="flex:1; padding:12px; border:none; background:transparent; border-radius:10px; cursor:pointer; font-weight:600; transition:all 0.3s;">
-                        🎨 Theme
+                        Theme
                     </button>
                 </div>
 
@@ -2980,7 +2980,7 @@
                         <label for="confirmPassword" style="font-weight:600; color:#1f2937; margin-bottom:8px; display:block;">Confirm New Password</label>
                         <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password" style="color: #1f2937; padding:12px; border-radius:10px;"/>
                     </div>
-                    <button class="btn-sm btn-success" onclick="changePassword()" id="changePasswordBtn" style="width:100%; margin-top:16px; padding:14px; font-size:16px;">🔐 Update Password</button>
+                    <button class="btn-sm btn-success" onclick="changePassword()" id="changePasswordBtn" style="width:100%; margin-top:16px; padding:14px; font-size:16px;">Update Password</button>
                 </div>
 
                 <!-- Theme Section -->
@@ -3650,7 +3650,7 @@
                 errorDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '🔐 Update Password';
+                btn.innerHTML = 'Update Password';
             }
         }
 
