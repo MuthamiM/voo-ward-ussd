@@ -76,84 +76,7 @@ const Sidebar = {
 };
 
 // ========================================
-// NOTIFICATIONS
-// ========================================
-const Notifications = {
-    notifications: [],
-    unreadCount: 0,
-    
-    init() {
-        this.render();
-        this.attachEvents();
-        this.startPolling();
-    },
-    
-    render() {
-        // Notification bell already exists in navbar, just enhance it
-        const navbar = document.querySelector('.navbar-user');
-        if (!navbar || document.getElementById('notificationBell')) return;
-        
-        const bellHTML = `
-            <div class="notification-bell" id="notificationBell">
-                <button class="notification-btn" id="notificationBtn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                    </svg>
-                    <span class="notification-badge" id="notificationBadge">0</span>
-                </button>
-                <div class="notification-dropdown" id="notificationDropdown">
-                    <div class="notification-header">
-                        <span>Notifications</span>
-                        <button class="notification-clear" onclick="DashboardEnhancements.Notifications.markAllRead()">Mark all read</button>
-                    </div>
-                    <div class="notification-list" id="notificationList">
-                        <div class="notification-empty">No new notifications</div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Insert before logout button
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.parentElement.insertAdjacentHTML('beforebegin', bellHTML);
-        }
-    },
-    
-    attachEvents() {
-        const btn = document.getElementById('notificationBtn');
-        const dropdown = document.getElementById('notificationDropdown');
-        
-        btn?.addEventListener('click', (e) => {
-            e.preventDefault();
-            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-        });
-        
-        // Attach sidebar navigation events
-        document.querySelectorAll('.sidebar-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const tab = link.dataset.tab;
-                this.navigate(tab);
-            });
-        });
-    },
-    
-    navigate(tab) {
-        // Update active state
-        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-        document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
-        
-        // Switch content (integrate with existing tab system)
-        if (window.switchTab) {
-            window.switchTab(tab);
-        }
-    }
-};
-
-// ========================================
-// NOTIFICATION SYSTEM
+// NOTIFICATION SYSTEM  
 // ========================================
 const Notifications = {
     notifications: [],
@@ -163,6 +86,7 @@ const Notifications = {
         this.render();
         this.loadNotifications();
         this.startPolling();
+        this.attachEvents();
     },
     
     render() {
@@ -322,6 +246,36 @@ const Notifications = {
         if (!lastCheck || (now - parseInt(lastCheck)) > 30000) {
             localStorage.setItem('lastNotificationCheck', now);
             // Simulate checking for new items
+        }
+    },
+    
+    attachEvents() {
+        const btn = document.getElementById('notificationBell');
+        const dropdown = document.getElementById('notificationDropdown');
+        
+        btn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Attach sidebar navigation events
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tab = link.dataset.tab;
+                this.navigate(tab);
+            });
+        });
+    },
+    
+    navigate(tab) {
+        // Update active state
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        document.querySelector(`[data-tab="${tab}"]`)?.classList.add('active');
+        
+        // Switch content (integrate with existing tab system)
+        if (window.switchTab) {
+            window.switchTab(tab);
         }
     }
 };
