@@ -28,7 +28,7 @@ const Sidebar = {
                     </svg>
                 </button>
                 <nav class="sidebar-nav">
-                    <a href="#" class="sidebar-link active" data-tab="dashboard">
+                    <a href="#" class="sidebar-link active" data-tab="dashboard" onclick="openTab('dashboard'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="7" height="7"></rect>
                             <rect x="14" y="3" width="7" height="7"></rect>
@@ -37,7 +37,7 @@ const Sidebar = {
                         </svg>
                         <span>Dashboard</span>
                     </a>
-                    <a href="#" class="sidebar-link" data-tab="issues">
+                    <a href="#" class="sidebar-link" data-tab="issues" onclick="openTab('issues'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <line x1="12" y1="8" x2="12" y2="12"></line>
@@ -45,13 +45,13 @@ const Sidebar = {
                         </svg>
                         <span>Issues</span>
                     </a>
-                    <a href="#" class="sidebar-link" data-tab="bursaries">
+                    <a href="#" class="sidebar-link" data-tab="bursaries" onclick="openTab('bursaries'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
                         </svg>
                         <span>Bursaries</span>
                     </a>
-                    <a href="#" class="sidebar-link" data-tab="analytics">
+                    <a href="#" class="sidebar-link" data-tab="analytics" onclick="openTab('analytics'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="20" x2="18" y2="10"></line>
                             <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -59,7 +59,7 @@ const Sidebar = {
                         </svg>
                         <span>Analytics</span>
                     </a>
-                    <a href="#" class="sidebar-link" data-tab="users">
+                    <a href="#" class="sidebar-link" data-tab="users" onclick="openTab('users'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                             <circle cx="9" cy="7" r="4"></circle>
@@ -68,10 +68,16 @@ const Sidebar = {
                         </svg>
                         <span>Users</span>
                     </a>
-                    <a href="#" class="sidebar-link" data-tab="settings">
+                    <a href="#" class="sidebar-link" data-tab="map" onclick="openTab('map'); return false;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon>
+                        </svg>
+                        <span>Map</span>
+                    </a>
+                    <a href="#" class="sidebar-link" data-tab="settings" onclick="openTab('settings'); return false;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6m6-12a9 9 0 1 1-12 0"></path>
+                            <path d="M12 1v6m0 6v6"></path>
                         </svg>
                         <span>Settings</span>
                     </a>
@@ -79,10 +85,13 @@ const Sidebar = {
             </div>
         `;
         
-        // Insert before main container
-        const container = document.querySelector('.container');
-        if (container && !document.getElementById('sidebar')) {
-            container.insertAdjacentHTML('beforebegin', sidebarHTML);
+        // Insert before main container or at start of dashboard
+        const dashboard = document.getElementById('dashboardPage');
+        const navbar = dashboard?.querySelector('.navbar');
+        
+        if (dashboard && navbar && !document.getElementById('sidebar')) {
+            // Insert after navbar
+            navbar.insertAdjacentHTML('afterend', sidebarHTML);
         }
     },
     
