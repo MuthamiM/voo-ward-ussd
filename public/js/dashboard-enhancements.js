@@ -126,6 +126,13 @@ const Notifications = {
         const dropdown = document.getElementById('notificationDropdown');
         
         btn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Attach sidebar navigation events
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
                 e.preventDefault();
                 const tab = link.dataset.tab;
                 this.navigate(tab);
