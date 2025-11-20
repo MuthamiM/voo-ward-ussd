@@ -43,13 +43,14 @@ function extractDOBFromID(idNo) {
 
 function mainMenu(){
   return (
-    "CON Main Menu:\n" +
-    "1. Register constituent\n" +
-    "2. Report issue\n" +
-    "3. Announcements\n" +
-    "4. Projects\n" +
-    "5. Bursary\n" +
-    "0. Exit"
+    "CON ===== MAIN MENU =====\n" +
+    "1. Register as Constituent\n" +
+    "2. Report an Issue\n" +
+    "3. News & Announcements\n" +
+    "4. Ongoing Projects\n" +
+    "5. Bursary Services\n" +
+    "0. Exit\n" +
+    "======================="
   );
 }
 
@@ -91,20 +92,79 @@ router.post("/ussd", async (req, res) => {
 
     // --- Option 1: Register constituent ---
     if (parts[1] === "1") {
-      if (step === 2) return res.send("CON Enter your full name:\n\n0. Back to Main Menu");
+      if (step === 2) {
+        return res.send(
+          "CON === REGISTRATION (1/3) ===\n" +
+          "Enter your Full Name:\n" +
+          "(e.g., John Mwangi Kamau)\n\n" +
+          "0. Back to Main Menu"
+        );
+      }
       if (step === 3) {
         if (parts[2] === "0") return res.send(mainMenu());
-        return res.send("CON Enter your Ward/Village:\n\n0. Back to Main Menu");
+        if (parts[2].length < 3) {
+          return res.send(
+            "CON Name too short!\n" +
+            "Enter your Full Name:\n" +
+            "(minimum 3 characters)\n\n" +
+            "0. Back"
+          );
+        }
+        return res.send(
+          "CON === REGISTRATION (2/3) ===\n" +
+          "Name: " + parts[2] + "\n\n" +
+          "Enter your Village/Location:\n" +
+          "(e.g., Mbitini, Kyamatu)\n\n" +
+          "0. Back"
+        );
       }
       if (step === 4) {
         if (parts[3] === "0") return res.send(mainMenu());
-        return res.send("CON Enter your National ID (optional).\n\n0. Skip and Complete");
+        if (parts[3].length < 2) {
+          return res.send(
+            "CON Location too short!\n" +
+            "Enter your Village/Location:\n\n" +
+            "0. Back"
+          );
+        }
+        return res.send(
+          "CON === REGISTRATION (3/3) ===\n" +
+          "Name: " + parts[2] + "\n" +
+          "Location: " + parts[3] + "\n\n" +
+          "Enter National ID (optional)\n" +
+          "or press 0 to complete\n\n" +
+          "0. Skip & Complete"
+        );
       }
       if (step === 5) {
-        if (!db) return res.send("END Service temporarily unavailable (DB).");
+        if (!db) return res.send("END Service temporarily unavailable. Please try again later.");
         
         const nationalId = parts[4] === "0" ? null : parts[4];
         const dob = nationalId ? extractDOBFromID(nationalId) : null;
+        
+        // Check if already registered
+        const existing = await db.collection("constituents").findOne({ phone: phoneNumber });
+        if (existing) {
+          await db.collection("constituents").updateOne(
+            { phone: phoneNumber },
+            { 
+              $set: {
+                name: parts[2],
+                ward: parts[3],
+                nationalId: nationalId,
+                dateOfBirth: dob,
+                updatedAt: new Date()
+              }
+            }
+          );
+          return res.send(
+            "END ✓ Registration Updated!\n" +
+            "Name: " + parts[2] + "\n" +
+            "Location: " + parts[3] + "\n" +
+            "Phone: " + phoneNumber + "\n\n" +
+            "Thank you for updating your details."
+          );
+        }
         
         await db.collection("constituents").insertOne({
           phone: phoneNumber,
@@ -112,70 +172,130 @@ router.post("/ussd", async (req, res) => {
           ward: parts[3],
           nationalId: nationalId,
           dateOfBirth: dob,
-          createdAt: new Date()
+          createdAt: new Date(),
+          updatedAt: new Date()
         });
-        return res.send("END Registration complete. Thank you.");
+        return res.send(
+          "END ✓ Registration Complete!\n" +
+          "Name: " + parts[2] + "\n" +
+          "Location: " + parts[3] + "\n" +
+          "Phone: " + phoneNumber + "\n\n" +
+          "Welcome to Kyamatu Ward services!"
+        );
       }
     }
 
     // --- Option 2: Report issue ---
     if (parts[1] === "2") {
-      if (step === 2) return res.send("CON Enter your name:\n\n0. Back to Main Menu");
+      if (step === 2) {
+        return res.send(
+          "CON === REPORT ISSUE (1/4) ===\n" +
+          "Enter your Name:\n" +
+          "(for follow-up)\n\n" +
+          "0. Back to Main Menu"
+        );
+      }
       if (step === 3) {
         if (parts[2] === "0") return res.send(mainMenu());
-        return res.send("CON Enter issue title:\n\n0. Back to Main Menu");
+        if (parts[2].length < 2) {
+          return res.send("CON Name required!\nEnter your Name:\n\n0. Back");
+        }
+        return res.send(
+          "CON === REPORT ISSUE (2/4) ===\n" +
+          "Reporter: " + parts[2] + "\n\n" +
+          "Enter Issue Title:\n" +
+          "(e.g., Water shortage)\n\n" +
+          "0. Back"
+        );
       }
       if (step === 4) {
         if (parts[3] === "0") return res.send(mainMenu());
-        return res.send("CON Describe your issue briefly:\n\n0. Back to Main Menu");
+        if (parts[3].length < 3) {
+          return res.send("CON Title too short!\nEnter Issue Title:\n\n0. Back");
+        }
+        return res.send(
+          "CON === REPORT ISSUE (3/4) ===\n" +
+          "Title: " + parts[3] + "\n\n" +
+          "Describe the issue:\n" +
+          "(brief description)\n\n" +
+          "0. Back"
+        );
       }
       if (step === 5) {
         if (parts[4] === "0") return res.send(mainMenu());
-        return res.send("CON Nearest location/landmark (optional).\n\n0. Skip and Submit");
+        if (parts[4].length < 5) {
+          return res.send("CON Description too short!\nDescribe the issue:\n\n0. Back");
+        }
+        return res.send(
+          "CON === REPORT ISSUE (4/4) ===\n" +
+          "Location/Landmark:\n" +
+          "(e.g., Near Mbitini Market)\n\n" +
+          "0. Skip & Submit"
+        );
       }
       if (step === 6) {
-        if (!db) return res.send("END Service temporarily unavailable (DB).");
+        if (!db) return res.send("END Service unavailable. Please try again later.");
         
-        // Generate ticket number
-        const ticketNo = "TKT-" + Date.now().toString(36).toUpperCase().slice(-6);
+        // Generate unique ticket number with timestamp
+        const ticketNo = "TICK-" + Date.now().toString(36).toUpperCase().slice(-8);
         
         await db.collection("issues").insertOne({
-          ticketNo: ticketNo,
+          ticket: ticketNo,
           phone: phoneNumber,
-          reporterName: parts[2],
-          title: parts[3],
-          description: parts[4],
-          location: parts[5] === "0" ? null : parts[5],
+          reporter_name: parts[2],
+          message: parts[3] + ": " + parts[4],
+          location: parts[5] === "0" ? "Not specified" : parts[5],
           status: "pending",
-          createdAt: new Date(),
-          updatedAt: new Date()
+          action_note: "",
+          created_at: new Date()
         });
-        return res.send(`END Issue submitted. Ticket: ${ticketNo}. We'll follow up.`);
+        
+        return res.send(
+          "END ✓ Issue Reported!\n" +
+          "Ticket: " + ticketNo + "\n" +
+          "Title: " + parts[3] + "\n" +
+          "Location: " + (parts[5] === "0" ? "N/A" : parts[5]) + "\n\n" +
+          "We will follow up soon.\n" +
+          "Save your ticket number!"
+        );
       }
     }
 
-    // --- Option 3: Announcements ---
+    // --- Option 3: News & Announcements ---
     if (parts[1] === "3") {
-      if (!db) return res.send("END No announcements right now.");
-      // Only show title, no time, for USSD/news
+      if (!db) return res.send("END No announcements available at this time.");
+      
       const latest = await db.collection("announcements")
-        .find({}).project({ _id: 0, title: 1 })
-        .sort({ createdAt: -1 }).limit(3).toArray();
+        .find({}).project({ _id: 0, title: 1, body: 1 })
+        .sort({ created_at: -1 }).limit(3).toArray();
 
       if (step === 2) {
-        if (!latest.length) return res.send("END No announcements right now.");
+        if (!latest.length) {
+          return res.send("END === WARD NEWS ===\nNo announcements at this time.\n\nCheck back later.");
+        }
         const lines = latest.map((a, i) => `${i+1}. ${a.title}`).join("\n");
-        return res.send("CON Announcements:\n" + lines + "\n0. Back");
+        return res.send(
+          "CON === WARD NEWS ===\n" +
+          lines + "\n\n" +
+          "Select news to read\n" +
+          "0. Back"
+        );
       }
       if (step === 3) {
         if (parts[2] === "0") return res.send(mainMenu());
         const n = Number(parts[2]);
         if (n >= 1 && n <= latest.length) {
           const item = latest[n-1];
-          // Only show title, no time
-          return res.send("END " + item.title);
+          const body = item.body || "No details available.";
+          // Truncate if too long for USSD
+          const displayBody = body.length > 150 ? body.substring(0, 150) + "..." : body;
+          return res.send(
+            "END === " + item.title + " ===\n\n" +
+            displayBody + "\n\n" +
+            "--- End of News ---"
+          );
         }
-        return res.send("END Invalid option.");
+        return res.send("END Invalid selection.");
       }
     }
 
@@ -244,71 +364,200 @@ router.post("/ussd", async (req, res) => {
         }
       }
 
-      // 5->1 Apply
+      // 5->1 Apply for Bursary
       if (parts[2] === "1") {
-        if (!db) return res.send("END Service temporarily unavailable (DB).");
-        if (step === 3) return res.send("CON Enter your National ID:");
-        if (step === 4) {
-          const natId = parts[3];
-          if (!(isNumeric(natId) && natId.length >= 6 && natId.length <= 10)) {
-            return res.send("CON Invalid ID. Re-enter your National ID:");
-          }
-          return res.send("CON Enter your Full Name:");
-        }
-        if (step === 5) return res.send("CON Institution (e.g., KCA Univ, Mbitini Sec):");
-        if (step === 6) {
-          return res.send("CON Level:\n1. Secondary\n2. TVET/College\n3. University");
-        }
-        if (step === 7) return res.send("CON Admission/Student Number:");
-        if (step === 8) return res.send("CON Fee balance amount (KSh):");
-        if (step === 9) {
-          const fee = parts[8];
-          if (!(isNumeric(fee) && Number(fee) > 0)) {
-            return res.send("CON Invalid amount. Re-enter fee balance (KSh):");
-          }
-          return res.send("CON Household status:\n1. Orphan\n2. Single Parent\n3. Vulnerable\n4. Other");
-        }
-        if (step === 10) return res.send("CON Guardian/Parent Phone (07xxxxxxxx):");
-        if (step === 11) {
-          const levelMap = { "1":"Secondary","2":"TVET/College","3":"University" };
-          const level = levelMap[parts[6]];
-          const guardianPhone = normalizeKenyanPhone(parts[10]);
+        if (!db) return res.send("END Service temporarily unavailable. Please try again later.");
+        
+        if (step === 3) {
           return res.send(
-            "CON Confirm application:\n" +
-            `Name: ${parts[4]}\n` +
-            `ID: ${parts[3]}\n` +
-            `Inst: ${parts[5]}\n` +
-            `Level: ${level || "N/A"}\n` +
-            `Fee: KSh ${parts[8]}\n` +
-            `Guardian: ${guardianPhone}\n` +
-            "1. Confirm\n" +
+            "CON === BURSARY (Step 1/8) ===\n" +
+            "Enter National ID:\n" +
+            "(8-10 digits)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 4) {
+          if (parts[3] === "0") return res.send(mainMenu());
+          const natId = parts[3];
+          if (!(isNumeric(natId) && natId.length >= 7 && natId.length <= 10)) {
+            return res.send(
+              "CON Invalid ID format!\n" +
+              "Enter 8-10 digit ID:\n\n" +
+              "0. Back"
+            );
+          }
+          return res.send(
+            "CON === BURSARY (Step 2/8) ===\n" +
+            "ID: " + natId + "\n\n" +
+            "Enter Full Name:\n" +
+            "(as in ID/Birth Cert)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 5) {
+          if (parts[4] === "0") return res.send(mainMenu());
+          if (parts[4].length < 3) {
+            return res.send("CON Name too short!\nEnter Full Name:\n\n0. Back");
+          }
+          return res.send(
+            "CON === BURSARY (Step 3/8) ===\n" +
+            "Name: " + parts[4] + "\n\n" +
+            "Institution Name:\n" +
+            "(e.g., KCA University)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 6) {
+          if (parts[5] === "0") return res.send(mainMenu());
+          if (parts[5].length < 3) {
+            return res.send("CON Institution name required!\nEnter Institution:\n\n0. Back");
+          }
+          return res.send(
+            "CON === BURSARY (Step 4/8) ===\n" +
+            "Education Level:\n" +
+            "1. Secondary School\n" +
+            "2. TVET/College\n" +
+            "3. University\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 7) {
+          if (parts[6] === "0") return res.send(mainMenu());
+          if (!["1","2","3"].includes(parts[6])) {
+            return res.send("CON Invalid level!\nSelect 1, 2, or 3:\n\n0. Back");
+          }
+          const levelMap = { "1":"Secondary", "2":"TVET/College", "3":"University" };
+          return res.send(
+            "CON === BURSARY (Step 5/8) ===\n" +
+            "Level: " + levelMap[parts[6]] + "\n\n" +
+            "Admission/Student No:\n" +
+            "(e.g., ADM/001/2024)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 8) {
+          if (parts[7] === "0") return res.send(mainMenu());
+          if (parts[7].length < 3) {
+            return res.send("CON Admission number required!\nEnter Adm No:\n\n0. Back");
+          }
+          return res.send(
+            "CON === BURSARY (Step 6/8) ===\n" +
+            "Fee Balance Amount:\n" +
+            "(KSh - numbers only)\n" +
+            "(e.g., 25000)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 9) {
+          if (parts[8] === "0") return res.send(mainMenu());
+          const fee = parts[8];
+          if (!(isNumeric(fee) && Number(fee) >= 1000)) {
+            return res.send(
+              "CON Invalid amount!\n" +
+              "Enter fee balance (min 1000):\n\n" +
+              "0. Back"
+            );
+          }
+          return res.send(
+            "CON === BURSARY (Step 7/8) ===\n" +
+            "Fee: KSh " + Number(fee).toLocaleString() + "\n\n" +
+            "Household Status:\n" +
+            "1. Orphan\n" +
+            "2. Single Parent\n" +
+            "3. Vulnerable Family\n" +
+            "4. Other\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 10) {
+          if (parts[9] === "0") return res.send(mainMenu());
+          if (!["1","2","3","4"].includes(parts[9])) {
+            return res.send("CON Invalid option!\nSelect 1-4:\n\n0. Back");
+          }
+          return res.send(
+            "CON === BURSARY (Step 8/8) ===\n" +
+            "Guardian/Parent Phone:\n" +
+            "(e.g., 0712345678)\n\n" +
+            "0. Back"
+          );
+        }
+        
+        if (step === 11) {
+          if (parts[10] === "0") return res.send(mainMenu());
+          const guardianPhone = normalizeKenyanPhone(parts[10]);
+          if (!guardianPhone.startsWith("+254") || guardianPhone.length < 12) {
+            return res.send(
+              "CON Invalid phone format!\n" +
+              "Enter Guardian Phone:\n" +
+              "(e.g., 0712345678)\n\n" +
+              "0. Back"
+            );
+          }
+          
+          const levelMap = { "1":"Secondary", "2":"TVET/College", "3":"University" };
+          const householdMap = {"1":"Orphan", "2":"Single Parent", "3":"Vulnerable", "4":"Other"};
+          
+          return res.send(
+            "CON === CONFIRM APPLICATION ===\n" +
+            "Name: " + parts[4] + "\n" +
+            "ID: " + parts[3] + "\n" +
+            "School: " + parts[5] + "\n" +
+            "Level: " + (levelMap[parts[6]] || "N/A") + "\n" +
+            "Adm No: " + parts[7] + "\n" +
+            "Fee: KSh " + Number(parts[8]).toLocaleString() + "\n" +
+            "Status: " + (householdMap[parts[9]] || "Other") + "\n" +
+            "Guardian: " + guardianPhone + "\n\n" +
+            "1. Submit Application\n" +
             "0. Cancel"
           );
         }
+        
         if (step === 12) {
-          if (parts[11] === "0") return res.send("END Cancelled.");
-          if (parts[11] !== "1") return res.send("END Invalid option.");
+          if (parts[11] === "0") {
+            return res.send("END Application cancelled.\n\nYou can apply again anytime.");
+          }
+          if (parts[11] !== "1") {
+            return res.send("END Invalid option. Application cancelled.");
+          }
 
-          const ref = "VKW-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-          const levelMap = { "1":"Secondary","2":"TVET/College","3":"University" };
-          const householdMap = {"1":"Orphan","2":"Single Parent","3":"Vulnerable","4":"Other"};
+          // Generate unique reference code
+          const ref = "VKW-BUR-" + Date.now().toString(36).toUpperCase().slice(-6);
+          const levelMap = { "1":"Secondary", "2":"TVET/College", "3":"University" };
+          const householdMap = {"1":"Orphan", "2":"Single Parent", "3":"Vulnerable", "4":"Other"};
+          
           await db.collection("bursary_applications").insertOne({
-            ref,
+            ref_code: ref,
             phone: phoneNumber,
-            nationalId: parts[3],
-            fullName: parts[4],
+            national_id: parts[3],
+            student_name: parts[4],
             institution: parts[5],
             level: levelMap[parts[6]] || "N/A",
-            admissionNo: parts[7],
-            feeBalance: Number(parts[8]),
-            household: householdMap[parts[9]] || "Other",
-            guardianPhone: normalizeKenyanPhone(parts[10]),
+            admission_no: parts[7],
+            fee_balance: Number(parts[8]),
+            household_status: householdMap[parts[9]] || "Other",
+            guardian_phone: normalizeKenyanPhone(parts[10]),
             ward: "Kyamatu",
-            status: "Received",
-            createdAt: new Date(),
-            updatedAt: new Date()
+            status: "pending",
+            admin_notes: "",
+            created_at: new Date()
           });
-          return res.send(`END Application received. Wait for approval. Ref: ${ref}`);
+          
+          return res.send(
+            "END ✓ APPLICATION RECEIVED!\n\n" +
+            "Reference: " + ref + "\n" +
+            "Name: " + parts[4] + "\n" +
+            "Amount: KSh " + Number(parts[8]).toLocaleString() + "\n\n" +
+            "Your application will be reviewed.\n" +
+            "SAVE YOUR REFERENCE NUMBER!\n\n" +
+            "Check status: Dial *384*1234# > Bursary > Check Status"
+          );
         }
       }
     }
