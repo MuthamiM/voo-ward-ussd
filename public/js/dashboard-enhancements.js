@@ -25,7 +25,7 @@ const Sidebar = {
     
     render() {
         const sidebarHTML = `
-            <div class="sidebar" id="sidebar">
+            <div class="sidebar" id="sidebar" style="border: 5px solid red !important;">
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="3" y1="12" x2="21" y2="12"></line>
