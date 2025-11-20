@@ -9,6 +9,8 @@ if (require.resolve("dotenv")) {
 
 const app = express();
 
+// Configure trust proxy for rate limiting and proper IP detection
+app.set('trust proxy', 1);
 
 const path = require('path');
 // Serve static files from public directory
