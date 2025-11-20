@@ -2605,6 +2605,194 @@
                         
                         <div id="issueMap" class="map-container"></div>
                     </div>
+
+                    <!-- Settings Content -->
+                    <div id="settings-content" class="tab-content" style="display:none;">
+                        <div class="content-header">
+                            <h2 class="content-title">⚙️ System Settings</h2>
+                            <div class="content-actions">
+                                <button class="btn-sm btn-success" onclick="saveAllSettings()">
+                                    <i class="fas fa-save"></i> Save All Settings
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="settings-container" style="padding: 20px;">
+                            <!-- Appearance Settings -->
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-palette"></i> Appearance</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Theme</label>
+                                        <select class="date-input" id="themeSelect" onchange="changeTheme(this.value)" style="width: 100%; max-width: 300px;">
+                                            <option value="light">Light</option>
+                                            <option value="dark">Dark</option>
+                                            <option value="auto">Auto (System)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Sidebar Position</label>
+                                        <select class="date-input" id="sidebarPosition" style="width: 100%; max-width: 300px;">
+                                            <option value="left">Left</option>
+                                            <option value="right">Right</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="compactMode" style="margin-right: 8px;">
+                                            <span>Compact Mode (Reduced spacing)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notification Settings -->
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-bell"></i> Notifications</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyNewIssues" checked style="margin-right: 8px;">
+                                            <span>New Issues</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyStatusChanges" checked style="margin-right: 8px;">
+                                            <span>Status Changes</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifyUserActivity" checked style="margin-right: 8px;">
+                                            <span>User Activity</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="notifySystemAlerts" checked style="margin-right: 8px;">
+                                            <span>System Alerts</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Notification Sound</label>
+                                        <select class="date-input" id="notificationSound" style="width: 100%; max-width: 300px;">
+                                            <option value="default">Default</option>
+                                            <option value="chime">Chime</option>
+                                            <option value="bell">Bell</option>
+                                            <option value="none">None (Silent)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Data & Display Settings -->
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-database"></i> Data & Display</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Items Per Page</label>
+                                        <select class="date-input" id="itemsPerPage" style="width: 100%; max-width: 300px;">
+                                            <option value="10">10</option>
+                                            <option value="25" selected>25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Date Format</label>
+                                        <select class="date-input" id="dateFormat" style="width: 100%; max-width: 300px;">
+                                            <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                            <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                            <option value="YYYY-MM-DD" selected>YYYY-MM-DD</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Time Format</label>
+                                        <select class="date-input" id="timeFormat" style="width: 100%; max-width: 300px;">
+                                            <option value="12h">12-hour (AM/PM)</option>
+                                            <option value="24h" selected>24-hour</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="autoRefresh" checked style="margin-right: 8px;">
+                                            <span>Auto-refresh dashboard every 30 seconds</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Settings -->
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="card-header" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-shield-alt"></i> Security</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Session Timeout</label>
+                                        <select class="date-input" id="sessionTimeout" style="width: 100%; max-width: 300px;">
+                                            <option value="15">15 minutes</option>
+                                            <option value="30" selected>30 minutes</option>
+                                            <option value="60">1 hour</option>
+                                            <option value="120">2 hours</option>
+                                            <option value="0">Never</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="twoFactorAuth" style="margin-right: 8px;">
+                                            <span>Enable Two-Factor Authentication</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" id="loginAlerts" checked style="margin-right: 8px;">
+                                            <span>Email alerts for new logins</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <button class="btn-sm btn-warning" onclick="showChangePasswordModal()">
+                                            <i class="fas fa-key"></i> Change Password
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- System Information -->
+                            <div class="card">
+                                <div class="card-header" style="background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-info-circle"></i> System Information</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                                        <div>
+                                            <strong>Version:</strong>
+                                            <p style="margin: 5px 0 0 0; color: #666;">1.0.0</p>
+                                        </div>
+                                        <div>
+                                            <strong>Last Login:</strong>
+                                            <p style="margin: 5px 0 0 0; color: #666;" id="lastLoginTime">Loading...</p>
+                                        </div>
+                                        <div>
+                                            <strong>Database Status:</strong>
+                                            <p style="margin: 5px 0 0 0; color: #28a745;">● Connected</p>
+                                        </div>
+                                        <div>
+                                            <strong>Cache Status:</strong>
+                                            <p style="margin: 5px 0 0 0; color: #28a745;">● Active</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3920,6 +4108,7 @@
             else if (tab === 'announcements') loadAnnouncements();
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
+            else if (tab === 'settings') loadSettings();
         }
 
         // Profile modal helpers
@@ -4540,6 +4729,152 @@
     </script>
     <script>
         // ========================================
+        // SETTINGS FUNCTIONS
+        // ========================================
+        function changeTheme(theme) {
+            localStorage.setItem('voo_theme', theme);
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else if (theme === 'light') {
+                document.body.classList.remove('dark-mode');
+            } else {
+                // Auto mode - use system preference
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            }
+            showToast(`Theme changed to ${theme}`, 'success');
+        }
+
+        function saveAllSettings() {
+            const settings = {
+                theme: document.getElementById('themeSelect')?.value,
+                sidebarPosition: document.getElementById('sidebarPosition')?.value,
+                compactMode: document.getElementById('compactMode')?.checked,
+                notifyNewIssues: document.getElementById('notifyNewIssues')?.checked,
+                notifyStatusChanges: document.getElementById('notifyStatusChanges')?.checked,
+                notifyUserActivity: document.getElementById('notifyUserActivity')?.checked,
+                notifySystemAlerts: document.getElementById('notifySystemAlerts')?.checked,
+                notificationSound: document.getElementById('notificationSound')?.value,
+                itemsPerPage: document.getElementById('itemsPerPage')?.value,
+                dateFormat: document.getElementById('dateFormat')?.value,
+                timeFormat: document.getElementById('timeFormat')?.value,
+                autoRefresh: document.getElementById('autoRefresh')?.checked,
+                sessionTimeout: document.getElementById('sessionTimeout')?.value,
+                twoFactorAuth: document.getElementById('twoFactorAuth')?.checked,
+                loginAlerts: document.getElementById('loginAlerts')?.checked
+            };
+
+            localStorage.setItem('voo_system_settings', JSON.stringify(settings));
+            
+            // Apply theme immediately
+            if (settings.theme) {
+                changeTheme(settings.theme);
+            }
+
+            // Apply compact mode
+            if (settings.compactMode) {
+                document.body.classList.add('compact-mode');
+            } else {
+                document.body.classList.remove('compact-mode');
+            }
+
+            showToast('All settings saved successfully!', 'success');
+        }
+
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('voo_system_settings') || '{}');
+            
+            if (settings.theme) {
+                const themeSelect = document.getElementById('themeSelect');
+                if (themeSelect) themeSelect.value = settings.theme;
+                changeTheme(settings.theme);
+            }
+            
+            if (settings.sidebarPosition) {
+                const sidebarPos = document.getElementById('sidebarPosition');
+                if (sidebarPos) sidebarPos.value = settings.sidebarPosition;
+            }
+            
+            if (settings.compactMode !== undefined) {
+                const compactMode = document.getElementById('compactMode');
+                if (compactMode) compactMode.checked = settings.compactMode;
+                if (settings.compactMode) document.body.classList.add('compact-mode');
+            }
+            
+            if (settings.notifyNewIssues !== undefined) {
+                const el = document.getElementById('notifyNewIssues');
+                if (el) el.checked = settings.notifyNewIssues;
+            }
+            
+            if (settings.notifyStatusChanges !== undefined) {
+                const el = document.getElementById('notifyStatusChanges');
+                if (el) el.checked = settings.notifyStatusChanges;
+            }
+            
+            if (settings.notifyUserActivity !== undefined) {
+                const el = document.getElementById('notifyUserActivity');
+                if (el) el.checked = settings.notifyUserActivity;
+            }
+            
+            if (settings.notifySystemAlerts !== undefined) {
+                const el = document.getElementById('notifySystemAlerts');
+                if (el) el.checked = settings.notifySystemAlerts;
+            }
+            
+            if (settings.notificationSound) {
+                const el = document.getElementById('notificationSound');
+                if (el) el.value = settings.notificationSound;
+            }
+            
+            if (settings.itemsPerPage) {
+                const el = document.getElementById('itemsPerPage');
+                if (el) el.value = settings.itemsPerPage;
+            }
+            
+            if (settings.dateFormat) {
+                const el = document.getElementById('dateFormat');
+                if (el) el.value = settings.dateFormat;
+            }
+            
+            if (settings.timeFormat) {
+                const el = document.getElementById('timeFormat');
+                if (el) el.value = settings.timeFormat;
+            }
+            
+            if (settings.autoRefresh !== undefined) {
+                const el = document.getElementById('autoRefresh');
+                if (el) el.checked = settings.autoRefresh;
+            }
+            
+            if (settings.sessionTimeout) {
+                const el = document.getElementById('sessionTimeout');
+                if (el) el.value = settings.sessionTimeout;
+            }
+            
+            if (settings.twoFactorAuth !== undefined) {
+                const el = document.getElementById('twoFactorAuth');
+                if (el) el.checked = settings.twoFactorAuth;
+            }
+            
+            if (settings.loginAlerts !== undefined) {
+                const el = document.getElementById('loginAlerts');
+                if (el) el.checked = settings.loginAlerts;
+            }
+
+            // Show last login time
+            const lastLogin = localStorage.getItem('voo_last_login');
+            if (lastLogin) {
+                const lastLoginEl = document.getElementById('lastLoginTime');
+                if (lastLoginEl) {
+                    lastLoginEl.textContent = new Date(lastLogin).toLocaleString();
+                }
+            }
+        }
+
+        // ========================================
         // RIPPLE EFFECT FOR BUTTONS
         // ========================================
         function createRipple(event) {
@@ -4564,6 +4899,14 @@
             document.querySelectorAll('.btn, .tab, button').forEach(btn => {
                 btn.addEventListener('click', createRipple);
             });
+            
+            // Load saved settings
+            loadSettings();
+            
+            // Store login time
+            if (!localStorage.getItem('voo_last_login')) {
+                localStorage.setItem('voo_last_login', new Date().toISOString());
+            }
         });
 
         // Remove stray help widgets that display only a question mark.

@@ -419,12 +419,8 @@ window.IssueMap = (function() {
 // Auto-initialize if map container exists
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        if (document.getElementById('issueMap')) {
-            IssueMap.init();
-        }
+        // Don't auto-initialize, let dashboard call init when needed
     });
 } else {
-    if (document.getElementById('issueMap')) {
-        IssueMap.init();
-    }
+    // Don't auto-initialize, let dashboard call init when needed
 }

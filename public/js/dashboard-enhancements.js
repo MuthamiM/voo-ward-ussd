@@ -551,16 +551,29 @@ const TableSort = {
 // INITIALIZE ALL MODULES
 // ========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Only initialize if on dashboard page
-    if (document.querySelector('.container')) {
-        Sidebar.init();
-        Notifications.init();
-        
-        // Initialize table sorting for all tables
-        TableSort.init('issues-tbody');
-        TableSort.init('bursaries-tbody');
-        TableSort.init('constituents-tbody');
-    }
+    // Wait for dashboard to be visible
+    const initEnhancements = () => {
+        if (document.getElementById('dashboardPage')) {
+            try {
+                Sidebar.init();
+                Notifications.init();
+                
+                // Initialize table sorting for all tables
+                TableSort.init('issues-tbody');
+                TableSort.init('bursaries-tbody');
+                TableSort.init('constituents-tbody');
+            } catch (error) {
+                console.error('Error initializing dashboard enhancements:', error);
+            }
+        }
+    };
+    
+    // Try immediately
+    initEnhancements();
+    
+    // Also try after a delay in case dashboard renders later
+    setTimeout(initEnhancements, 500);
+    setTimeout(initEnhancements, 1000);
 });
 
 // Export for use in main dashboard
@@ -569,4 +582,14 @@ window.DashboardEnhancements = {
     Notifications,
     Pagination,
     TableSort
+};
+
+// Also expose init function for manual calls
+window.initializeDashboardEnhancements = () => {
+    try {
+        Sidebar.init();
+        Notifications.init();
+    } catch (error) {
+        console.error('Manual init error:', error);
+    }
 };
