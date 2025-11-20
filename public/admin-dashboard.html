@@ -2661,32 +2661,107 @@
                 <div class="content">
                     <!-- Dashboard Tab -->
                     <div id="dashboard-content" class="tab-content" style="display: block;">
-                        <!-- Statistics Cards -->
-                        <div class="stats-grid" id="statsGrid">
+                        <!-- Hero Section -->
+                        <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%); border-radius: 24px; padding: 32px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -50%; right: -20%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 32px; font-weight: 700; margin-bottom: 12px; font-family: 'Inter', sans-serif;">Welcome Back!</h1>
+                                <p style="color: rgba(255, 255, 255, 0.7); font-size: 16px; line-height: 1.6; margin-bottom: 24px; max-width: 600px;">Manage VOO Kyamatu Ward efficiently with our comprehensive admin dashboard. Monitor issues, track bursaries, and stay connected with your community.</p>
+                                <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                                    <button onclick="openTab('issues')" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; padding: 12px 24px; border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(99, 102, 241, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(99, 102, 241, 0.3)';">View Issues</button>
+                                    <button onclick="openTab('bursaries')" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 12px 24px; border-radius: 12px; color: rgba(255, 255, 255, 0.9); font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif;" onmouseover="this.style.background='rgba(255, 255, 255, 0.2)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)';">Manage Bursaries</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Statistics Grid -->
+                        <div class="stats-grid" id="statsGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 32px;">
                             <!-- Stats will be loaded dynamically -->
                         </div>
                         
-                        <!-- Dashboard Welcome Content -->
-                        <div style="margin-top: 24px; padding: 24px; background: rgba(0,0,0,0.3); border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
-                            <h3 style="color: rgba(255,255,255,0.9); font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; margin-bottom: 12px;">Welcome to VOO Kyamatu Ward Admin Dashboard</h3>
-                            <p style="color: rgba(255,255,255,0.7); font-family: 'Inter',-apple-system,BlinkMacSystemFont,sans-serif; line-height: 1.6;">Use the navigation on the left to manage issues, bursaries, constituents, and other administrative tasks. The statistics above show real-time data about your ward.</p>
+                        <!-- Quick Actions Grid -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 24px; margin-bottom: 32px;">
+                            <!-- Recent Activity Card -->
+                            <div style="background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); border-radius: 20px; padding: 28px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 20px 40px rgba(0, 0, 0, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                    <h3 style="color: rgba(255, 255, 255, 0.95); font-size: 20px; font-weight: 600; margin: 0; font-family: 'Inter', sans-serif;">Recent Activity</h3>
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                                    </div>
+                                </div>
+                                <div id="recentActivityList" style="space-y: 12px;">
+                                    <div style="padding: 16px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border-left: 3px solid #10b981;">
+                                        <p style="color: rgba(255, 255, 255, 0.8); margin: 0; font-size: 14px; line-height: 1.5;">System initialized successfully</p>
+                                        <span style="color: rgba(255, 255, 255, 0.5); font-size: 12px;">Just now</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Quick Stats Card -->
+                            <div style="background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(20px); border-radius: 20px; padding: 28px; border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 20px 40px rgba(0, 0, 0, 0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                                    <h3 style="color: rgba(255, 255, 255, 0.95); font-size: 20px; font-weight: 600; margin: 0; font-family: 'Inter', sans-serif;">Quick Overview</h3>
+                                    <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                                        <svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+                                        <div style="font-size: 24px; font-weight: 700; color: #10b981; margin-bottom: 4px;" id="quickIssuesCount">0</div>
+                                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.5px;">Active Issues</div>
+                                    </div>
+                                    <div style="text-align: center; padding: 16px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
+                                        <div style="font-size: 24px; font-weight: 700; color: #f59e0b; margin-bottom: 4px;" id="quickBursariesCount">0</div>
+                                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.5px;">Bursaries</div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <!-- Issues Tab -->
                     <div id="issues-content" class="tab-content" style="display: none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Reported Issues</h2>
-                            <div class="content-actions">
-                                <input id="issuesSearch" placeholder="Search ticket/phone/message..." style="padding:12px 18px; border-radius:14px; border:1px solid rgba(255,255,255,0.1); margin-right:10px; font-size:14px; min-width:250px; background:rgba(0,0,0,0.4); backdrop-filter:blur(20px); transition:all 0.3s ease; box-shadow:0 8px 25px rgba(0,0,0,0.2); color:#ffffff; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;" onfocus="this.style.borderColor='rgba(29,78,216,0.5)'; this.style.boxShadow='0 0 0 3px rgba(29,78,216,0.1), 0 8px 32px rgba(29,78,216,0.3)'; this.style.transform='translateY(-2px)';" onblur="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.2)'; this.style.transform='translateY(0)';"/>
-                                <button class="btn-sm" onclick="applyIssuesSearch()" style="background:linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); color:white;">Search</button>
-                                <button class="btn-sm" onclick="clearIssuesSearch()" style="background:linear-gradient(135deg, rgba(156,163,175,0.9) 0%, rgba(107,114,128,0.9) 100%); color:white;">Clear</button>
-                                <button class="btn-sm btn-success" onclick="exportData('issues')">
-                                    Export CSV
-                                </button>
-                                <button class="btn-sm btn-primary" style="margin-left:8px;" onclick="resolveSelected()">Resolve Selected</button>
+                        <!-- Issues Header -->
+                        <div style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">Issue Management</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Track and resolve community issues efficiently</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                    <button onclick="exportData('issues')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';">Export Data</button>
+                                    <button onclick="resolveSelected()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 10px 20px; border-radius: 10px; color: rgba(255, 255, 255, 0.9); font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.1)';">Resolve Selected</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="table-container">
+                        
+                        <!-- Search and Filter Section -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+                                <div style="flex: 1; min-width: 280px; position: relative;">
+                                    <div style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: rgba(255, 255, 255, 0.5);">
+                                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M21.71 20.29L18 16.61A9 9 0 1 0 16.61 18l3.68 3.68a1 1 0 0 0 1.42-1.42zM11 18a7 7 0 1 1 7-7 7 7 0 0 1-7 7z"/></svg>
+                                    </div>
+                                    <input id="issuesSearch" placeholder="Search by ticket, phone, or message..." style="width: 100%; padding: 14px 16px 14px 48px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(255, 255, 255, 0.05); color: #ffffff; font-family: 'Inter', sans-serif; font-size: 14px; transition: all 0.3s ease;" onfocus="this.style.borderColor='rgba(99, 102, 241, 0.5)'; this.style.background='rgba(255, 255, 255, 0.08)'; this.style.boxShadow='0 0 0 3px rgba(99, 102, 241, 0.1)';" onblur="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='rgba(255, 255, 255, 0.05)'; this.style.boxShadow='none';"/>
+                                </div>
+                                <button onclick="applyIssuesSearch()" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); border: none; padding: 14px 24px; border-radius: 12px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; white-space: nowrap;">Search</button>
+                                <button onclick="clearIssuesSearch()" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); padding: 14px 20px; border-radius: 12px; color: rgba(255, 255, 255, 0.8); font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif;">Clear</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Issues Table Container -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                            <div style="padding: 24px 24px 0 24px;">
+                                <h3 style="color: rgba(255, 255, 255, 0.9); font-size: 18px; font-weight: 600; margin: 0 0 20px 0; font-family: 'Inter', sans-serif;">All Issues</h3>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto;">
                             <table>
                                 <thead>
                                     <tr>
@@ -2711,25 +2786,57 @@
 
                     <!-- Bursaries Tab -->
                     <div id="bursaries-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Bursary Applications</h2>
-                            <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('bursaries')">
-                                    Export CSV
-                                </button>
+                        <!-- Bursaries Header -->
+                        <div style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">Bursary Management</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Track and manage education funding applications</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Stats Row -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                        <div style="font-size: 24px; font-weight: 700; color: #10b981; margin-bottom: 4px;" id="totalBursaries">0</div>
+                                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.5px;">Total Applications</div>
+                                    </div>
+                                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                        <div style="font-size: 24px; font-weight: 700; color: #f59e0b; margin-bottom: 4px;" id="pendingBursaries">0</div>
+                                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.5px;">Pending Review</div>
+                                    </div>
+                                    <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                        <div style="font-size: 24px; font-weight: 700; color: #3b82f6; margin-bottom: 4px;" id="approvedBursaries">0</div>
+                                        <div style="font-size: 12px; color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.5px;">Approved</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Button -->
+                                <button onclick="exportData('bursaries')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';">Export Applications</button>
                             </div>
                         </div>
-                        <div class="table-container">
-                            <table>
+                        
+                        <!-- Bursaries Table Container -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                            <div style="padding: 24px 24px 0 24px;">
+                                <h3 style="color: rgba(255, 255, 255, 0.9); font-size: 18px; font-weight: 600; margin: 0 0 20px 0; font-family: 'Inter', sans-serif;">All Applications</h3>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto;">
+                            <table class="data-table">
                                 <thead>
-                                    <tr>
-                                        <th>Ref Code</th>
-                                        <th>Student Name</th>
-                                        <th>School/Institution</th>
-                                        <th>Amount</th>
-                                        <th>Phone</th>
-                                        <th>Status</th>
-                                        <th>Created At</th>
+                                    <tr style="background: rgba(255, 255, 255, 0.05);">
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Ref Code</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Student Name</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">School/Institution</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Amount</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Phone</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Status</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody id="bursaries-tbody"></tbody>
@@ -2739,25 +2846,41 @@
 
                     <!-- Constituents Tab -->
                     <div id="constituents-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Registered Constituents</h2>
-                            <div class="content-actions">
-                                <button class="btn-sm btn-success" onclick="exportData('constituents')">
-                                    Export CSV
-                                </button>
+                        <!-- Constituents Header -->
+                        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">Registered Constituents</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Community members database</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Button -->
+                                <button onclick="exportData('constituents')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';">Export CSV</button>
                             </div>
                         </div>
-                        <div class="table-container">
-                            <table>
+                        
+                        <!-- Constituents Table Container -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                            <div style="padding: 24px 24px 0 24px;">
+                                <h3 style="color: rgba(255, 255, 255, 0.9); font-size: 18px; font-weight: 600; margin: 0 0 20px 0; font-family: 'Inter', sans-serif;">Community Members</h3>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto;">
+                            <table class="data-table">
                                 <thead>
-                                    <tr>
-                                        <th>Phone</th>
-                                        <th>National ID</th>
-                                        <th>Date of Birth</th>
-                                        <th>Full Name</th>
-                                        <th>Location</th>
-                                        <th>Village</th>
-                                        <th>Registered</th>
+                                    <tr style="background: rgba(255, 255, 255, 0.05);">
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Phone</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">National ID</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Date of Birth</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Full Name</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Location</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Village</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Registered</th>
                                     </tr>
                                 </thead>
                                 <tbody id="constituents-tbody"></tbody>
@@ -2767,22 +2890,38 @@
 
                     <!-- Announcements Tab -->
                     <div id="announcements-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Announcements</h2>
-                            <div class="content-actions">
-                                <button class="btn-sm btn-info" onclick="showCreateAnnouncementModal()">
-                                    New Announcement
-                                </button>
+                        <!-- Announcements Header -->
+                        <div style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(234, 88, 12, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(249, 115, 22, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">Announcements</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Manage community announcements and notifications</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Button -->
+                                <button onclick="showCreateAnnouncementModal()" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(6, 182, 212, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(6, 182, 212, 0.3)';">New Announcement</button>
                             </div>
                         </div>
-                        <div class="table-container">
-                            <table>
+                        
+                        <!-- Announcements Table Container -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                            <div style="padding: 24px 24px 0 24px;">
+                                <h3 style="color: rgba(255, 255, 255, 0.9); font-size: 18px; font-weight: 600; margin: 0 0 20px 0; font-family: 'Inter', sans-serif;">All Announcements</h3>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto;">
+                            <table class="data-table">
                                 <thead>
-                                    <tr>
-                                        <th>Title</th>
-                                        <th>Body</th>
-                                        <th>Created By</th>
-                                        <th>Created At</th>
+                                    <tr style="background: rgba(255, 255, 255, 0.05);">
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Title</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Body</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Created By</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Created At</th>
                                     </tr>
                                 </thead>
                                 <tbody id="announcements-tbody"></tbody>
@@ -2818,23 +2957,39 @@
 
                     <!-- User Management Tab (MCA only) -->
                     <div id="users-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">User Management</h2>
-                            <div class="content-actions">
-                                <button class="btn-sm btn-info" onclick="showAddUserModal()">
-                                    Add PA User
-                                </button>
+                        <!-- Users Header -->
+                        <div style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">User Management</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Manage system users and permissions</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Button -->
+                                <button onclick="showAddUserModal()" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(6, 182, 212, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(6, 182, 212, 0.3)';">Add PA User</button>
                             </div>
                         </div>
-                        <div class="table-container">
-                            <table>
+                        
+                        <!-- Users Table Container -->
+                        <div style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(20px); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1); overflow: hidden;">
+                            <div style="padding: 24px 24px 0 24px;">
+                                <h3 style="color: rgba(255, 255, 255, 0.9); font-size: 18px; font-weight: 600; margin: 0 0 20px 0; font-family: 'Inter', sans-serif;">System Users</h3>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto;">
+                            <table class="data-table">
                                 <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>Full Name</th>
-                                        <th>Role</th>
-                                        <th>Created At</th>
-                                        <th>Actions</th>
+                                    <tr style="background: rgba(255, 255, 255, 0.05);">
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Username</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Full Name</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Role</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Created At</th>
+                                        <th style="padding: 16px; color: rgba(255, 255, 255, 0.8); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="users-tbody"></tbody>
@@ -2844,20 +2999,32 @@
 
                     <!-- Analytics Tab -->
                     <div id="analytics-content" class="tab-content" style="display:none;">
-                        <div class="content-header">
-                            <h2 class="content-title">Analytics Dashboard</h2>
-                            <div class="content-actions">
-                                <select id="analyticsDateRange" class="date-input" onchange="AnalyticsCharts.applyDateFilter(this.value)">
-                                    <option value="all">All Time</option>
-                                    <option value="today">Today</option>
-                                    <option value="week">This Week</option>
-                                    <option value="month" selected>This Month</option>
-                                    <option value="quarter">This Quarter</option>
-                                    <option value="custom">Custom Range</option>
-                                </select>
-                                <button class="btn-sm btn-success" onclick="AnalyticsCharts.exportReport()">
-                                    📥 Export Report
-                                </button>
+                        <!-- Analytics Header -->
+                        <div style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.1) 100%); border-radius: 20px; padding: 28px; margin-bottom: 28px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+                            <div style="position: absolute; top: -30%; right: -15%; width: 150px; height: 150px; background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%); pointer-events: none;"></div>
+                            <div style="position: relative; z-index: 2;">
+                                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);">
+                                        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M16 8v8a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h8a2 2 0 012 2zM2 4a2 2 0 012-2h16a2 2 0 012 2v16a2 2 0 01-2 2H4a2 2 0 01-2-2V4z"/><path d="M9 9h6v6H9V9z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h1 style="color: rgba(255, 255, 255, 0.95); font-size: 28px; font-weight: 700; margin: 0; font-family: 'Inter', sans-serif;">Analytics Dashboard</h1>
+                                        <p style="color: rgba(255, 255, 255, 0.7); margin: 4px 0 0 0; font-size: 14px;">Insights and performance metrics</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Controls Row -->
+                                <div style="display: flex; gap: 16px; align-items: center;">
+                                    <select id="analyticsDateRange" class="date-input" onchange="AnalyticsCharts.applyDateFilter(this.value)" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px; padding: 8px 12px; color: white; font-family: 'Inter', sans-serif; font-size: 14px; backdrop-filter: blur(10px);">
+                                        <option value="all">All Time</option>
+                                        <option value="today">Today</option>
+                                        <option value="week">This Week</option>
+                                        <option value="month" selected>This Month</option>
+                                        <option value="quarter">This Quarter</option>
+                                        <option value="custom">Custom Range</option>
+                                    </select>
+                                    <button onclick="AnalyticsCharts.exportReport()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';">📥 Export Report</button>
+                                </div>
                             </div>
                         </div>
                         
