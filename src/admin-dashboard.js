@@ -9,17 +9,83 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 const chatbotSvc = require('./chatbot');
 
+// Input validation and sanitization
+function sanitizeString(str, maxLength = 1000) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[<>]/g, '') // Remove HTML tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+=/gi, ''); // Remove event handlers
+}
+
+function validateEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254;
+}
+
+function validatePhone(phone) {
+  if (!phone || typeof phone !== 'string') return false;
+  // Allow + prefix and digits, length 10-15
+  const phoneRegex = /^\+?[0-9]{10,15}$/;
+  return phoneRegex.test(phone.replace(/[\s-]/g, ''));
+}
+
+function validateUsername(username) {
+  if (!username || typeof username !== 'string') return false;
+  // Alphanumeric, underscore, hyphen, 3-30 chars
+  const usernameRegex = /^[a-zA-Z0-9_-]{3,30}$/;
+  return usernameRegex.test(username);
+}
+
+function validatePassword(password) {
+  if (!password || typeof password !== 'string') return false;
+  // At least 6 characters
+  return password.length >= 6 && password.length <= 128;
+}
+
 const app = express();
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-// CORS - allow frontend to connect
+// Security headers
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE");
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // XSS Protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Content Security Policy
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
+  next();
+});
+
+// Middleware with size limits to prevent DOS
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// CORS - secure origin handling
+const ALLOWED_ORIGINS = [
+  'http://localhost:4000',
+  'http://localhost:3000', 
+  process.env.FRONTEND_URL || ''
+].filter(Boolean);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (ALLOWED_ORIGINS.includes(origin) || !origin) {
+    res.header("Access-Control-Allow-Origin", origin || "*");
+  }
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true");
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
@@ -48,6 +114,22 @@ try {
 
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
+
+// Session cleanup: Remove expired sessions every 15 minutes to prevent memory leaks
+const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT_MS) || 1800000; // 30 minutes default
+setInterval(() => {
+  const now = new Date();
+  let cleanedCount = 0;
+  for (const [token, sess] of sessions.entries()) {
+    if (sess.createdAt && (now - sess.createdAt > SESSION_TIMEOUT)) {
+      sessions.delete(token);
+      cleanedCount++;
+    }
+  }
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cleaned ${cleanedCount} expired sessions (total: ${sessions.size})`);
+  }
+}, 900000); // 15 minutes
 
 // Helper: Hash password
 function hashPassword(password) {
@@ -158,7 +240,7 @@ let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
-async function connectDB() {
+async function connectDB(retries = 3) {
   if (db) return db;
   
   if (!MONGO_URI) {
@@ -166,31 +248,78 @@ async function connectDB() {
     return null;
   }
   
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      if (!client) {
+        client = new MongoClient(MONGO_URI, {
+          serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
+          tls: true,
+          retryWrites: true,
+          connectTimeoutMS: 10000,
+          serverSelectionTimeoutMS: 8000,
+          maxPoolSize: 10,
+          minPoolSize: 2,
+        });
+      }
+      
+      if (!db) {
+        await client.connect();
+        // Extract database name from URI
+        const url = new URL(MONGO_URI);
+        const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
+        db = client.db(pathDb);
+        
+        // Create indexes for performance
+        await createIndexes(db);
+      }
+      
+      console.log("✅ Connected to MongoDB Atlas");
+      return db;
+    } catch (err) {
+      lastError = err;
+      console.error(`❌ MongoDB connection attempt ${attempt}/${retries} failed:`, err.message);
+      
+      if (attempt < retries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  console.error("❌ MongoDB connection failed after", retries, "attempts:", lastError?.message);
+  console.log("💡 Tip: Check if MONGO_URI is correct in .env file");
+  return null;
+}
+
+// Create database indexes for performance
+async function createIndexes(database) {
   try {
-    if (!client) {
-      client = new MongoClient(MONGO_URI, {
-        serverApi: { version: ServerApiVersion.v1, strict: true, deprecationErrors: true },
-        tls: true,
-        retryWrites: true,
-        connectTimeoutMS: 10000,
-        serverSelectionTimeoutMS: 8000,
-      });
-    }
+    // Admin users indexes
+    await database.collection('admin_users').createIndex({ username: 1 }, { unique: true });
+    await database.collection('admin_users').createIndex({ role: 1 });
     
-    if (!db) {
-      await client.connect();
-      // Extract database name from URI
-      const url = new URL(MONGO_URI);
-      const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
-      db = client.db(pathDb);
-    }
+    // Issues indexes
+    await database.collection('issues').createIndex({ status: 1 });
+    await database.collection('issues').createIndex({ created_at: -1 });
+    await database.collection('issues').createIndex({ phone_number: 1 });
     
-    console.log("✅ Connected to MongoDB Atlas");
-    return db;
+    // Bursaries indexes
+    await database.collection('bursaries').createIndex({ status: 1 });
+    await database.collection('bursaries').createIndex({ created_at: -1 });
+    
+    // Constituents indexes
+    await database.collection('constituents').createIndex({ phone_number: 1 }, { unique: true });
+    await database.collection('constituents').createIndex({ national_id: 1 });
+    
+    // USSD interactions indexes
+    await database.collection('ussd_interactions').createIndex({ created_at: -1 });
+    await database.collection('ussd_interactions').createIndex({ phone_number: 1 });
+    
+    console.log("✅ Database indexes created/verified");
   } catch (err) {
-    console.error("❌ MongoDB connection failed:", err.message);
-    console.log("💡 Tip: Check if MONGO_URI is correct in .env file");
-    return null;
+    console.warn("⚠️  Index creation warning:", err.message);
   }
 }
 
@@ -252,6 +381,15 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
       return res.status(400).json({ error: "Username and password required" });
     }
     
+    // Validate input format
+    if (!validateUsername(username)) {
+      return res.status(400).json({ error: "Invalid username format" });
+    }
+    
+    if (!validatePassword(password)) {
+      return res.status(400).json({ error: "Invalid password format" });
+    }
+    
     const database = await connectDB();
     
     // When database is not connected, require DB for authentication.
@@ -260,12 +398,12 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
       return res.status(503).json({ error: 'Database not connected' });
     }
     
-    console.log(`Login attempt for user: ${username}`);
+    console.log(`Login attempt for user: ${sanitizeString(username, 50)}`);
     
     // PRODUCTION: Use database authentication
     // Find user
     const user = await database.collection("admin_users").findOne({
-      username: username.toLowerCase()
+      username: username.toLowerCase().trim()
     });
 
     if (!user) {
@@ -348,13 +486,30 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
       return res.status(400).json({ error: "All fields required" });
     }
     
+    // Validate username format
+    if (!validateUsername(username)) {
+      return res.status(400).json({ error: "Username must be 3-30 characters, alphanumeric with - or _" });
+    }
+    
+    // Validate password strength
+    if (!validatePassword(password)) {
+      return res.status(400).json({ error: "Password must be 6-128 characters" });
+    }
+    
+    // Validate phone format
+    if (!validatePhone(phone)) {
+      return res.status(400).json({ error: "Invalid phone number format" });
+    }
+    
+    // Sanitize fullName
+    const sanitizedFullName = sanitizeString(fullName, 100);
+    if (!sanitizedFullName || sanitizedFullName.length < 2) {
+      return res.status(400).json({ error: "Full name must be at least 2 characters" });
+    }
+    
     // Only CLERK and PA can self-register
     if (role !== 'CLERK' && role !== 'PA') {
       return res.status(400).json({ error: "Only CLERK and PA roles can register. MCA users must be created by existing admins." });
-    }
-    
-    if (password.length < 6) {
-      return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
     
     const database = await connectDB();
