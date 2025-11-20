@@ -879,16 +879,20 @@
 
         .sidebar-link.active {
             background: linear-gradient(135deg, 
-                rgba(139, 92, 246, 0.9) 0%, 
-                rgba(236, 72, 153, 0.8) 50%,
-                rgba(6, 182, 212, 0.7) 100%);
-            color: white;
-            border-color: rgba(255, 255, 255, 0.2);
+                rgba(139, 92, 246, 0.95) 0%, 
+                rgba(236, 72, 153, 0.9) 50%,
+                rgba(6, 182, 212, 0.85) 100%) !important;
+            color: white !important;
+            border-color: rgba(255, 255, 255, 0.3);
             box-shadow: 
-                0 8px 32px rgba(139, 92, 246, 0.4),
-                0 0 20px rgba(236, 72, 153, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            transform: translateX(4px);
+                0 8px 32px rgba(139, 92, 246, 0.6),
+                0 0 25px rgba(236, 72, 153, 0.4),
+                0 8px 25px rgba(0, 0, 0, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            transform: translateX(8px) !important;
+            font-weight: 700 !important;
+            border-radius: 16px;
+            border-left: 4px solid #ffffff !important;
         }
 
         .sidebar-link.active::after {
@@ -2841,6 +2845,7 @@
                                 </thead>
                                 <tbody id="bursaries-tbody"></tbody>
                             </table>
+                            </div>
                         </div>
                     </div>
 
@@ -4702,8 +4707,13 @@
         }
 
         function openTab(tab) {
+            console.log('🔄 Opening tab:', tab);
+            
             // Hide all content
-            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            document.querySelectorAll('.tab-content').forEach(div => {
+                div.style.display = 'none';
+                console.log('  ❌ Hidden:', div.id);
+            });
             // Remove active class from tabs
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             
@@ -4712,17 +4722,25 @@
             
             // Add active class to current sidebar link
             const activeLink = document.querySelector(`.sidebar-link[data-tab="${tab}"]`);
-            if (activeLink) activeLink.classList.add('active');
+            if (activeLink) {
+                activeLink.classList.add('active');
+                console.log('  ✅ Activated sidebar link for:', tab);
+            } else {
+                console.error('  ⚠️ Sidebar link not found for:', tab);
+            }
 
             // Show selected content
             const content = document.getElementById(tab + '-content');
             if (content) {
                 content.style.display = 'block';
+                console.log('  ✅ Showing content:', content.id);
                 
                 // Load stats only for dashboard
                 if (tab === 'dashboard') {
                     loadStats();
                 }
+            } else {
+                console.error('  ⚠️ Content element not found for:', tab + '-content');
             }
 
             // Try to set the corresponding tab button active
@@ -4730,10 +4748,23 @@
             if (btn) btn.classList.add('active');
 
             // Load data for selected tab
-            if (tab === 'issues') loadIssues();
-            else if (tab === 'bursaries') loadBursaries();
-            else if (tab === 'constituents') loadConstituents();
-            else if (tab === 'announcements') loadAnnouncements();
+            if (tab === 'issues') {
+                console.log('  📊 Loading issues data...');
+                loadIssues();
+            } else if (tab === 'bursaries') {
+                console.log('  💰 Loading bursaries data...');
+                loadBursaries();
+            } else if (tab === 'constituents') {
+                console.log('  👥 Loading constituents data...');
+                loadConstituents();
+            } else if (tab === 'announcements') {
+                console.log('  📢 Loading announcements data...');
+                loadAnnouncements();
+            } else if (tab === 'users') {
+                console.log('  👤 Loading users data...');
+                loadUsers();
+            }
+        }
             else if (tab === 'ussd') loadUssd();
             else if (tab === 'users') loadUsers();
             else if (tab === 'analytics') loadAnalytics();
