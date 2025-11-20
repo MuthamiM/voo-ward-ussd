@@ -100,6 +100,91 @@ const Sidebar = {
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', (e) => {
                 e.preventDefault();
+                const tab = link.getAttribute('data-tab');
+                this.navigate(tab);
+            });
+        });
+    },
+    
+    navigate(tabName) {
+        // Remove active class from all sidebar links
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        
+        // Add active to clicked link
+        const activeLink = document.querySelector(`.sidebar-link[data-tab="${tabName}"]`);
+        if (activeLink) activeLink.classList.add('active');
+        
+        // Call the main openTab function if it exists
+        if (typeof window.openTab === 'function') {
+            window.openTab(tabName);
+        } else {
+            // Fallback: manually show/hide content
+            document.querySelectorAll('.tab-content').forEach(div => div.style.display = 'none');
+            const content = document.getElementById(tabName + '-content');
+            if (content) content.style.display = 'block';
+            
+            // Load data based on tab
+            if (tabName === 'issues' && typeof window.loadIssues === 'function') window.loadIssues();
+            else if (tabName === 'bursaries' && typeof window.loadBursaries === 'function') window.loadBursaries();
+            else if (tabName === 'constituents' && typeof window.loadConstituents === 'function') window.loadConstituents();
+            else if (tabName === 'announcements' && typeof window.loadAnnouncements === 'function') window.loadAnnouncements();
+            else if (tabName === 'users' && typeof window.loadUsers === 'function') window.loadUsers();
+        }
+    }
+};
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+const Notifications = {
+    notifications: [],
+    unreadCount: 0,
+    
+    init() {
+        this.render();
+        this.attachEvents();
+        this.startPolling();
+    },
+    
+    render() {
+        // Notification bell already exists in navbar, just enhance it
+        const navbar = document.querySelector('.navbar-user');
+        if (!navbar || document.getElementById('notificationBell')) return;
+        
+        const bellHTML = `
+            <div class="notification-bell" id="notificationBell">
+                <button class="notification-btn" id="notificationBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                    </svg>
+                    <span class="notification-badge" id="notificationBadge">0</span>
+                </button>
+                <div class="notification-dropdown" id="notificationDropdown">
+                    <div class="notification-header">
+                        <span>Notifications</span>
+                        <button class="notification-clear" onclick="DashboardEnhancements.Notifications.markAllRead()">Mark all read</button>
+                    </div>
+                    <div class="notification-list" id="notificationList">
+                        <div class="notification-empty">No new notifications</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Insert before logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.parentElement.insertAdjacentHTML('beforebegin', bellHTML);
+        }
+    },
+    
+    attachEvents() {
+        const btn = document.getElementById('notificationBtn');
+        const dropdown = document.getElementById('notificationDropdown');
+        
+        btn?.addEventListener('click', (e) => {
+                e.preventDefault();
                 const tab = link.dataset.tab;
                 this.navigate(tab);
             });
