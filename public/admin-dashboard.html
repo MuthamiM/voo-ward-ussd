@@ -110,6 +110,284 @@
         }
         
         /* ========================================
+           LOADING STATES & SKELETON SCREENS
+        ======================================== */
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Page loading spinner */
+        .page-loader {
+            position: relative;
+            width: 60px;
+            height: 60px;
+        }
+
+        .page-loader::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid var(--gray-200);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .page-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 30px;
+            height: 30px;
+            margin: -15px 0 0 -15px;
+            border: 2px solid transparent;
+            border-top: 2px solid var(--secondary);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite reverse;
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            color: var(--gray-600);
+            font-weight: 500;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* Skeleton loading animations */
+        .skeleton {
+            background: linear-gradient(90deg, 
+                var(--gray-200) 25%, 
+                var(--gray-100) 50%, 
+                var(--gray-200) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 4px;
+        }
+
+        .skeleton-text {
+            height: 16px;
+            margin-bottom: 8px;
+        }
+
+        .skeleton-text:last-child {
+            width: 60%;
+        }
+
+        .skeleton-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .skeleton-card {
+            height: 120px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+        }
+
+        .skeleton-table-row {
+            height: 48px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+        }
+
+        .skeleton-button {
+            height: 36px;
+            width: 100px;
+            border-radius: 6px;
+        }
+
+        /* Table loading states */
+        .table-loading {
+            position: relative;
+            opacity: 0.6;
+        }
+
+        .table-loading::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.4) 50%, 
+                transparent 100%);
+            animation: tableShimmer 2s ease-in-out infinite;
+        }
+
+        @keyframes tableShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Card loading states */
+        .card-loading {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-loading::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg,
+                transparent 0%,
+                rgba(124, 58, 237, 0.1) 50%,
+                transparent 100%);
+            animation: cardPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes cardPulse {
+            0%, 100% { opacity: 0; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* Button loading states */
+        .btn-loading {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .btn-loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Form loading states */
+        .form-loading input,
+        .form-loading textarea,
+        .form-loading select {
+            background: var(--gray-100);
+            cursor: not-allowed;
+            animation: formShimmer 1.5s ease-in-out infinite;
+        }
+
+        @keyframes formShimmer {
+            0%, 100% { background-color: var(--gray-100); }
+            50% { background-color: var(--gray-200); }
+        }
+
+        /* Search loading states */
+        .search-loading {
+            position: relative;
+        }
+
+        .search-loading::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--gray-300);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Dashboard metrics loading */
+        .metric-loading {
+            background: linear-gradient(135deg,
+                var(--gray-100) 0%,
+                var(--gray-50) 50%,
+                var(--gray-100) 100%);
+            background-size: 200% 200%;
+            animation: metricGlow 2s ease-in-out infinite;
+            border-radius: 12px;
+            height: 100px;
+        }
+
+        @keyframes metricGlow {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        /* Progressive loading states */
+        .progressive-load {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .progressive-load:nth-child(1) { animation-delay: 0.1s; }
+        .progressive-load:nth-child(2) { animation-delay: 0.2s; }
+        .progressive-load:nth-child(3) { animation-delay: 0.3s; }
+        .progressive-load:nth-child(4) { animation-delay: 0.4s; }
+        .progressive-load:nth-child(5) { animation-delay: 0.5s; }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Error loading states */
+        .loading-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: var(--gray-500);
+        }
+
+        .loading-error-icon {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            color: var(--danger);
+        }
+
+        /* Retry loading button */
+        .retry-loading {
+            margin-top: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .retry-loading:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* ========================================
            CUSTOM SCROLLBAR
         ======================================== */
         ::-webkit-scrollbar {
@@ -2539,8 +2817,8 @@
             }
         </style>
 
-        <!-- AI Assistant Chat Modal (modern glassmorphism) - Always visible at bottom right on dashboard only -->
-        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:9500; align-items:flex-end; justify-content:flex-end; pointer-events:none;">
+        <!-- AI Assistant Chat Modal (modern glassmorphism) - Dashboard only, hidden in settings -->
+        <div id="chatbotModal" style="display:none; position:fixed; right:0; bottom:0; z-index:9500; align-items:flex-end; justify-content:flex-end; pointer-events:none;" class="ai-assistant-container">
             <div class="chatbot-modal" style="position:relative; right:20px; bottom:20px; margin:0; background:rgba(255,255,255,0.25); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(31,38,135,0.3); border:1px solid rgba(255,255,255,0.3); max-width:320px; width:320px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
                 <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.3);">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -2563,8 +2841,8 @@
             </div>
         </div>
         
-        <!-- Floating Chatbot Button -->
-        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 6px 20px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'">
+        <!-- Floating Chatbot Button - Only visible on dashboard -->
+        <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#667eea,#764ba2); box-shadow:0 6px 20px rgba(102,126,234,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" class="chatbot-button" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(102,126,234,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
                 <circle cx="9" cy="10" r="1" fill="#667eea"/>
@@ -2585,6 +2863,88 @@
 
         #floatingChatbotBtn:hover svg {
             transform: scale(1.1);
+        }
+        
+        /* Hide AI Assistant when in settings mode */
+        .settings-active .ai-assistant-container,
+        .settings-active .chatbot-button,
+        body.settings-mode #chatbotModal,
+        body.settings-mode #floatingChatbotBtn {
+            display: none !important;
+            visibility: hidden !important;
+        }
+        
+        /* Notification animations */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Responsive layout improvements */
+        .settings-container {
+            max-width: 100% !important;
+            overflow-x: hidden !important;
+        }
+        
+        .card {
+            max-width: 100% !important;
+            margin: 0 auto 20px auto !important;
+        }
+        
+        .card-body {
+            padding: 15px !important;
+        }
+        
+        /* Profile upload improvements */
+        .profile-upload-section {
+            max-width: 300px;
+            margin: 20px 0;
+        }
+        
+        .profile-upload-section input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .settings-container {
+                padding: 10px !important;
+            }
+            
+            .card-body {
+                padding: 10px !important;
+            }
+            
+            .form-group {
+                margin-bottom: 10px !important;
+            }
+            
+            .ai-assistant-container {
+                max-width: 280px !important;
+                right: 10px !important;
+            }
         }
         </style>
 
@@ -3267,6 +3627,39 @@
                         </div>
 
                         <div class="settings-container" style="padding: 20px;">
+                            <!-- Profile Settings -->
+                            <div class="card" style="margin-bottom: 20px;">
+                                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px;">
+                                    <h3 style="margin: 0; font-size: 18px;"><i class="fas fa-user-circle"></i> Profile Settings</h3>
+                                </div>
+                                <div class="card-body" style="padding: 20px;">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Profile Picture</label>
+                                        <div class="profile-upload-section">
+                                            <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                                                <img id="currentProfilePic" src="/uploads/avatars/default-avatar.png" alt="Profile" style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid #e0e0e0; object-fit: cover;">
+                                                <div style="flex: 1;">
+                                                    <input type="file" id="profilePictureInput" accept="image/*" onchange="uploadProfilePicture(this)" style="width: 100%; padding: 8px; border: 2px dashed #ccc; border-radius: 8px; background: #f9f9f9; cursor: pointer; font-size: 14px;">
+                                                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #666;">Max size: 2MB. JPG, PNG, GIF allowed.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Display Name</label>
+                                        <input type="text" id="displayName" class="date-input" placeholder="Your display name" style="width: 100%; max-width: 300px;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Email</label>
+                                        <input type="email" id="userEmail" class="date-input" placeholder="your.email@example.com" style="width: 100%; max-width: 300px;">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Phone Number</label>
+                                        <input type="tel" id="userPhone" class="date-input" placeholder="+27 XX XXX XXXX" style="width: 100%; max-width: 300px;">
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Appearance Settings -->
                             <div class="card" style="margin-bottom: 20px;">
                                 <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px;">
@@ -4756,6 +5149,23 @@
         function openTab(tab) {
             console.log('🔄 Opening tab:', tab);
             
+            // Settings mode management
+            if (tab === 'settings') {
+                document.body.classList.add('settings-mode');
+                // Hide AI assistant completely
+                const chatModal = document.getElementById('chatbotModal');
+                const chatButton = document.getElementById('floatingChatbotBtn');
+                if (chatModal) chatModal.style.display = 'none';
+                if (chatButton) chatButton.style.display = 'none';
+            } else {
+                document.body.classList.remove('settings-mode');
+                // Restore AI assistant for dashboard
+                if (tab === 'dashboard') {
+                    const chatButton = document.getElementById('floatingChatbotBtn');
+                    if (chatButton) chatButton.style.display = 'flex';
+                }
+            }
+            
             // Hide all content
             document.querySelectorAll('.tab-content').forEach(div => {
                 div.style.display = 'none';
@@ -4785,6 +5195,11 @@
                 // Load stats only for dashboard
                 if (tab === 'dashboard') {
                     loadStats();
+                }
+                
+                // Load settings data for settings tab
+                if (tab === 'settings') {
+                    loadSettingsData();
                 }
             } else {
                 console.error('  ⚠️ Content element not found for:', tab + '-content');
@@ -5514,7 +5929,152 @@
             showToast(`Theme changed to ${theme}`, 'success');
         }
 
+        // Settings and Profile Management Functions
+        function loadSettingsData() {
+            console.log('📄 Loading settings data...');
+            
+            // Load saved settings
+            const saved = localStorage.getItem('voo_system_settings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                
+                // Apply saved settings to form
+                if (settings.theme) document.getElementById('themeSelect').value = settings.theme;
+                if (settings.sidebarPosition) document.getElementById('sidebarPosition').value = settings.sidebarPosition;
+                if (settings.compactMode !== undefined) document.getElementById('compactMode').checked = settings.compactMode;
+                if (settings.notifyNewIssues !== undefined) document.getElementById('notifyNewIssues').checked = settings.notifyNewIssues;
+                if (settings.notifyStatusChanges !== undefined) document.getElementById('notifyStatusChanges').checked = settings.notifyStatusChanges;
+                if (settings.notifyUserActivity !== undefined) document.getElementById('notifyUserActivity').checked = settings.notifyUserActivity;
+                if (settings.notifySystemAlerts !== undefined) document.getElementById('notifySystemAlerts').checked = settings.notifySystemAlerts;
+                if (settings.notificationSound) document.getElementById('notificationSound').value = settings.notificationSound;
+                if (settings.itemsPerPage) document.getElementById('itemsPerPage').value = settings.itemsPerPage;
+                if (settings.dateFormat) document.getElementById('dateFormat').value = settings.dateFormat;
+                if (settings.timeFormat) document.getElementById('timeFormat').value = settings.timeFormat;
+                if (settings.autoRefresh !== undefined) document.getElementById('autoRefresh').checked = settings.autoRefresh;
+                if (settings.sessionTimeout) document.getElementById('sessionTimeout').value = settings.sessionTimeout;
+                if (settings.twoFactorAuth !== undefined) document.getElementById('twoFactorAuth').checked = settings.twoFactorAuth;
+                if (settings.loginAlerts !== undefined) document.getElementById('loginAlerts').checked = settings.loginAlerts;
+            }
+            
+            // Load profile data
+            loadProfileData();
+        }
+        
+        function loadProfileData() {
+            // Load current user profile info
+            const profile = localStorage.getItem('voo_user_profile');
+            if (profile) {
+                const data = JSON.parse(profile);
+                if (data.displayName) document.getElementById('displayName').value = data.displayName;
+                if (data.email) document.getElementById('userEmail').value = data.email;
+                if (data.phone) document.getElementById('userPhone').value = data.phone;
+                if (data.profilePicture) {
+                    document.getElementById('currentProfilePic').src = data.profilePicture;
+                }
+            }
+            
+            // Update last login time
+            document.getElementById('lastLoginTime').textContent = 
+                new Date().toLocaleDateString() + ' at ' + new Date().toLocaleTimeString();
+        }
+        
+        function uploadProfilePicture(input) {
+            if (!input.files || !input.files[0]) return;
+            
+            const file = input.files[0];
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            
+            // Validate file
+            if (file.size > maxSize) {
+                alert('File size must be less than 2MB');
+                input.value = '';
+                return;
+            }
+            
+            if (!file.type.match(/^image\\/(jpeg|png|gif)$/)) {
+                alert('Only JPG, PNG, and GIF files are allowed');
+                input.value = '';
+                return;
+            }
+            
+            // Show loading state
+            const container = input.closest('.profile-upload-section');
+            container.classList.add('profile-upload-loading');
+            
+            // Create FormData for upload
+            const formData = new FormData();
+            formData.append('avatar', file);
+            
+            // Upload file
+            fetch('/api/auth/upload-avatar', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + (localStorage.getItem('token') || '')
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update profile picture
+                    document.getElementById('currentProfilePic').src = data.url + '?t=' + Date.now();
+                    
+                    // Save to localStorage
+                    const profile = JSON.parse(localStorage.getItem('voo_user_profile') || '{}');
+                    profile.profilePicture = data.url;
+                    localStorage.setItem('voo_user_profile', JSON.stringify(profile));
+                    
+                    // Show success message
+                    showNotification('Profile picture updated successfully', 'success');
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                alert('Failed to upload profile picture: ' + error.message);
+                input.value = '';
+            })
+            .finally(() => {
+                // Remove loading state
+                container.classList.remove('profile-upload-loading');
+            });
+        }
+        
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 10000;
+                animation: slideInRight 0.3s ease;
+                max-width: 300px;
+                word-wrap: break-word;
+            `;
+            notification.textContent = message;
+            
+            // Add to DOM
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
         function saveAllSettings() {
+            // Save system settings
             const settings = {
                 theme: document.getElementById('themeSelect')?.value,
                 sidebarPosition: document.getElementById('sidebarPosition')?.value,
@@ -5535,6 +6095,16 @@
 
             localStorage.setItem('voo_system_settings', JSON.stringify(settings));
             
+            // Save profile settings
+            const profile = {
+                displayName: document.getElementById('displayName')?.value,
+                email: document.getElementById('userEmail')?.value,
+                phone: document.getElementById('userPhone')?.value,
+                profilePicture: document.getElementById('currentProfilePic')?.src
+            };
+            
+            localStorage.setItem('voo_user_profile', JSON.stringify(profile));
+            
             // Apply theme immediately
             if (settings.theme) {
                 changeTheme(settings.theme);
@@ -5546,6 +6116,12 @@
             } else {
                 document.body.classList.remove('compact-mode');
             }
+
+            // Show success notification
+            showNotification('All settings saved successfully!', 'success');
+            
+            console.log('✅ Settings saved:', settings);
+        }
 
             showToast('All settings saved successfully!', 'success');
         }
