@@ -680,11 +680,6 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
       return res.status(400).json({ error: "Full name must be at least 2 characters" });
     }
     
-    // Only CLERK and PA can self-register
-    if (role !== 'CLERK' && role !== 'PA') {
-      return res.status(400).json({ error: "Only CLERK and PA roles can register. MCA users must be created by existing admins." });
-    }
-    
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
@@ -694,6 +689,22 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
     const totalUsers = await database.collection('admin_users').countDocuments({});
     if (totalUsers >= 3) {
       return res.status(400).json({ error: 'Maximum number of users reached (3). Please contact MCA to create space.' });
+    }
+
+    // Check if role already exists (only one of each role allowed)
+    const roleExists = await database.collection("admin_users").findOne({ role: role });
+    if (roleExists) {
+      return res.status(400).json({ error: `A user with role ${role} already exists. Each role can only have one user.` });
+    }
+
+    // Special handling for MCA role
+    if (role === 'MCA') {
+      // Only allow MCA registration if no users exist (first user)
+      if (totalUsers > 0) {
+        return res.status(400).json({ error: "MCA users can only be created as the first user or by existing MCAs." });
+      }
+    } else if (role !== 'CLERK' && role !== 'PA') {
+      return res.status(400).json({ error: "Invalid role. Only MCA, CLERK, and PA roles are allowed." });
     }
 
     // Check if username exists
