@@ -654,8 +654,8 @@
         .sidebar {
             position: fixed;
             left: 0;
-            top: 0;
-            height: 100vh;
+            top: 70px; /* Start below navbar */
+            height: calc(100vh - 70px); /* Account for navbar height */
             width: 280px;
             background: linear-gradient(145deg, 
                 rgba(0, 0, 0, 0.95) 0%, 
@@ -669,8 +669,30 @@
                 0 0 0 1px rgba(255, 255, 255, 0.05),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
             transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
-            z-index: 10000;
-            overflow: hidden;
+            z-index: 9000; /* Below navbar but above content */
+            overflow-y: auto; /* Enable scrolling */
+            overflow-x: hidden;
+            /* Custom scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+        }
+
+        /* Webkit scrollbar styling for sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .sidebar.collapsed {
@@ -692,10 +714,34 @@
         @media (max-width: 768px) {
             .sidebar {
                 width: 100vw;
+                top: 70px;
+                height: calc(100vh - 70px);
                 transform: translateX(-100%);
+                z-index: 9500; /* Higher on mobile for overlay effect */
             }
             .sidebar.mobile-open {
                 transform: translateX(0);
+            }
+            
+            /* Add mobile menu toggle button */
+            .mobile-menu-toggle {
+                display: block;
+                background: transparent;
+                border: none;
+                color: white;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 8px;
+            }
+            
+            .navbar-content {
+                padding: 12px 20px;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-menu-toggle {
+                display: none;
             }
         }
 
@@ -1021,7 +1067,8 @@
             padding: 0;
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 10000; /* Above sidebar (9000) */
+            height: 70px; /* Fixed height for consistent layout */
             box-shadow: 
                 0 8px 32px rgba(0, 0, 0, 0.4), 
                 0 0 0 1px rgba(255, 255, 255, 0.05),
@@ -5326,37 +5373,90 @@
             }
             
             try {
-                showToast('Preparing export...', 'info');
+                // Show loading state with progress
+                const loadingToast = showToast('Preparing export... This may take a moment for large datasets.', 'info', 10000);
+                
+                // Add timeout for large exports
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minute timeout
                 
                 const response = await fetch(API_BASE + '/api/admin/export/' + type, {
                     headers: {
                         'Authorization': 'Bearer ' + authToken
-                    }
+                    },
+                    signal: controller.signal
                 });
                 
+                clearTimeout(timeoutId);
+                
                 if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.error || 'Export failed');
+                    let errorMsg = 'Export failed';
+                    try {
+                        const error = await response.json();
+                        errorMsg = error.error || errorMsg;
+                    } catch (e) {
+                        // Response might not be JSON if it's a 404 or similar
+                        errorMsg = `Export failed (${response.status}: ${response.statusText})`;
+                    }
+                    throw new Error(errorMsg);
                 }
                 
-                // Get the CSV data
-                const csvData = await response.text();
+                // Check if response is actually CSV
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('text/csv')) {
+                    throw new Error('Invalid response format. Expected CSV file.');
+                }
                 
-                // Create a blob and download
-                const blob = new Blob([csvData], { type: 'text/csv' });
+                // Get the CSV data with progress tracking
+                const reader = response.body.getReader();
+                const chunks = [];
+                let receivedLength = 0;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    chunks.push(value);
+                    receivedLength += value.length;
+                }
+                
+                // Combine chunks into final CSV
+                const allChunks = new Uint8Array(receivedLength);
+                let position = 0;
+                for (const chunk of chunks) {
+                    allChunks.set(chunk, position);
+                    position += chunk.length;
+                }
+                
+                // Create blob and download
+                const blob = new Blob([allChunks], { type: 'text/csv; charset=utf-8' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `kyamatu-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+                a.style.display = 'none';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
                 
-                showToast('Export downloaded successfully', 'success');
+                // Calculate file size for user feedback
+                const fileSizeKB = Math.round(blob.size / 1024);
+                const fileSizeMB = fileSizeKB > 1024 ? (fileSizeKB / 1024).toFixed(1) + ' MB' : fileSizeKB + ' KB';
+                
+                showToast(`Export completed! File downloaded (${fileSizeMB})`, 'success');
+                
             } catch (err) {
                 console.error('Export error:', err);
-                showToast('Export failed: ' + err.message, 'error');
+                
+                let errorMessage = err.message;
+                if (err.name === 'AbortError') {
+                    errorMessage = 'Export timed out. Please try again or contact administrator for large datasets.';
+                } else if (err.message.includes('Failed to fetch')) {
+                    errorMessage = 'Network error. Please check your connection and try again.';
+                }
+                
+                showToast('Export failed: ' + errorMessage, 'error', 8000);
             }
         }
 
