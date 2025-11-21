@@ -1078,7 +1078,7 @@
                                 <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Profile Picture</h3>
                                 <div style="display: flex; align-items: center; gap: 20px;">
                                     <div style="position: relative;">
-                                        <img id="currentProfilePic" src="${API_BASE}/api/admin/default-avatar.png" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                                        <img id="currentProfilePic" src="/uploads/avatars/default-avatar.png" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary));">
                                         <div id="uploadIndicator" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--success); border-radius: 50%; border: 2px solid var(--surface); display: none; align-items: center; justify-content: center;">
                                             <i class="fas fa-check" style="color: white; font-size: 12px;"></i>
                                         </div>
@@ -1351,13 +1351,38 @@
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Admin Dashboard initializing...');
+            console.log('API_BASE:', API_BASE);
+            console.log('Current location:', window.location.href);
+            
+            // Fix avatar path - set correct src after DOM loads
+            setTimeout(() => {
+                const profilePic = document.getElementById('currentProfilePic');
+                if (profilePic) {
+                    profilePic.src = '/uploads/avatars/default-avatar.png';
+                    profilePic.onerror = function() {
+                        this.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
+                        this.style.color = 'white';
+                        this.style.fontSize = '24px';
+                        this.style.display = 'flex';
+                        this.style.alignItems = 'center';
+                        this.style.justifyContent = 'center';
+                        this.textContent = 'A';
+                        this.removeAttribute('src');
+                    };
+                }
+            }, 100);
+            
             checkAuth();
             setupEventListeners();
         });
 
         function setupEventListeners() {
             // Login form
-            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
             
             // Navigation
             document.querySelectorAll('.nav-link').forEach(link => {
