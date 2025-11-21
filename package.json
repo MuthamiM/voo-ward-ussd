@@ -19,6 +19,8 @@
     "morgan": "^1.10.1",
     "multer": "^1.4.5-lts.1",
     "sharp": "^0.32.5",
-    "@aws-sdk/client-s3": "^3.929.0"
+    "@aws-sdk/client-s3": "^3.929.0",
+    "pino": "^8.17.0",
+    "redis": "^4.6.0"
   }
 }
