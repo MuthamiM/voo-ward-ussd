@@ -2182,6 +2182,48 @@ app.get('/old', (req, res) => {
   res.redirect('/admin-dashboard.html');
 });
 
+// MISSING API ENDPOINTS
+// ============================================
+
+// Chatbot endpoints that frontend expects
+app.get('/api/admin/chatbot', requireAuth, (req, res) => {
+    res.json({ message: 'AI Assistant endpoint ready' });
+});
+
+app.post('/api/admin/chatbot', requireAuth, (req, res) => {
+    const { message } = req.body;
+    console.log('Chatbot message received:', message);
+    
+    // Simple AI response logic
+    let reply = 'I can help you with dashboard navigation, system management, and general questions. What would you like to know?';
+    
+    if (message && message.toLowerCase().includes('hello') || message && message.toLowerCase().includes('hi')) {
+        reply = 'Hello! I\'m Mai, your AI assistant. How can I help you today?';
+    } else if (message && message.toLowerCase().includes('issue')) {
+        reply = 'For issue management, go to the Issues section where you can view, update status, and resolve constituent problems.';
+    } else if (message && message.toLowerCase().includes('export')) {
+        reply = 'You can export data from any section using the export buttons. Navigate to Issues, Bursaries, or other sections and look for export options.';
+    } else if (message && message.toLowerCase().includes('dashboard')) {
+        reply = 'Use the sidebar to navigate between different sections like Dashboard, Issues, Bursaries, Analytics, and Settings.';
+    }
+    
+    res.json({ reply });
+});
+
+// Default avatar endpoint
+app.get('/api/admin/default-avatar.png', (req, res) => {
+    // Return a simple SVG avatar
+    const svgAvatar = `
+    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="20" fill="#6366f1"/>
+        <circle cx="20" cy="16" r="6" fill="white"/>
+        <path d="M8 32c0-8 5.373-12 12-12s12 4 12 12" fill="white"/>
+    </svg>`;
+    
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.send(svgAvatar);
+});
+
 // Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;

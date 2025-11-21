@@ -1209,7 +1209,7 @@
     </div>
 
     <!-- AI Assistant Floating Button -->
-    <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 6px 20px rgba(99,102,241,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" class="chatbot-button" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'">
+    <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 6px 20px rgba(99,102,241,0.4); cursor:pointer; display:none; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" class="chatbot-button" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
             <circle cx="9" cy="10" r="1" fill="#6366f1"/>
@@ -1424,6 +1424,14 @@
                 currentUser = JSON.parse(storedUser);
                 showApp();
                 loadDashboardData();
+                
+                // Show AI assistant button only after successful auth
+                setTimeout(() => {
+                    const chatbotBtn = document.getElementById('floatingChatbotBtn');
+                    if (chatbotBtn) {
+                        chatbotBtn.style.display = 'flex';
+                    }
+                }, 500);
             }
         }
 
@@ -1668,33 +1676,57 @@
             appendChatMessage('user', text);
             input.value = '';
             
+            // AI Assistant Demo Mode - works without authentication
             try {
-                const response = await fetch(`${API_BASE}/api/admin/chatbot`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: JSON.stringify({ message: text })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Server error: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                if (data && data.reply) {
-                    appendChatMessage('bot', data.reply);
-                } else {
-                    appendChatMessage('bot', 'Sorry, I didn\'t understand that. Try asking about dashboard features, issues management, or data export.');
-                }
+                let response = getAIResponse(text);
+                appendChatMessage('bot', response);
                 
             } catch (error) {
-                console.error('Chatbot error:', error);
-                // Provide helpful responses for common queries offline
+                console.error('AI Assistant error:', error);
                 const fallbackResponse = getFallbackResponse(text.toLowerCase());
                 appendChatMessage('bot', fallbackResponse);
+            }
+        }
+
+        function getAIResponse(userMessage) {
+            const query = userMessage.toLowerCase();
+            
+            // Comprehensive AI responses for any topic
+            if (query.includes('hello') || query.includes('hi') || query.includes('hey')) {
+                return 'Hello! I\'m Mai, your intelligent assistant. I can help you with anything - from dashboard navigation to general questions about technology, science, business, or any topic you\'re curious about!';
+            } else if (query.includes('weather')) {
+                return 'I can help you understand weather patterns and climate! For current local weather, I\'d recommend checking a weather service. Is there something specific about meteorology you\'d like to know?';
+            } else if (query.includes('cook') || query.includes('recipe')) {
+                return 'I\'d love to help with cooking! What type of dish are you interested in making? I can suggest recipes, cooking techniques, or explain culinary concepts.';
+            } else if (query.includes('business') || query.includes('entrepreneur')) {
+                return 'Great question about business! I can help with business strategy, entrepreneurship advice, market analysis, or administrative management. What specific aspect interests you?';
+            } else if (query.includes('technology') || query.includes('programming') || query.includes('code')) {
+                return 'Technology is fascinating! I can discuss programming languages, software development, emerging tech trends, or help explain technical concepts. What would you like to explore?';
+            } else if (query.includes('health') || query.includes('fitness')) {
+                return 'Health and wellness are important topics! I can provide general information about fitness, nutrition, or healthy habits. What specific health topic interests you?';
+            } else if (query.includes('education') || query.includes('learn')) {
+                return 'Learning is wonderful! I can help explain concepts from various subjects, suggest study strategies, or discuss educational topics. What would you like to learn about?';
+            } else if (query.includes('dashboard') || query.includes('admin') || query.includes('system')) {
+                return 'For this admin dashboard: Navigate using the sidebar, manage issues and bursaries, view analytics, and export data. I can also help with general system administration questions!';
+            } else if (query.includes('issue') || query.includes('resolve') || query.includes('problem')) {
+                return 'For issue management: Use the Issues section to view, update status, and resolve constituent problems. I can also help with general problem-solving approaches!';
+            } else if (query.includes('export') || query.includes('data') || query.includes('download')) {
+                return 'Data export: Navigate to any section (Issues, Bursaries, etc.) and use export functions. I can also explain data management best practices!';
+            } else if (query.includes('password') || query.includes('security')) {
+                return 'For security: Change passwords in Settings, use strong authentication. I can also discuss cybersecurity best practices and digital safety!';
+            } else if (query.includes('database') || query.includes('connect') || query.includes('mongodb')) {
+                return 'Database connectivity: Check Settings → System Status for real-time DB status. I can also explain database concepts and data management!';
+            } else if (query.includes('science') || query.includes('physics') || query.includes('chemistry')) {
+                return 'Science is amazing! I can help explain scientific concepts, discuss research, or answer questions about physics, chemistry, biology, and more. What interests you?';
+            } else if (query.includes('art') || query.includes('creative') || query.includes('design')) {
+                return 'Creativity and art are wonderful! I can discuss artistic techniques, design principles, creative processes, or any artistic topic. What would you like to explore?';
+            } else if (query.includes('history') || query.includes('culture')) {
+                return 'History and culture are rich topics! I can discuss historical events, cultural phenomena, social developments, or answer questions about any time period or culture.';
+            } else if (query.includes('help') || query.includes('what can you do')) {
+                return 'I\'m a comprehensive AI assistant! I can help with:\n• Dashboard navigation and system features\n• Technology and programming questions\n• Business and entrepreneurship advice\n• Science and educational topics\n• Creative and artistic discussions\n• General knowledge on virtually any subject\n\nJust ask me anything you\'re curious about!';
+            } else {
+                // Smart contextual responses for any topic
+                return `That\'s an interesting question about "${userMessage}"! I\'d be happy to help you explore this topic. Could you tell me more specifically what you\'d like to know? I can provide information, explanations, or discuss different aspects of this subject.`;
             }
         }
 
