@@ -478,8 +478,6 @@ window.initializeDashboardEnhancements = function() {
         console.error('Error initializing dashboard enhancements:', error);
     }
 };
-    TableSort
-};
 
 // Also expose init function for manual calls
 window.initializeDashboardEnhancements = () => {
