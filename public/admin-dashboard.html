@@ -3079,14 +3079,9 @@
 
         <!-- Main Content -->
         <div class="container">
-            <!-- Tabs Container -->
-            <div class="tabs-container">
-                <div class="tabs" id="tabsNav">
-                    <!-- Tabs will be loaded dynamically based on role -->
-                </div>
-
-                <div class="content">
-                    <!-- Dashboard Tab -->
+            <!-- Main Content Area (no duplicate tabs - using sidebar navigation) -->
+            <div class="content">
+                <!-- Dashboard Tab -->
                     <div id="dashboard-content" class="tab-content" style="display: block;">
                         <!-- Hero Section -->
                         <div style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%); border-radius: 24px; padding: 32px; margin-bottom: 32px; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
@@ -4355,27 +4350,9 @@
         }
 
         function setupDashboard() {
-            const tabsNav = document.getElementById('tabsNav');
-            
-            if (currentUser.role === 'MCA') {
-                    // MCA has FULL ACCESS - sees everything
-                    tabsNav.innerHTML = `
-                        <button class="tab active" onclick="showTab('issues')">Issues</button>
-                        <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
-                        <button class="tab" onclick="showTab('constituents')">Constituents</button>
-                        <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                        <button class="tab" onclick="showTab('ussd')">USSD Interactions</button>
-                        <button class="tab" onclick="showTab('users')">User Management</button>
-                    `;
-                } else {
-                // PA and CLERK have LIMITED ACCESS: Issues, Bursaries, Announcements only
-                // NO access to: Constituents, USSD Interactions, User Management
-                tabsNav.innerHTML = `
-                    <button class="tab active" onclick="showTab('issues')">Issues</button>
-                    <button class="tab" onclick="showTab('bursaries')">Bursaries</button>
-                    <button class="tab" onclick="showTab('announcements')">Announcements</button>
-                `;
-            }
+            // Top navigation tabs removed - using sidebar navigation only  
+            // All navigation now handled by sidebar links
+            // Skip tab setup since we use sidebar navigation
         }
 
         async function apiRequest(endpoint, options = {}) {
