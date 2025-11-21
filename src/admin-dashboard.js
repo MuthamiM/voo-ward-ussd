@@ -1413,33 +1413,47 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       return res.status(503).json({ error: "Database not connected" });
     }
     
-    const issues = await database.collection("issues")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
+    // Set proper headers first
+    res.header("Content-Type", "text/csv; charset=utf-8");
+    res.header("Content-Disposition", `attachment; filename="kyamatu-issues-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.header("Cache-Control", "no-cache");
     
-    // Include action metadata in export: action_by, action_at, action_note
-    let csv = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
-    issues.forEach(issue => {
+    // Start with UTF-8 BOM for Excel compatibility
+    const utf8Bom = '\uFEFF';
+    const headers = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
+    res.write(utf8Bom + headers);
+    
+    // Stream data in chunks to handle large datasets
+    const cursor = database.collection("issues")
+      .find({})
+      .sort({ created_at: -1 });
+    
+    let count = 0;
+    await cursor.forEach(issue => {
       const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
       const category = (issue.category || '').toString().replace(/"/g, '""');
-      const message = (issue.message || '').toString().replace(/"/g, '""');
+      const message = (issue.message || '').toString().replace(/"/g, '""').replace(/\n/g, ' ');
       const phone = (issue.phone_number || '').toString().replace(/"/g, '""');
       const status = (issue.status || '').toString().replace(/"/g, '""');
       const actionBy = (issue.action_by || '').toString().replace(/"/g, '""');
       const actionAt = issue.action_at ? new Date(issue.action_at).toISOString() : '';
-      const actionNote = (issue.action_note || '').toString().replace(/"/g, '""');
+      const actionNote = (issue.action_note || '').toString().replace(/"/g, '""').replace(/\n/g, ' ');
       const created = issue.created_at ? new Date(issue.created_at).toISOString() : '';
 
-      csv += `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`;
+      const line = `"${ticket}","${category}","${message}","${phone}","${status}","${actionBy}","${actionAt}","${actionNote}","${created}"\n`;
+      res.write(line);
+      count++;
     });
     
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=issues.csv");
-    res.send(csv);
+    console.log(`✅ Exported ${count} issues to CSV`);
+    res.end();
   } catch (err) {
     console.error("Error exporting issues:", err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.end(); // End the stream if headers already sent
+    }
   }
 });
 
@@ -1492,29 +1506,45 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     const database = await connectDB();
     if (!database) return res.status(503).json({ error: 'Database not connected' });
 
-    const interactions = await database.collection('ussd_interactions')
+    // Set proper headers
+    res.header('Content-Type', 'text/csv; charset=utf-8');
+    res.header('Content-Disposition', `attachment; filename="kyamatu-ussd-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.header('Cache-Control', 'no-cache');
+    
+    // Start with UTF-8 BOM and headers
+    const utf8Bom = '\uFEFF';
+    const headers = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
+    res.write(utf8Bom + headers);
+    
+    // Stream data
+    const cursor = database.collection('ussd_interactions')
       .find({})
-      .sort({ created_at: -1 })
-      .toArray();
+      .sort({ created_at: -1 });
 
-    let csv = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
-    interactions.forEach(i => {
+    let count = 0;
+    await cursor.forEach(i => {
       const phone = (i.phone_number || '').toString().replace(/"/g, '""');
-      const text = (i.text || '').toString().replace(/"/g, '""');
+      const text = (i.text || '').toString().replace(/"/g, '""').replace(/\n/g, ' ');
       const parsed = i.parsed_text ? JSON.stringify(i.parsed_text).replace(/"/g, '""') : '';
-      const response = (i.response || '').toString().replace(/"/g, '""');
+      const response = (i.response || '').toString().replace(/"/g, '""').replace(/\n/g, ' ');
       const ref = (i.ref_code || '').toString().replace(/"/g, '""');
       const ip = (i.ip || '').toString();
       const created = i.created_at ? new Date(i.created_at).toISOString() : '';
-      csv += `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
+      
+      const line = `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
+      res.write(line);
+      count++;
     });
 
-    res.header('Content-Type', 'text/csv');
-    res.header('Content-Disposition', 'attachment; filename=ussd_interactions.csv');
-    res.send(csv);
+    console.log(`✅ Exported ${count} USSD interactions to CSV`);
+    res.end();
   } catch (err) {
     console.error('Error exporting USSD interactions:', err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.end();
+    }
   }
 });
 
@@ -1526,22 +1556,45 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
       return res.status(503).json({ error: "Database not connected" });
     }
     
-    const bursaries = await database.collection("bursary_applications")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
+    // Set proper headers
+    res.header("Content-Type", "text/csv; charset=utf-8");
+    res.header("Content-Disposition", `attachment; filename="kyamatu-bursaries-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.header("Cache-Control", "no-cache");
     
-    let csv = "Ref Code,Student Name,School,Amount,Status,Phone,Created At\n";
-    bursaries.forEach(b => {
-      csv += `"${b.ref_code}","${b.student_name}","${b.institution}","${b.amount_requested}","${b.status}","${b.phone_number}","${b.created_at}"\n`;
+    // Start with UTF-8 BOM and headers
+    const utf8Bom = '\uFEFF';
+    const headers = "Ref Code,Student Name,School,Amount,Status,Phone,Created At\n";
+    res.write(utf8Bom + headers);
+    
+    // Stream data
+    const cursor = database.collection("bursary_applications")
+      .find({})
+      .sort({ created_at: -1 });
+    
+    let count = 0;
+    await cursor.forEach(b => {
+      const refCode = (b.ref_code || '').toString().replace(/"/g, '""');
+      const studentName = (b.student_name || '').toString().replace(/"/g, '""');
+      const school = (b.institution || '').toString().replace(/"/g, '""');
+      const amount = (b.amount_requested || '').toString().replace(/"/g, '""');
+      const status = (b.status || '').toString().replace(/"/g, '""');
+      const phone = (b.phone_number || '').toString().replace(/"/g, '""');
+      const created = b.created_at ? new Date(b.created_at).toISOString() : '';
+      
+      const line = `"${refCode}","${studentName}","${school}","${amount}","${status}","${phone}","${created}"\n`;
+      res.write(line);
+      count++;
     });
     
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=bursaries.csv");
-    res.send(csv);
+    console.log(`✅ Exported ${count} bursary applications to CSV`);
+    res.end();
   } catch (err) {
     console.error("Error exporting bursaries:", err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.end();
+    }
   }
 });
 
@@ -1553,22 +1606,44 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
       return res.status(503).json({ error: "Database not connected" });
     }
     
-    const constituents = await database.collection("constituents")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
+    // Set proper headers
+    res.header("Content-Type", "text/csv; charset=utf-8");
+    res.header("Content-Disposition", `attachment; filename="kyamatu-constituents-${new Date().toISOString().split('T')[0]}.csv"`);
+    res.header("Cache-Control", "no-cache");
     
-    let csv = "Phone,National ID,Full Name,Location,Village,Created At\n";
-    constituents.forEach(c => {
-      csv += `"${c.phone_number}","${c.national_id}","${c.full_name}","${c.location}","${c.village}","${c.created_at}"\n`;
+    // Start with UTF-8 BOM and headers
+    const utf8Bom = '\uFEFF';
+    const headers = "Phone,National ID,Full Name,Location,Village,Created At\n";
+    res.write(utf8Bom + headers);
+    
+    // Stream data
+    const cursor = database.collection("constituents")
+      .find({})
+      .sort({ created_at: -1 });
+    
+    let count = 0;
+    await cursor.forEach(c => {
+      const phone = (c.phone_number || '').toString().replace(/"/g, '""');
+      const nationalId = (c.national_id || '').toString().replace(/"/g, '""');
+      const fullName = (c.full_name || '').toString().replace(/"/g, '""');
+      const location = (c.location || '').toString().replace(/"/g, '""');
+      const village = (c.village || '').toString().replace(/"/g, '""');
+      const created = c.created_at ? new Date(c.created_at).toISOString() : '';
+      
+      const line = `"${phone}","${nationalId}","${fullName}","${location}","${village}","${created}"\n`;
+      res.write(line);
+      count++;
     });
     
-    res.header("Content-Type", "text/csv");
-    res.header("Content-Disposition", "attachment; filename=constituents.csv");
-    res.send(csv);
+    console.log(`✅ Exported ${count} constituents to CSV`);
+    res.end();
   } catch (err) {
     console.error("Error exporting constituents:", err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    } else {
+      res.end();
+    }
   }
 });
 
