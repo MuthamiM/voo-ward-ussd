@@ -988,6 +988,18 @@
             overflow: hidden;
         }
 
+        .sidebar.collapsed .brand-text {
+            opacity: 0;
+            transform: translateX(-20px);
+            width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .sidebar.collapsed .brand-logo {
+            justify-content: center;
+        }
+
         .sidebar.collapsed .sidebar-nav {
             padding: 80px 8px 20px;
         }
@@ -3913,9 +3925,8 @@
                         <button type="button" onclick="document.getElementById('profilePictureInput').click()" class="btn" style="width:100%; padding:14px 20px; font-size:14px; background:linear-gradient(135deg,#1d4ed8,#a855f7); border:none; border-radius:12px; transition:all 0.3s ease; color:white; font-weight:600; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; box-shadow:0 4px 12px rgba(29,78,216,0.3);">
                             Select Image
                         </button>
-                        <p style="font-size:12px; color:rgba(255,255,255,0.6); text-align:center; margin-top:8px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Supported: JPG, PNG, GIF (max 5MB)</p>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.6); text-align:center; margin-top:8px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;">Use the Settings tab to manage your profile</p>
                     </div>
-                    <button class="btn" onclick="uploadProfilePicture()" id="uploadProfileBtn" style="width:100%; margin-top:16px; padding:14px 20px; font-size:14px; background:linear-gradient(135deg,#10b981,#059669); border:none; border-radius:12px; color:white; font-weight:600; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; box-shadow:0 4px 12px rgba(16,185,129,0.3);">Upload Picture</button>
                 </div>
 
                 <!-- Password Section -->
