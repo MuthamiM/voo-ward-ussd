@@ -1055,7 +1055,7 @@
                     </div>
                 </div>
 
-                <!-- Other page contents will be loaded here dynamically -->
+                <!-- Add more page contents as needed -->
                 <div id="issuesContent" class="page-content" style="display: none;">
                     <h2>Issues Management</h2>
                     <p>Issues content will be loaded here...</p>
@@ -1066,14 +1066,284 @@
                     <p>Bursaries content will be loaded here...</p>
                 </div>
 
-                <!-- Add more page contents as needed -->
+                <div id="settingsContent" class="page-content" style="display: none;">
+                    <div style="max-width: 800px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Profile Settings</h2>
+                            </div>
+                            
+                            <!-- Profile Picture Section -->
+                            <div style="margin-bottom: 32px;">
+                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Profile Picture</h3>
+                                <div style="display: flex; align-items: center; gap: 20px;">
+                                    <div style="position: relative;">
+                                        <img id="currentProfilePic" src="/uploads/avatars/default-avatar.png" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                                        <div id="uploadIndicator" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--success); border-radius: 50%; border: 2px solid var(--surface); display: none; align-items: center; justify-content: center;">
+                                            <i class="fas fa-check" style="color: white; font-size: 12px;"></i>
+                                        </div>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
+                                        <button class="btn" onclick="document.getElementById('profilePictureInput').click()" id="uploadProfileBtn">
+                                            <i class="fas fa-upload"></i>
+                                            <span>Upload New Picture</span>
+                                        </button>
+                                        <p style="margin-top: 8px; font-size: 14px; color: var(--text-secondary);">
+                                            Supported formats: JPG, PNG, GIF. Max size: 5MB.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Information -->
+                            <div style="margin-bottom: 32px;">
+                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Account Information</h3>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                    <div class="form-group">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" id="fullNameInput" class="form-input" placeholder="Enter your full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" id="emailInput" class="form-input" placeholder="Enter your email">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="tel" id="phoneInput" class="form-input" placeholder="Enter your phone number">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Role</label>
+                                        <input type="text" id="roleInput" class="form-input" readonly>
+                                    </div>
+                                </div>
+                                <button class="btn" onclick="updateProfile()" id="updateProfileBtn" style="margin-top: 16px;">
+                                    <i class="fas fa-save"></i>
+                                    <span>Update Profile</span>
+                                </button>
+                            </div>
+
+                            <!-- Password Change -->
+                            <div style="margin-bottom: 32px;">
+                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Change Password</h3>
+                                <div style="max-width: 400px;">
+                                    <div class="form-group">
+                                        <label class="form-label">Current Password</label>
+                                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">New Password</label>
+                                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
+                                    </div>
+                                    <button class="btn" onclick="changePassword()" id="changePasswordBtn">
+                                        <i class="fas fa-lock"></i>
+                                        <span>Change Password</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- System Information -->
+                            <div style="margin-bottom: 32px;">
+                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">System Status</h3>
+                                <div id="systemStatus" style="padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--border);">
+                                    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                                        <div id="dbStatusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: var(--warning);"></div>
+                                        <span>Database Connectivity: <span id="dbStatusText">Checking...</span></span>
+                                    </div>
+                                    <button class="btn" onclick="refreshSystemStatus()" id="refreshStatusBtn" style="font-size: 14px; padding: 8px 16px;">
+                                        <i class="fas fa-refresh"></i>
+                                        <span>Refresh Status</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="announcementsContent" class="page-content" style="display: none;">
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Ward Announcements</h2>
+                                <button class="btn" onclick="showNewAnnouncementModal()">
+                                    <i class="fas fa-plus"></i>
+                                    <span>New Announcement</span>
+                                </button>
+                            </div>
+                            
+                            <div id="announcementsList" style="margin-top: 20px;">
+                                <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                                    <div class="loading"></div>
+                                    <p style="margin-top: 16px;">Loading announcements...</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- USSD News Preview -->
+                        <div class="dashboard-card" style="margin-top: 32px;">
+                            <div class="card-header">
+                                <h2 class="card-title">USSD News Preview</h2>
+                                <button class="btn" onclick="refreshNewsPreview()">
+                                    <i class="fas fa-refresh"></i>
+                                    <span>Refresh Preview</span>
+                                </button>
+                            </div>
+                            
+                            <div id="ussdNewsPreview" style="margin-top: 20px;">
+                                <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
+                                    This shows how announcements and resolved issues appear in the USSD news feed:
+                                </p>
+                                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--border);" id="ussdPreviewText">
+                                    Loading preview...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
 
+    <!-- AI Assistant Floating Button -->
+    <button id="floatingChatbotBtn" onclick="toggleChatbot()" style="position:fixed; right:24px; bottom:24px; width:52px; height:52px; border-radius:50%; border:none; background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 6px 20px rgba(99,102,241,0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:9400; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotPulse 2s ease-in-out infinite;" class="chatbot-button" onmouseover="this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 28px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.4)'">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
+            <circle cx="9" cy="10" r="1" fill="#6366f1"/>
+            <circle cx="12" cy="10" r="1" fill="#6366f1"/>
+            <circle cx="15" cy="10" r="1" fill="#6366f1"/>
+        </svg>
+    </button>
+
+    <!-- AI Assistant Modal -->
+    <div id="chatbotModal" style="display:none; position:fixed; right:20px; top:50%; transform:translateY(-50%); z-index:9500; pointer-events:none;" class="ai-assistant-container">
+        <div class="chatbot-modal" style="position:relative; margin:0; background:rgba(255,255,255,0.1); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:20px; padding:20px; box-shadow:0 25px 50px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.2); max-width:320px; width:320px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.2);">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:36px; height:36px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4);">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
+                            <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                            <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                        </svg>
+                    </div>
+                    <span style="font-family: 'Space Grotesk', sans-serif; font-weight:700; font-size:18px; letter-spacing:0.5px; color:var(--text);">AI Assistant</span>
+                </div>
+                <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)'">&times;</button>
+            </div>
+            <div id="chatbot-messages" style="flex:1; min-height:200px; max-height:300px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.05); border-radius:16px; border:1px solid rgba(255,255,255,0.1); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;"></div>
+            <div style="margin-top:12px; display:flex; gap:8px;">
+                <input id="chatbot-input" placeholder="Ask me anything..." style="flex:1; padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); font-size:14px; font-weight:400; color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backdrop-filter:blur(10px); transition:all 0.3s ease;" />
+                <button class="btn" onclick="sendChatbotMessage()" style="padding:12px 20px; border-radius:12px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:white; font-weight:600; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(99,102,241,0.4); font-size:13px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes chatbotPulse {
+            0%, 100% {
+                box-shadow: 0 8px 24px rgba(99,102,241,0.4), 0 0 0 0 rgba(99,102,241,0.7);
+            }
+            50% {
+                box-shadow: 0 8px 24px rgba(99,102,241,0.4), 0 0 0 20px rgba(99,102,241,0);
+            }
+        }
+
+        #floatingChatbotBtn:hover svg {
+            transform: scale(1.1);
+        }
+
+        /* Chat message styles */
+        .chat-row {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .chat-row.user {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            margin-left: 20px;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-row.bot {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            margin-right: 20px;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Scrollbar styling for chat */
+        #chatbot-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chatbot-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+
+        #chatbot-messages::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        #chatbot-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Quick action buttons in chat */
+        .chat-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .chat-actions button {
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .chat-actions button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #chatbotModal {
+                right: 10px !important;
+                top: auto !important;
+                bottom: 80px !important;
+                transform: none !important;
+            }
+            
+            .chatbot-modal {
+                max-width: 280px !important;
+                width: 280px !important;
+            }
+        }
+    </style>
+
     <script>
         // API Base URL
         const API_BASE = window.location.origin + '/admin';
+        console.log('API_BASE:', API_BASE);
+        console.log('Current location:', window.location.href);
         
         // Current user data
         let currentUser = null;
@@ -1107,6 +1377,7 @@
             loginError.innerHTML = '';
             
             try {
+                console.log('Attempting login to:', `${API_BASE}/api/auth/login`);
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1128,6 +1399,14 @@
                 
                 showApp();
                 loadDashboardData();
+                
+                // Show AI assistant button
+                setTimeout(() => {
+                    const chatbotBtn = document.getElementById('floatingChatbotBtn');
+                    if (chatbotBtn) {
+                        chatbotBtn.style.display = 'flex';
+                    }
+                }, 500);
                 
             } catch (error) {
                 loginError.innerHTML = `<div class="error-message">${error.message}</div>`;
@@ -1203,6 +1482,12 @@
                 case 'bursaries':
                     loadBursariesData();
                     break;
+                case 'settings':
+                    loadSettingsData();
+                    break;
+                case 'announcements':
+                    loadAnnouncementsData();
+                    break;
                 // Add more cases as needed
             }
         }
@@ -1257,6 +1542,727 @@
             // Clear form
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+        }
+
+        // ========================================
+        // AI ASSISTANT FUNCTIONALITY
+        // ========================================
+        function showChatbot() {
+            document.getElementById('chatbotModal').style.display = 'flex';
+            const panel = document.querySelector('.chatbot-modal');
+            if (panel) panel.style.display = 'flex';
+
+            const convo = document.getElementById('chatbot-messages');
+            if (!convo.children.length) {
+                appendChatMessage('bot', 'Hello! I can guide you through using this admin dashboard. Try: "how to resolve issues", "export data", "change password", or "check database status".');
+            }
+        }
+
+        function toggleChatbot() {
+            const modal = document.getElementById('chatbotModal');
+            const panel = document.querySelector('.chatbot-modal');
+            
+            modal.style.display = 'flex';
+            
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'flex';
+                const input = document.getElementById('chatbot-input');
+                if (input) {
+                    input.focus();
+                    input.onkeydown = function(e) { 
+                        if (e.key === 'Enter') { 
+                            e.preventDefault(); 
+                            sendChatbotMessage(); 
+                        } 
+                    };
+                }
+                // Show floating button
+                document.getElementById('floatingChatbotBtn').style.display = 'flex';
+            } else {
+                panel.style.display = 'none';
+                const input = document.getElementById('chatbot-input');
+                if (input) input.onkeydown = null;
+            }
+        }
+
+        function hideChatbot() {
+            const panel = document.querySelector('.chatbot-modal');
+            if (panel) panel.style.display = 'none';
+            const input = document.getElementById('chatbot-input');
+            if (input) input.onkeydown = null;
+        }
+
+        function appendChatMessage(who, text) {
+            const container = document.getElementById('chatbot-messages');
+            const messageEl = document.createElement('div');
+            messageEl.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
+            
+            if (who === 'bot') {
+                text = formatMaiReply(text);
+            }
+            
+            messageEl.innerHTML = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            container.appendChild(messageEl);
+
+            // Add action buttons for bot messages
+            if (who === 'bot') {
+                attachActionButtons(messageEl, text);
+            }
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function formatMaiReply(text) {
+            if (!text) return text;
+            try {
+                if (/—\s*Mai$|\-\s*Mai$|Mai\s*$/i.test(text.trim())) return text;
+                return text + ' — Mai';
+            } catch (e) { 
+                return text; 
+            }
+        }
+
+        function attachActionButtons(containerEl, text) {
+            const t = (text || '').toLowerCase();
+            const actions = [];
+            
+            if (t.includes('resolve') || t.includes('issues')) {
+                actions.push({ label: 'Open Issues', fn: () => navigateTo('issues') });
+            }
+            if (t.includes('export')) {
+                actions.push({ label: 'Export Data', fn: () => exportData('issues') });
+            }
+            if (t.includes('ussd')) {
+                actions.push({ label: 'Open USSD', fn: () => navigateTo('ussd') });
+            }
+            if (t.includes('password')) {
+                actions.push({ label: 'Settings', fn: () => navigateTo('settings') });
+            }
+            if (t.includes('database') || t.includes('connectivity')) {
+                actions.push({ label: 'Check DB', fn: () => checkDatabaseConnectivity() });
+            }
+
+            if (!actions.length) return;
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chat-actions';
+
+            actions.forEach(action => {
+                const button = document.createElement('button');
+                button.textContent = action.label;
+                button.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    action.fn(); 
+                };
+                wrapper.appendChild(button);
+            });
+
+            containerEl.appendChild(wrapper);
+        }
+
+        async function sendChatbotMessage() {
+            const input = document.getElementById('chatbot-input');
+            const text = (input.value || '').trim();
+            if (!text) return;
+            
+            appendChatMessage('user', text);
+            input.value = '';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/chatbot`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ message: text })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data && data.reply) {
+                    appendChatMessage('bot', data.reply);
+                } else {
+                    appendChatMessage('bot', 'Sorry, I didn\'t understand that. Try asking about dashboard features, issues management, or data export.');
+                }
+                
+            } catch (error) {
+                console.error('Chatbot error:', error);
+                // Provide helpful responses for common queries offline
+                const fallbackResponse = getFallbackResponse(text.toLowerCase());
+                appendChatMessage('bot', fallbackResponse);
+            }
+        }
+
+        function getFallbackResponse(query) {
+            if (query.includes('issue') || query.includes('resolve')) {
+                return 'To manage issues, click on "Issues" in the sidebar. You can view, update status, and resolve reported problems from constituents.';
+            } else if (query.includes('export') || query.includes('download')) {
+                return 'You can export data by navigating to the relevant section (Issues, Bursaries, etc.) and using the export functionality.';
+            } else if (query.includes('password') || query.includes('change')) {
+                return 'To change your password, go to Settings in the sidebar and use the password change form.';
+            } else if (query.includes('database') || query.includes('connect')) {
+                return 'Database connectivity can be checked through the system status. All data is stored securely in MongoDB Atlas.';
+            } else if (query.includes('help')) {
+                return 'I can help with: managing issues, exporting data, changing passwords, checking system status, and navigating the dashboard.';
+            } else {
+                return 'I can help you with dashboard navigation, issue management, data export, and system settings. What would you like to know?';
+            }
+        }
+
+        // ========================================
+        // DATABASE CONNECTIVITY CHECK
+        // ========================================
+        async function checkDatabaseConnectivity() {
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/health`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Health check failed');
+                }
+                
+                const health = await response.json();
+                
+                if (health.database === 'connected') {
+                    appendChatMessage('bot', '✅ Database connectivity is healthy! MongoDB Atlas connection is active and all systems are operational.');
+                } else {
+                    appendChatMessage('bot', '⚠️ Database connectivity issue detected. Please check system status or contact support.');
+                }
+                
+            } catch (error) {
+                appendChatMessage('bot', '❌ Unable to check database connectivity at the moment. Please try again later.');
+                console.error('Database check error:', error);
+            }
+        }
+
+        // Show AI assistant button on dashboard load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Show chatbot button after login
+            setTimeout(() => {
+                const chatbotBtn = document.getElementById('floatingChatbotBtn');
+                if (chatbotBtn && authToken) {
+                    chatbotBtn.style.display = 'flex';
+                }
+            }, 1000);
+        });
+
+        // ========================================
+        // PROFILE & SETTINGS MANAGEMENT
+        // ========================================
+        
+        async function loadSettingsData() {
+            try {
+                // Load current user profile data
+                if (currentUser) {
+                    document.getElementById('fullNameInput').value = currentUser.fullName || '';
+                    document.getElementById('emailInput').value = currentUser.email || '';
+                    document.getElementById('phoneInput').value = currentUser.phone || '';
+                    document.getElementById('roleInput').value = currentUser.role || 'Administrator';
+                    
+                    // Load profile picture if available
+                    if (currentUser.profilePicture) {
+                        document.getElementById('currentProfilePic').src = currentUser.profilePicture;
+                    }
+                }
+                
+                // Check system status
+                refreshSystemStatus();
+                
+            } catch (error) {
+                console.error('Error loading settings:', error);
+            }
+        }
+
+        async function uploadProfilePicture(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Validate file
+            if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
+                alert('Please select a valid image file (JPG, PNG, or GIF).');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB.');
+                return;
+            }
+
+            const uploadBtn = document.getElementById('uploadProfileBtn');
+            const indicator = document.getElementById('uploadIndicator');
+            
+            // Show loading state
+            uploadBtn.innerHTML = '<div class="loading"></div> Uploading...';
+            uploadBtn.disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('profilePicture', file);
+
+                const response = await fetch(`${API_BASE}/api/admin/profile/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+
+                const result = await response.json();
+                
+                // Update profile picture
+                document.getElementById('currentProfilePic').src = result.profilePicture;
+                
+                // Show success indicator
+                indicator.style.display = 'flex';
+                setTimeout(() => {
+                    indicator.style.display = 'none';
+                }, 3000);
+
+                // Update user data
+                if (currentUser) {
+                    currentUser.profilePicture = result.profilePicture;
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                }
+
+                showToast('Profile picture updated successfully!', 'success');
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showToast('Failed to upload profile picture. Please try again.', 'error');
+            } finally {
+                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> <span>Upload New Picture</span>';
+                uploadBtn.disabled = false;
+            }
+        }
+
+        async function updateProfile() {
+            const updateBtn = document.getElementById('updateProfileBtn');
+            
+            const profileData = {
+                fullName: document.getElementById('fullNameInput').value.trim(),
+                email: document.getElementById('emailInput').value.trim(),
+                phone: document.getElementById('phoneInput').value.trim()
+            };
+
+            // Basic validation
+            if (!profileData.fullName) {
+                showToast('Full name is required', 'error');
+                return;
+            }
+
+            if (profileData.email && !validateEmail(profileData.email)) {
+                showToast('Please enter a valid email address', 'error');
+                return;
+            }
+
+            updateBtn.innerHTML = '<div class="loading"></div> Updating...';
+            updateBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Update failed');
+                }
+
+                const result = await response.json();
+                
+                // Update stored user data
+                if (currentUser) {
+                    Object.assign(currentUser, profileData);
+                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    
+                    // Update header display
+                    document.getElementById('userName').textContent = profileData.fullName || currentUser.username;
+                }
+
+                showToast('Profile updated successfully!', 'success');
+
+            } catch (error) {
+                console.error('Update error:', error);
+                showToast(error.message, 'error');
+            } finally {
+                updateBtn.innerHTML = '<i class="fas fa-save"></i> <span>Update Profile</span>';
+                updateBtn.disabled = false;
+            }
+        }
+
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const changeBtn = document.getElementById('changePasswordBtn');
+
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('All password fields are required', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('New password must be at least 6 characters long', 'error');
+                return;
+            }
+
+            changeBtn.innerHTML = '<div class="loading"></div> Changing...';
+            changeBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/change-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Password change failed');
+                }
+
+                // Clear password fields
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
+
+                showToast('Password changed successfully!', 'success');
+
+            } catch (error) {
+                console.error('Password change error:', error);
+                showToast(error.message, 'error');
+            } finally {
+                changeBtn.innerHTML = '<i class="fas fa-lock"></i> <span>Change Password</span>';
+                changeBtn.disabled = false;
+            }
+        }
+
+        async function refreshSystemStatus() {
+            const indicator = document.getElementById('dbStatusIndicator');
+            const statusText = document.getElementById('dbStatusText');
+            const refreshBtn = document.getElementById('refreshStatusBtn');
+
+            refreshBtn.innerHTML = '<div class="loading"></div> Checking...';
+            refreshBtn.disabled = true;
+            statusText.textContent = 'Checking...';
+            indicator.style.background = 'var(--warning)';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/health`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Health check failed');
+                }
+
+                const health = await response.json();
+                
+                if (health.database === 'connected') {
+                    indicator.style.background = 'var(--success)';
+                    statusText.textContent = `Connected (${health.details.collections} collections, ${health.details.latency}ms)`;
+                } else {
+                    indicator.style.background = 'var(--error)';
+                    statusText.textContent = 'Disconnected';
+                }
+
+            } catch (error) {
+                console.error('System status error:', error);
+                indicator.style.background = 'var(--error)';
+                statusText.textContent = 'Error checking status';
+            } finally {
+                refreshBtn.innerHTML = '<i class="fas fa-refresh"></i> <span>Refresh Status</span>';
+                refreshBtn.disabled = false;
+            }
+        }
+
+        function showToast(message, type = 'info') {
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 20px;
+                border-radius: 12px;
+                color: white;
+                font-weight: 500;
+                z-index: 10000;
+                max-width: 300px;
+                animation: slideInRight 0.3s ease;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            `;
+
+            // Set background based on type
+            switch (type) {
+                case 'success':
+                    toast.style.background = 'linear-gradient(135deg, var(--success), #059669)';
+                    break;
+                case 'error':
+                    toast.style.background = 'linear-gradient(135deg, var(--error), #dc2626)';
+                    break;
+                case 'warning':
+                    toast.style.background = 'linear-gradient(135deg, var(--warning), #d97706)';
+                    break;
+                default:
+                    toast.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
+            }
+
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOutRight 0.3s ease';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // ========================================
+        // ANNOUNCEMENTS MANAGEMENT
+        // ========================================
+        
+        async function loadAnnouncementsData() {
+            await loadAnnouncements();
+            await refreshNewsPreview();
+        }
+
+        async function loadAnnouncements() {
+            const container = document.getElementById('announcementsList');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/announcements`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load announcements');
+                }
+
+                const announcements = await response.json();
+                
+                if (announcements.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fas fa-bullhorn" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <h3 style="margin-bottom: 8px;">No Announcements Yet</h3>
+                            <p>Create your first ward announcement to get started.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = announcements.map(announcement => `
+                    <div class="announcement-item" style="border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 16px; background: rgba(255,255,255,0.02);">
+                        <div style="display: flex; justify-content: between; align-items: start; gap: 16px;">
+                            <div style="flex: 1;">
+                                <h4 style="margin-bottom: 8px; font-weight: 600; color: var(--text);">
+                                    ${announcement.title || 'Ward Announcement'}
+                                </h4>
+                                <p style="margin-bottom: 12px; color: var(--text-secondary); line-height: 1.5;">
+                                    ${announcement.body || announcement.content || 'No content'}
+                                </p>
+                                <div style="display: flex; gap: 16px; font-size: 14px; color: var(--text-muted);">
+                                    <span><i class="fas fa-calendar"></i> ${new Date(announcement.created_at).toLocaleDateString()}</span>
+                                    <span><i class="fas fa-user"></i> ${announcement.created_by || 'Admin'}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn" onclick="editAnnouncement('${announcement._id}')" style="padding: 8px 12px; font-size: 12px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn" onclick="deleteAnnouncement('${announcement._id}')" style="padding: 8px 12px; font-size: 12px; background: var(--error);">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading announcements:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--error);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                        <h3>Error Loading Announcements</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function refreshNewsPreview() {
+            const previewContainer = document.getElementById('ussdPreviewText');
+            previewContainer.textContent = 'Loading preview...';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/ussd/news/1`);
+                const newsData = await response.json();
+
+                previewContainer.textContent = newsData.message || 'No news available';
+
+            } catch (error) {
+                console.error('Error loading news preview:', error);
+                previewContainer.textContent = 'Error loading preview: ' + error.message;
+            }
+        }
+
+        function showNewAnnouncementModal() {
+            // Create and show announcement modal
+            const modal = document.createElement('div');
+            modal.id = 'announcementModal';
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            modal.innerHTML = `
+                <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border-radius: 20px; padding: 32px; max-width: 500px; width: 90%; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--text);">New Announcement</h3>
+                        <button onclick="closeAnnouncementModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">Title</label>
+                        <input type="text" id="announcementTitle" class="form-input" placeholder="Enter announcement title" required>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label class="form-label">Content</label>
+                        <textarea id="announcementContent" class="form-input" rows="4" placeholder="Enter announcement content" required style="resize: vertical;"></textarea>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button onclick="closeAnnouncementModal()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); cursor: pointer;">Cancel</button>
+                        <button onclick="createAnnouncement()" id="createAnnouncementBtn" class="btn">
+                            <i class="fas fa-plus"></i>
+                            <span>Create Announcement</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            document.getElementById('announcementTitle').focus();
+        }
+
+        function closeAnnouncementModal() {
+            const modal = document.getElementById('announcementModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function createAnnouncement() {
+            const title = document.getElementById('announcementTitle').value.trim();
+            const content = document.getElementById('announcementContent').value.trim();
+            const createBtn = document.getElementById('createAnnouncementBtn');
+
+            if (!title || !content) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+
+            createBtn.innerHTML = '<div class="loading"></div> Creating...';
+            createBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/announcements`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ title, body: content })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to create announcement');
+                }
+
+                showToast('Announcement created successfully!', 'success');
+                closeAnnouncementModal();
+                await loadAnnouncements();
+                await refreshNewsPreview();
+
+            } catch (error) {
+                console.error('Error creating announcement:', error);
+                showToast(error.message, 'error');
+            } finally {
+                createBtn.innerHTML = '<i class="fas fa-plus"></i> <span>Create Announcement</span>';
+                createBtn.disabled = false;
+            }
+        }
+
+        async function deleteAnnouncement(id) {
+            if (!confirm('Are you sure you want to delete this announcement?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/announcements/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to delete announcement');
+                }
+
+                showToast('Announcement deleted successfully!', 'success');
+                await loadAnnouncements();
+                await refreshNewsPreview();
+
+            } catch (error) {
+                console.error('Error deleting announcement:', error);
+                showToast(error.message, 'error');
+            }
         }
 
         // Smooth page transitions

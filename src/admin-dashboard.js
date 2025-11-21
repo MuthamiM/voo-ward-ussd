@@ -62,7 +62,7 @@ app.use((req, res, next) => {
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   // Content Security Policy - Allow external resources for maps, fonts, and charts
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https:;");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https:;");
   next();
 });
 
@@ -469,6 +469,57 @@ app.get("/health", (req, res) => {
     ts: new Date().toISOString(),
     db: db ? "connected" : "disconnected"
   });
+});
+
+// Admin health check with detailed system status
+app.get("/api/admin/health", requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    
+    // Test database connectivity
+    let dbStatus = {
+      connected: false,
+      collections: 0,
+      latency: 0
+    };
+    
+    if (database) {
+      const startTime = Date.now();
+      try {
+        const collections = await database.listCollections().toArray();
+        dbStatus = {
+          connected: true,
+          collections: collections.length,
+          latency: Date.now() - startTime,
+          database: "MongoDB Atlas"
+        };
+      } catch (error) {
+        console.error('Database test failed:', error);
+        dbStatus.error = error.message;
+      }
+    }
+    
+    // System status
+    const systemStatus = {
+      service: "VOO Ward Admin Dashboard",
+      version: "2.0.0",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      database: dbStatus.connected ? "connected" : "disconnected",
+      details: dbStatus
+    };
+    
+    res.json(systemStatus);
+    
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ 
+      error: "Health check failed", 
+      database: "disconnected",
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // ============================================
@@ -923,6 +974,173 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   } catch (err) {
     console.error("Error fetching announcements:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Get USSD news feed (announcements + recent issue updates)
+app.get("/api/ussd/news", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const newsItems = [];
+    
+    // Get recent announcements (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    
+    const announcements = await database.collection("announcements")
+      .find({ created_at: { $gte: sevenDaysAgo } })
+      .sort({ created_at: -1 })
+      .limit(5)
+      .toArray();
+    
+    // Add announcements to news feed
+    announcements.forEach(announcement => {
+      newsItems.push({
+        type: 'announcement',
+        title: announcement.title || 'Ward Announcement',
+        content: announcement.body || announcement.content,
+        date: announcement.created_at,
+        priority: 'high'
+      });
+    });
+    
+    // Get recent issue resolutions (last 7 days)
+    const resolvedIssues = await database.collection("issues")
+      .find({ 
+        status: 'Resolved',
+        action_at: { $gte: sevenDaysAgo }
+      })
+      .sort({ action_at: -1 })
+      .limit(5)
+      .toArray();
+    
+    // Add resolved issues to news feed
+    resolvedIssues.forEach(issue => {
+      const categoryName = issue.category || 'General Issue';
+      const location = issue.location || 'Ward Area';
+      
+      newsItems.push({
+        type: 'issue_resolved',
+        title: `${categoryName} Issue Resolved`,
+        content: `Issue in ${location} has been resolved. Ref: ${issue.ticket}`,
+        date: issue.action_at || issue.updated_at,
+        priority: 'medium',
+        category: issue.category
+      });
+    });
+    
+    // Get recently published projects or updates
+    const recentProjects = await database.collection("projects")
+      .find({ 
+        status: { $in: ['Active', 'Completed'] },
+        updated_at: { $gte: sevenDaysAgo }
+      })
+      .sort({ updated_at: -1 })
+      .limit(3)
+      .toArray()
+      .catch(() => []); // Projects collection might not exist
+    
+    recentProjects.forEach(project => {
+      newsItems.push({
+        type: 'project_update',
+        title: `Project Update: ${project.name || 'Ward Development'}`,
+        content: project.description || project.status,
+        date: project.updated_at,
+        priority: 'low'
+      });
+    });
+    
+    // Sort all news items by date (newest first)
+    newsItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
+    // Limit to top 10 items
+    const limitedNews = newsItems.slice(0, 10);
+    
+    res.json({
+      success: true,
+      news: limitedNews,
+      total: limitedNews.length,
+      lastUpdated: new Date().toISOString()
+    });
+    
+  } catch (err) {
+    console.error("Error fetching USSD news:", err);
+    res.status(500).json({ error: "Failed to fetch news" });
+  }
+});
+
+// Get paginated news for USSD (text-optimized)
+app.get("/api/ussd/news/:page", async (req, res) => {
+  try {
+    const page = parseInt(req.params.page) || 1;
+    const limit = 3; // Show 3 items per USSD page
+    
+    const newsResponse = await fetch(`${req.protocol}://${req.get('host')}/api/ussd/news`);
+    const newsData = await newsResponse.json();
+    
+    if (!newsData.success) {
+      throw new Error('Failed to fetch news');
+    }
+    
+    const allNews = newsData.news;
+    const totalPages = Math.ceil(allNews.length / limit);
+    const startIndex = (page - 1) * limit;
+    const pageNews = allNews.slice(startIndex, startIndex + limit);
+    
+    if (pageNews.length === 0) {
+      return res.json({
+        message: "No news available",
+        hasMore: false,
+        page,
+        totalPages: 0
+      });
+    }
+    
+    // Format for USSD display
+    let ussdText = `=== WARD NEWS (${page}/${totalPages}) ===\n\n`;
+    
+    pageNews.forEach((item, index) => {
+      const itemNumber = startIndex + index + 1;
+      const date = new Date(item.date).toLocaleDateString();
+      
+      ussdText += `${itemNumber}. ${item.title}\n`;
+      
+      // Truncate content for USSD
+      let content = item.content || '';
+      if (content.length > 100) {
+        content = content.substring(0, 97) + '...';
+      }
+      
+      ussdText += `${content}\n`;
+      ussdText += `Date: ${date}\n\n`;
+    });
+    
+    if (page < totalPages) {
+      ussdText += `Reply with ${page + 1} for more news`;
+    } else {
+      ussdText += "No more news items";
+    }
+    
+    res.json({
+      message: ussdText,
+      hasMore: page < totalPages,
+      page,
+      totalPages,
+      items: pageNews.length
+    });
+    
+  } catch (err) {
+    console.error("Error fetching USSD news page:", err);
+    res.json({
+      message: "News service temporarily unavailable",
+      hasMore: false,
+      page: 1,
+      totalPages: 0
+    });
   }
 });
 
@@ -1505,6 +1723,131 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
   } catch (e) {
     console.error('Error deleting avatar', e && e.message);
     res.status(500).json({ error: 'failed to remove avatar' });
+  }
+});
+
+// Profile picture upload endpoint
+app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+
+    const userId = new ObjectId(req.user.id);
+    
+    let finalPath = `/uploads/avatars/${req.file.filename}`;
+    
+    // Process image if sharp is available
+    if (sharp) {
+      try {
+        const originalPath = path.join(UPLOADS_DIR, req.file.filename);
+        const base = path.basename(req.file.filename, path.extname(req.file.filename));
+        const processedName = `${base}-profile.jpg`;
+        const processedPath = path.join(UPLOADS_DIR, processedName);
+        
+        // Resize and optimize
+        await sharp(originalPath)
+          .resize(256, 256, { fit: 'cover' })
+          .jpeg({ quality: 80 })
+          .toFile(processedPath);
+        
+        // Remove original
+        fs.unlinkSync(originalPath);
+        
+        finalPath = `/uploads/avatars/${processedName}`;
+      } catch (imgErr) {
+        console.warn('Image processing failed:', imgErr.message);
+      }
+    }
+    
+    // Update user's profile picture in database
+    await database.collection('admin_users').updateOne(
+      { _id: userId },
+      { $set: { profilePicture: finalPath, updatedAt: new Date() } }
+    );
+    
+    // Update session
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.id === req.user.id) {
+        sess.user.profilePicture = finalPath;
+        sessions.set(token, sess);
+      }
+    }
+    
+    res.json({ 
+      success: true, 
+      profilePicture: finalPath,
+      message: 'Profile picture updated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Profile picture upload error:', error);
+    res.status(500).json({ error: 'Failed to upload profile picture' });
+  }
+});
+
+// Update profile information (PUT)
+app.put('/api/admin/profile', requireAuth, async (req, res) => {
+  try {
+    const { fullName, email, phone } = req.body;
+    
+    // Validate inputs
+    if (fullName && (typeof fullName !== 'string' || fullName.trim().length === 0)) {
+      return res.status(400).json({ error: 'Invalid full name' });
+    }
+    
+    if (email && !validateEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
+    }
+    
+    if (phone && !validatePhone(phone)) {
+      return res.status(400).json({ error: 'Invalid phone number' });
+    }
+    
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: 'Database not connected' });
+    }
+    
+    const userId = new ObjectId(req.user.id);
+    const updateData = { updatedAt: new Date() };
+    
+    if (fullName) updateData.fullName = sanitizeString(fullName.trim());
+    if (email) updateData.email = sanitizeString(email.trim().toLowerCase());
+    if (phone) updateData.phone = sanitizeString(phone.trim());
+    
+    // Update user in database
+    const result = await database.collection('admin_users').updateOne(
+      { _id: userId },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Update session
+    for (const [token, sess] of sessions.entries()) {
+      if (sess.user && sess.user.id === req.user.id) {
+        Object.assign(sess.user, updateData);
+        sessions.set(token, sess);
+      }
+    }
+    
+    res.json({ 
+      success: true,
+      message: 'Profile updated successfully',
+      user: { ...req.user, ...updateData }
+    });
+    
+  } catch (error) {
+    console.error('Profile update error:', error);
+    res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 

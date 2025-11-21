@@ -45,19 +45,89 @@ router.post('/', async (req, res) => {
     if (state.step === 'menu') {
       // Top-level menu. We'll accept '1' for something else and '2' for bursary check.
       if (!text) {
-        const menu = 'Welcome to VOO Service:\n1. Main Menu\n2. Check Bursary Status\nReply with option number';
+        const menu = 'Welcome to VOO Ward Services:\n1. Check Bursary Status\n2. View Ward News\n3. Report Issue\nReply with option number';
         sessions.set(sessionId, { step: 'menu' });
         return sendUssdResponse(res, menu, false);
       }
 
-      if (text === '2' || /check/i.test(text)) {
+      if (text === '1') {
         sessions.set(sessionId, { step: 'awaiting_ref' });
         return sendUssdResponse(res, 'Please enter your bursary reference code:', false);
       }
 
+      if (text === '2') {
+        // Show ward news
+        try {
+          const baseUrl = req.protocol + '://' + req.get('host');
+          const newsResponse = await fetch(`${baseUrl}/api/ussd/news/1`);
+          const newsData = await newsResponse.json();
+          
+          let newsMessage = newsData.message || 'No news available';
+          
+          if (newsData.hasMore) {
+            sessions.set(sessionId, { step: 'news_pagination', page: 1, totalPages: newsData.totalPages });
+            newsMessage += '\n\nReply with NEXT for more news or 0 to go back';
+          } else {
+            newsMessage += '\n\nReply with 0 to return to main menu';
+            sessions.set(sessionId, { step: 'news_end' });
+          }
+          
+          return sendUssdResponse(res, newsMessage, false);
+        } catch (error) {
+          console.error('News fetch error:', error);
+          return sendUssdResponse(res, 'News service temporarily unavailable. Please try again later.', true);
+        }
+      }
+
+      if (text === '3') {
+        return sendUssdResponse(res, 'Issue reporting feature coming soon. Please contact your ward office for urgent matters.', true);
+      }
+
       // Unknown option -> re-show menu
       sessions.set(sessionId, { step: 'menu' });
-      return sendUssdResponse(res, 'Invalid option. Reply 2 to check bursary status.', false);
+      return sendUssdResponse(res, 'Invalid option. Reply 1 for Bursary, 2 for News, 3 for Issues.', false);
+    }
+
+    if (state.step === 'news_pagination') {
+      if (text.toLowerCase() === 'next' || text === '1') {
+        const nextPage = state.page + 1;
+        try {
+          const baseUrl = req.protocol + '://' + req.get('host');
+          const newsResponse = await fetch(`${baseUrl}/api/ussd/news/${nextPage}`);
+          const newsData = await newsResponse.json();
+          
+          let newsMessage = newsData.message || 'No more news available';
+          
+          if (newsData.hasMore) {
+            sessions.set(sessionId, { step: 'news_pagination', page: nextPage, totalPages: newsData.totalPages });
+            newsMessage += '\n\nReply with NEXT for more news or 0 to go back';
+          } else {
+            newsMessage += '\n\nEnd of news. Reply 0 to return to main menu';
+            sessions.set(sessionId, { step: 'news_end' });
+          }
+          
+          return sendUssdResponse(res, newsMessage, false);
+        } catch (error) {
+          console.error('News pagination error:', error);
+          return sendUssdResponse(res, 'Error loading more news. Reply 0 to return to main menu.', false);
+        }
+      } else if (text === '0') {
+        sessions.set(sessionId, { step: 'menu' });
+        const menu = 'Welcome to VOO Ward Services:\n1. Check Bursary Status\n2. View Ward News\n3. Report Issue\nReply with option number';
+        return sendUssdResponse(res, menu, false);
+      } else {
+        return sendUssdResponse(res, 'Reply with NEXT for more news or 0 to return to main menu.', false);
+      }
+    }
+
+    if (state.step === 'news_end') {
+      if (text === '0') {
+        sessions.set(sessionId, { step: 'menu' });
+        const menu = 'Welcome to VOO Ward Services:\n1. Check Bursary Status\n2. View Ward News\n3. Report Issue\nReply with option number';
+        return sendUssdResponse(res, menu, false);
+      } else {
+        return sendUssdResponse(res, 'Reply with 0 to return to main menu.', false);
+      }
     }
 
     if (state.step === 'awaiting_ref') {
