@@ -471,6 +471,15 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Admin health check (simple)
+app.get("/api/health", (req, res) => {
+  res.json({ 
+    ok: true, 
+    service: "admin-api", 
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Admin health check with detailed system status
 app.get("/api/admin/health", requireAuth, async (req, res) => {
   try {
@@ -528,31 +537,39 @@ app.get("/api/admin/health", requireAuth, async (req, res) => {
 
 // Login
 app.post("/api/auth/login", loginLimiter, async (req, res) => {
+  console.log('🔐 Login attempt received:', req.body ? 'with body' : 'no body');
+  console.log('🔐 Request headers:', req.headers);
+  console.log('🔐 Request IP:', req.ip);
+  
   try {
     const { username, password } = req.body;
     
     if (!username || !password) {
+      console.log('❌ Missing credentials in login request');
       return res.status(400).json({ error: "Username and password required" });
     }
     
     // Validate input format
     if (!validateUsername(username)) {
+      console.log('❌ Invalid username format:', username);
       return res.status(400).json({ error: "Invalid username format" });
     }
     
     if (!validatePassword(password)) {
+      console.log('❌ Invalid password format');
       return res.status(400).json({ error: "Invalid password format" });
     }
     
+    console.log('🔄 Connecting to database for authentication...');
     const database = await connectDB();
     
     // When database is not connected, require DB for authentication.
     if (!database) {
-      console.error('Database not connected - authentication requires a configured database');
+      console.error('❌ Database not connected - authentication requires a configured database');
       return res.status(503).json({ error: 'Database not connected' });
     }
     
-    console.log(`Login attempt for user: ${sanitizeString(username, 50)}`);
+    console.log(`🔍 Login attempt for user: ${sanitizeString(username, 50)}`);
     
     // PRODUCTION: Use database authentication
     // Find user
@@ -561,9 +578,11 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
     });
 
     if (!user) {
-      console.warn(`Failed login attempt for unknown user '${username}' from ${req.ip}`);
+      console.warn(`⚠️  Failed login attempt for unknown user '${username}' from ${req.ip}`);
       return res.status(401).json({ error: "Invalid username or password" });
     }
+
+    console.log('✅ User found in database:', user.username);
 
     // Support both bcrypt (new) and legacy SHA-256 passwords.
     let passwordMatches = false;
