@@ -58,8 +58,8 @@ app.use((req, res, next) => {
   res.setHeader('X-XSS-Protection', '1; mode=block');
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Content Security Policy
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:;");
+  // Content Security Policy - Allow external resources for maps, fonts, and charts
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https:;");
   next();
 });
 
@@ -111,6 +111,10 @@ try {
   // @aws-sdk/client-s3 not installed or not configured
 }
 
+
+// Enhanced error handling middleware
+const errorHandler = require('./middleware/errorHandler');
+const redisCache = require('./services/redisCache');
 
 // Simple session storage (in production, use Redis or proper session management)
 const sessions = new Map();
@@ -296,30 +300,125 @@ async function connectDB(retries = 3) {
 // Create database indexes for performance
 async function createIndexes(database) {
   try {
-    // Admin users indexes
-    await database.collection('admin_users').createIndex({ username: 1 }, { unique: true });
-    await database.collection('admin_users').createIndex({ role: 1 });
+    console.log("🚀 Creating comprehensive database indexes for production optimization...");
     
-    // Issues indexes
-    await database.collection('issues').createIndex({ status: 1 });
-    await database.collection('issues').createIndex({ created_at: -1 });
-    await database.collection('issues').createIndex({ phone_number: 1 });
+    // ===============================
+    // ADMIN USERS COLLECTION - Enhanced for query patterns
+    // ===============================
+    await database.collection('admin_users').createIndex({ username: 1 }, { unique: true, name: "unique_username" });
+    await database.collection('admin_users').createIndex({ role: 1, status: 1 }, { name: "role_status_compound" });
+    await database.collection('admin_users').createIndex({ last_login: -1 }, { name: "last_login_desc" });
+    await database.collection('admin_users').createIndex({ created_at: -1 }, { name: "admin_created_desc" });
     
-    // Bursaries indexes
-    await database.collection('bursaries').createIndex({ status: 1 });
-    await database.collection('bursaries').createIndex({ created_at: -1 });
+    // Text search for admin management
+    await database.collection('admin_users').createIndex(
+      { username: "text", full_name: "text", email: "text" },
+      { name: "admin_text_search", weights: { username: 10, full_name: 5, email: 1 } }
+    );
     
-    // Constituents indexes
-    await database.collection('constituents').createIndex({ phone_number: 1 }, { unique: true });
-    await database.collection('constituents').createIndex({ national_id: 1 });
+    // ===============================
+    // ISSUES COLLECTION - Optimized for dashboard queries
+    // ===============================
+    await database.collection('issues').createIndex({ status: 1, created_at: -1 }, { name: "status_date_compound" });
+    await database.collection('issues').createIndex({ phone_number: 1, created_at: -1 }, { name: "phone_date_compound" });
+    await database.collection('issues').createIndex({ assigned_to: 1, status: 1 }, { name: "assigned_status_compound" });
+    await database.collection('issues').createIndex({ priority: -1, created_at: -1 }, { name: "priority_date_compound" });
+    await database.collection('issues').createIndex({ area_id: 1, status: 1, created_at: -1 }, { name: "area_status_date_compound" });
     
-    // USSD interactions indexes
-    await database.collection('ussd_interactions').createIndex({ created_at: -1 });
-    await database.collection('ussd_interactions').createIndex({ phone_number: 1 });
+    // Text search for issue management
+    await database.collection('issues').createIndex(
+      { title: "text", description: "text", phone_number: "text" },
+      { name: "issues_text_search", weights: { title: 10, description: 5, phone_number: 3 } }
+    );
     
-    console.log("✅ Database indexes created/verified");
+    // Geospatial index for location-based queries
+    await database.collection('issues').createIndex({ location: "2dsphere" }, { name: "issues_geospatial" });
+    
+    // ===============================
+    // BURSARIES COLLECTION - Enhanced for application management
+    // ===============================
+    await database.collection('bursaries').createIndex({ status: 1, created_at: -1 }, { name: "bursary_status_date_compound" });
+    await database.collection('bursaries').createIndex({ phone_number: 1, status: 1 }, { name: "bursary_phone_status_compound" });
+    await database.collection('bursaries').createIndex({ national_id: 1 }, { unique: true, sparse: true, name: "bursary_unique_national_id" });
+    await database.collection('bursaries').createIndex({ application_date: -1 }, { name: "bursary_application_date" });
+    await database.collection('bursaries').createIndex({ review_date: -1 }, { sparse: true, name: "bursary_review_date" });
+    await database.collection('bursaries').createIndex({ amount: -1, status: 1 }, { name: "bursary_amount_status" });
+    
+    // Text search for bursary applications
+    await database.collection('bursaries').createIndex(
+      { full_name: "text", school_name: "text", phone_number: "text" },
+      { name: "bursary_text_search", weights: { full_name: 10, school_name: 5, phone_number: 3 } }
+    );
+    
+    // ===============================
+    // CONSTITUENTS COLLECTION - Optimized for member management
+    // ===============================
+    await database.collection('constituents').createIndex({ phone_number: 1 }, { unique: true, name: "unique_phone_number" });
+    await database.collection('constituents').createIndex({ national_id: 1 }, { unique: true, sparse: true, name: "unique_national_id" });
+    await database.collection('constituents').createIndex({ area_id: 1, status: 1 }, { name: "area_status_compound" });
+    await database.collection('constituents').createIndex({ registration_date: -1 }, { name: "registration_date_desc" });
+    await database.collection('constituents').createIndex({ last_interaction: -1 }, { name: "last_interaction_desc" });
+    
+    // Text search for constituent management
+    await database.collection('constituents').createIndex(
+      { full_name: "text", phone_number: "text", national_id: "text" },
+      { name: "constituents_text_search", weights: { full_name: 10, phone_number: 5, national_id: 3 } }
+    );
+    
+    // Geospatial index for location-based services
+    await database.collection('constituents').createIndex({ location: "2dsphere" }, { name: "constituents_geospatial" });
+    
+    // ===============================
+    // USSD INTERACTIONS - Performance optimized for analytics
+    // ===============================
+    await database.collection('ussd_interactions').createIndex({ phone_number: 1, created_at: -1 }, { name: "phone_date_compound" });
+    await database.collection('ussd_interactions').createIndex({ session_id: 1 }, { name: "session_id_index" });
+    await database.collection('ussd_interactions').createIndex({ menu_option: 1, created_at: -1 }, { name: "menu_date_compound" });
+    await database.collection('ussd_interactions').createIndex({ created_at: -1 }, { name: "ussd_date_desc", expireAfterSeconds: 31536000 }); // Auto-expire after 1 year
+    
+    // ===============================
+    // AUDIT LOGS - For security and compliance
+    // ===============================
+    await database.collection('audit_logs').createIndex({ user_id: 1, timestamp: -1 }, { name: "audit_user_time" });
+    await database.collection('audit_logs').createIndex({ action: 1, timestamp: -1 }, { name: "audit_action_time" });
+    await database.collection('audit_logs').createIndex({ ip_address: 1, timestamp: -1 }, { name: "audit_ip_time" });
+    await database.collection('audit_logs').createIndex({ timestamp: -1 }, { name: "audit_timestamp", expireAfterSeconds: 7776000 }); // Auto-expire after 90 days
+    
+    // ===============================
+    // AREAS COLLECTION - For geographic management
+    // ===============================
+    await database.collection('areas').createIndex({ area_code: 1 }, { unique: true, name: "unique_area_code" });
+    await database.collection('areas').createIndex({ parent_area: 1 }, { name: "parent_area_index" });
+    await database.collection('areas').createIndex({ area_type: 1, status: 1 }, { name: "area_type_status" });
+    
+    // Text search for area management
+    await database.collection('areas').createIndex(
+      { area_name: "text", description: "text" },
+      { name: "areas_text_search", weights: { area_name: 10, description: 3 } }
+    );
+    
+    // ===============================
+    // SESSIONS COLLECTION - For session management
+    // ===============================
+    await database.collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: "session_ttl" });
+    await database.collection('sessions').createIndex({ user_id: 1 }, { name: "session_user_id" });
+    
+    // ===============================
+    // NOTIFICATIONS COLLECTION - For real-time features
+    // ===============================
+    await database.collection('notifications').createIndex({ user_id: 1, created_at: -1 }, { name: "notif_user_date" });
+    await database.collection('notifications').createIndex({ read: 1, created_at: -1 }, { name: "notif_read_date" });
+    await database.collection('notifications').createIndex({ type: 1, created_at: -1 }, { name: "notif_type_date" });
+    
+    console.log("✅ Production-grade database indexes created successfully!");
+    console.log("🎯 Indexes optimized for query patterns and performance targets");
+    console.log("📊 Text search enabled for all major collections");
+    console.log("🌍 Geospatial indexes ready for location-based queries");
+    console.log("⏰ TTL indexes configured for automatic data cleanup");
+    
   } catch (err) {
-    console.warn("⚠️  Index creation warning:", err.message);
+    console.error("❌ Index creation error:", err.message);
+    console.warn("⚠️  Some indexes may not have been created - check MongoDB logs");
   }
 }
 
