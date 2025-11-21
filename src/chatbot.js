@@ -1,3 +1,56 @@
+// Helper to save learned responses to knowledge base
+function saveToKnowledgeBase(question, answer, keywords = []) {
+  try {
+    const kb = loadKB();
+    const newEntry = {
+      keys: keywords.length > 0 ? keywords : [question.toLowerCase().trim()],
+      reply: answer,
+      learned: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Check if similar entry already exists
+    const exists = kb.some(entry => 
+      entry.keys && entry.keys.some(key => 
+        keywords.some(kw => key.toLowerCase().includes(kw.toLowerCase()))
+      )
+    );
+    
+    if (!exists) {
+      kb.push(newEntry);
+      fs.writeFileSync(KB_PATH, JSON.stringify(kb, null, 2));
+      console.log('New knowledge entry saved:', newEntry);
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.warn('Failed to save to knowledge base:', e?.message);
+    return false;
+  }
+}
+
+// Helper to extract keywords from a question
+function extractKeywords(text) {
+  const words = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2)
+    .filter(word => !['the', 'and', 'but', 'for', 'are', 'you', 'can', 'how', 'what', 'when', 'where', 'why', 'this', 'that', 'with', 'from', 'they', 'have', 'had', 'was', 'were', 'been', 'being'].includes(word));
+  
+  return words.slice(0, 5); // Take top 5 keywords
+}
+
+// Enhanced learning function
+function learnFromConversation(userMessage, aiResponse, wasHelpful = true) {
+  if (!wasHelpful || !userMessage || !aiResponse) return false;
+  
+  const keywords = extractKeywords(userMessage);
+  if (keywords.length > 0) {
+    return saveToKnowledgeBase(userMessage, aiResponse, keywords);
+  }
+  return false;
+}
+
 const fetch = global.fetch || require('node-fetch');
 require('dotenv').config();
 
@@ -73,12 +126,51 @@ function loadKB() {
 
 function fallbackReply(text) {
   const t = (text || '').toLowerCase().trim();
-  if (!t) return 'Hi — tell me what you need help with. Try: "resolve issues", "export issues", "change password".';
+  if (!t) return 'Hi! I\'m Mai, your AI assistant. I can help with anything you need - dashboard features, general questions, or just have a chat. What\'s on your mind?';
 
-  // Enhanced greeting detection (handles hey, hi, hello, yo, sup, greetings, etc.)
-  const greetings = ['hey', 'hi', 'hello', 'yo', 'sup', 'greetings', 'good morning', 'good afternoon', 'good evening'];
-  if (greetings.some(g => t.startsWith(g) || t === g)) {
-    return 'Hi there! I\'m Mai, your Voo Kyamatu Ward AI Assistant. I can help with:\n• Resolving issues\n• Managing announcements\n• Exporting data\n• User management\n• USSD interactions\n• Dashboard features\n\nWhat would you like help with?';
+  // Enhanced greeting detection with responses
+  const greetingPatterns = {
+    'hello': 'Hello! Great to see you today! 👋',
+    'hi': 'Hi there! How are you doing?',
+    'hey': 'Hey! What\'s up? How can I help you today?',
+    'good morning': 'Good morning! Hope you\'re having a wonderful start to your day!',
+    'good afternoon': 'Good afternoon! How\'s your day going so far?',
+    'good evening': 'Good evening! Hope you\'ve had a productive day!',
+    'greetings': 'Greetings! Welcome! What brings you here today?',
+    'yo': 'Yo! What\'s happening? 😊',
+    'sup': 'Not much, just helping people out! What\'s up with you?',
+    'howdy': 'Howdy! Nice to meet you!'
+  };
+  
+  // Check for greetings
+  for (const [pattern, response] of Object.entries(greetingPatterns)) {
+    if (t.includes(pattern) || t.startsWith(pattern)) {
+      return response + '\n\nI\'m Mai, your AI assistant. I can help with:\n• Dashboard features (issues, bursaries, announcements)\n• General questions\n• Technical support\n• Just chatting!\n\nWhat would you like to know?';
+    }
+  }
+  
+  // Enhanced question handling
+  const questionPatterns = {
+    'how are you': 'I\'m doing great, thank you for asking! I\'m here and ready to help. How are you doing today?',
+    'what is your name': 'I\'m Mai, your AI assistant for the VOO Ward dashboard. Nice to meet you!',
+    'who are you': 'I\'m Mai, an AI assistant designed to help you with the VOO Ward admin dashboard and answer any questions you might have.',
+    'what can you do': 'I can help with lots of things! Dashboard management, answering questions, providing information, troubleshooting, or just having a friendly chat. What interests you?',
+    'thank you': 'You\'re very welcome! Happy to help anytime. Is there anything else I can assist you with?',
+    'thanks': 'My pleasure! Glad I could help. Feel free to ask me anything else!',
+    'nice to meet you': 'Nice to meet you too! I\'m excited to be your assistant. How can I help you today?',
+    'how old are you': 'I\'m a relatively new AI, but I\'m learning and improving every day! Age is just a number for AI, right? 😊',
+    'where are you from': 'I was created specifically for the VOO Ward system, so you could say I\'m a local! I\'m designed to understand this community\'s needs.',
+    'what time is it': `It\'s ${new Date().toLocaleTimeString()} right now. Hope you\'re having a good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'}!`,
+    'what day is it': `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`,
+    'tell me a joke': 'Why did the AI go to school? To improve its learning algorithm! 😄 Got any good jokes for me?',
+    'how is the weather': 'I don\'t have access to weather data, but I hope it\'s nice where you are! How\'s the weather treating you today?'
+  };
+  
+  // Check for question patterns
+  for (const [pattern, response] of Object.entries(questionPatterns)) {
+    if (t.includes(pattern)) {
+      return response;
+    }
   }
 
   const KB = loadKB();
@@ -86,7 +178,6 @@ function fallbackReply(text) {
     for (const entry of KB) {
       if (!entry.keys || !entry.reply) continue;
       for (const k of entry.keys) {
-        // Fuzzy matching: check if keyword is contained in message OR message starts with keyword
         const keyword = k.toLowerCase().trim();
         if (t.includes(keyword) || t.startsWith(keyword)) return entry.reply;
       }
@@ -98,9 +189,13 @@ function fallbackReply(text) {
     return 'USSD interactions are logged under the USSD tab. You can export them as CSV using Export > USSD Interactions, or ask me how many interactions exist.';
   }
 
-  // Fallback hard-coded answers if KB didn't match
-  if (t.includes('help')) return 'I can help with: "resolve issues", "export issues", "change password", "ussd interactions", or ask a specific question.';
-  return 'I\'m not sure about that. Try asking about: resolving issues, managing announcements, exporting data, user management, or USSD interactions.';
+  // General help and unknown responses
+  if (t.includes('help')) {
+    return 'I\'d love to help! I can assist with:\n• Dashboard features (issues, bursaries, announcements)\n• General questions\n• Technical support\n• Friendly conversation\n\nWhat specifically would you like help with?';
+  }
+  
+  // Friendly unknown response
+  return 'I\'m not sure about that specific topic, but I\'d love to learn! Could you tell me more about what you\'re looking for? I\'m here to help with dashboard features, answer questions, or just chat.';
 }
 
 async function generateReply(message, user) {
@@ -136,10 +231,10 @@ async function generateReply(message, user) {
     const payload = {
       model,
       messages: [
-        { role: 'system', content: 'You are the Voo Kyamatu Ward Admin Assistant. Your goal is to help the admin manage the dashboard efficiently. You can assist with: \n1. Explaining dashboard features (Announcements, Issues, Bursaries, Constituents, Stats, Users).\n2. Providing step-by-step instructions for tasks like adding announcements, resolving issues, or managing users.\n3. Answering questions about USSD interactions and data.\n\nKeep your answers concise (1-3 sentences) and action-oriented. If the user asks about something outside the dashboard scope, politely redirect them to dashboard tasks.' },
+        { role: 'system', content: 'You are Mai, a friendly and intelligent AI assistant for the VOO Ward admin dashboard. You have a warm, conversational personality and can help with:\n\n1. Dashboard features (Issues, Bursaries, Announcements, Users, USSD interactions)\n2. General questions and conversation\n3. Technical support and troubleshooting\n4. Providing information and explanations\n\nYou should:\n- Be friendly, conversational, and helpful\n- Answer greetings warmly\n- Handle both technical and casual questions\n- Provide clear, actionable guidance\n- Ask follow-up questions when helpful\n- Remember you\'re here to assist and learn\n\nIf asked about topics outside your immediate scope, be honest but try to help or redirect constructively. Keep responses conversational but informative.' },
         { role: 'user', content: text }
       ],
-      temperature: 0.2,
+      temperature: 0.7, // Increased for more conversational responses
       max_tokens: 300
     };
 
@@ -165,4 +260,9 @@ async function generateReply(message, user) {
   }
 }
 
-module.exports = { generateReply };
+module.exports = { 
+  generateReply, 
+  learnFromConversation, 
+  saveToKnowledgeBase,
+  extractKeywords 
+};

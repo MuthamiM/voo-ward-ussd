@@ -780,6 +780,239 @@
             font-size: 14px;
             margin-bottom: 16px;
         }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-header button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .modal-header button:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 0;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--text);
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .modal-header button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.3s;
+        }
+
+        .modal-header button:hover {
+            color: var(--error);
+        }
+
+        .modal form {
+            padding: 24px;
+        }
+
+        .modal .form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .modal input, 
+        .modal select, 
+        .modal textarea {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .modal input:focus, 
+        .modal select:focus, 
+        .modal textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .modal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .modal-actions button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .modal-actions .btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .modal-actions .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .modal-actions .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .modal-actions .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -807,6 +1040,13 @@
                 <button type="submit" class="btn btn-full" id="loginBtn" style="user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
                     <span>Sign In</span>
                 </button>
+                
+                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <p style="color: var(--text-secondary); margin-bottom: 10px;">Don't have an account?</p>
+                    <a href="signup.html" style="color: var(--primary); text-decoration: none; font-weight: 500; padding: 8px 16px; border: 1px solid var(--primary); border-radius: 6px; display: inline-block; transition: all 0.3s ease;">
+                        Create New Account
+                    </a>
+                </div>
             </form>
         </div>
     </div>
@@ -1031,25 +1271,25 @@
                                 <h2 class="card-title">Quick Actions</h2>
                             </div>
                             <div style="display: flex; flex-direction: column; gap: 16px;">
-                                <a href="#" class="btn" onclick="navigateTo('issues')">
+                                <button class="btn" onclick="showAddIssueModal()">
                                     <i class="fas fa-plus"></i>
                                     <span>Add New Issue</span>
-                                </a>
+                                </button>
                                 
-                                <a href="#" class="btn" onclick="navigateTo('bursaries')">
+                                <button class="btn" onclick="showProcessBursaryModal()">
                                     <i class="fas fa-graduation-cap"></i>
                                     <span>Process Bursary</span>
-                                </a>
+                                </button>
                                 
-                                <a href="#" class="btn" onclick="navigateTo('announcements')">
+                                <button class="btn" onclick="showAnnouncementModal()">
                                     <i class="fas fa-bullhorn"></i>
                                     <span>Send Announcement</span>
-                                </a>
+                                </button>
                                 
-                                <a href="#" class="btn" onclick="navigateTo('users')">
+                                <button class="btn" onclick="navigateTo('users')">
                                     <i class="fas fa-user-cog"></i>
                                     <span>Manage Users</span>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1057,13 +1297,39 @@
 
                 <!-- Add more page contents as needed -->
                 <div id="issuesContent" class="page-content" style="display: none;">
-                    <h2>Issues Management</h2>
-                    <p>Issues content will be loaded here...</p>
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Issues Management</h2>
+                                <button class="btn" onclick="showAddIssueModal()">
+                                    <i class="fas fa-plus"></i>
+                                    <span>Add New Issue</span>
+                                </button>
+                            </div>
+                            
+                            <div id="issuesList">
+                                <div class="loading" id="issuesLoading">Loading issues...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="bursariesContent" class="page-content" style="display: none;">
-                    <h2>Bursaries Management</h2>
-                    <p>Bursaries content will be loaded here...</p>
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Bursaries Management</h2>
+                                <button class="btn" onclick="showProcessBursaryModal()">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <span>Process Application</span>
+                                </button>
+                            </div>
+                            
+                            <div id="bursariesList">
+                                <div class="loading" id="bursariesLoading">Loading bursary applications...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="settingsContent" class="page-content" style="display: none;">
@@ -1204,8 +1470,184 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- User Management Content -->
+                <div id="usersContent" class="page-content" style="display: none;">
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">User Management</h2>
+                                <a href="signup.html" class="btn">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Add New User</span>
+                                </a>
+                            </div>
+                            
+                            <div id="usersList" style="padding: 20px;">
+                                <div class="loading" id="usersLoading" style="text-align: center;">Loading users...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Constituents Content -->
+                <div id="constituentsContent" class="page-content" style="display: none;">
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Constituents Management</h2>
+                                <button class="btn" onclick="exportConstituents()">
+                                    <i class="fas fa-download"></i>
+                                    <span>Export Data</span>
+                                </button>
+                            </div>
+                            
+                            <div id="constituentsList" style="padding: 20px;">
+                                <div class="loading" id="constituentsLoading" style="text-align: center;">Loading constituents...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- USSD Interactions Content -->
+                <div id="ussdContent" class="page-content" style="display: none;">
+                    <div style="margin-bottom: 32px;">
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <h2 class="card-title">USSD Interactions</h2>
+                                <button class="btn" onclick="refreshUssdData()">
+                                    <i class="fas fa-refresh"></i>
+                                    <span>Refresh Data</span>
+                                </button>
+                            </div>
+                            
+                            <div id="ussdList" style="padding: 20px;">
+                                <div class="loading" id="ussdLoading" style="text-align: center;">Loading USSD interactions...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
+    </div>
+
+    <!-- Add Issue Modal -->
+    <div id="addIssueModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Issue</h3>
+                <button onclick="closeModal('addIssueModal')">&times;</button>
+            </div>
+            <form id="addIssueForm" onsubmit="submitNewIssue(event)">
+                <div class="form-group">
+                    <label for="issueTitle">Issue Title</label>
+                    <input type="text" id="issueTitle" required placeholder="Brief description of the issue">
+                </div>
+                <div class="form-group">
+                    <label for="issueDescription">Description</label>
+                    <textarea id="issueDescription" required placeholder="Detailed description of the issue" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="issuePriority">Priority</label>
+                    <select id="issuePriority" required>
+                        <option value="">Select Priority</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueLocation">Location</label>
+                    <input type="text" id="issueLocation" placeholder="Location where the issue occurred">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('addIssueModal')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn">Add Issue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Process Bursary Modal -->
+    <div id="processBursaryModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Process Bursary Application</h3>
+                <button onclick="closeModal('processBursaryModal')">&times;</button>
+            </div>
+            <form id="processBursaryForm" onsubmit="submitBursaryDecision(event)">
+                <div class="form-group">
+                    <label for="applicantName">Applicant Name</label>
+                    <input type="text" id="applicantName" required placeholder="Full name of applicant">
+                </div>
+                <div class="form-group">
+                    <label for="applicationId">Application ID</label>
+                    <input type="text" id="applicationId" required placeholder="e.g., BUR-2024-045">
+                </div>
+                <div class="form-group">
+                    <label for="bursaryAmount">Bursary Amount</label>
+                    <input type="number" id="bursaryAmount" required placeholder="Amount in KES" min="0">
+                </div>
+                <div class="form-group">
+                    <label for="bursaryDecision">Decision</label>
+                    <select id="bursaryDecision" required>
+                        <option value="">Select Decision</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="pending">Pending Review</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="decisionReason">Reason/Notes</label>
+                    <textarea id="decisionReason" placeholder="Reason for decision or additional notes" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('processBursaryModal')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn">Process Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Send Announcement Modal -->
+    <div id="announcementModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Send New Announcement</h3>
+                <button onclick="closeModal('announcementModal')">&times;</button>
+            </div>
+            <form id="announcementForm" onsubmit="submitAnnouncement(event)">
+                <div class="form-group">
+                    <label for="announcementTitle">Announcement Title</label>
+                    <input type="text" id="announcementTitle" required placeholder="Title for the announcement">
+                </div>
+                <div class="form-group">
+                    <label for="announcementMessage">Message</label>
+                    <textarea id="announcementMessage" required placeholder="Announcement message" rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="announcementType">Type</label>
+                    <select id="announcementType" required>
+                        <option value="">Select Type</option>
+                        <option value="general">General Information</option>
+                        <option value="urgent">Urgent Notice</option>
+                        <option value="event">Event Notification</option>
+                        <option value="service">Service Update</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sendSMS" style="margin-right: 8px;">
+                        Send as SMS notification
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('announcementModal')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn">Send Announcement</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- AI Assistant Floating Button -->
@@ -1556,6 +1998,15 @@
                     break;
                 case 'announcements':
                     loadAnnouncementsData();
+                    break;
+                case 'users':
+                    loadUsersData();
+                    break;
+                case 'constituents':
+                    loadConstituentsData();
+                    break;
+                case 'ussd':
+                    refreshUssdData();
                     break;
                 // Add more cases as needed
             }
@@ -2364,6 +2815,299 @@
             pages.forEach(page => {
                 page.style.transition = 'opacity 0.3s ease-in-out';
             });
+        }
+
+        // ========================================
+        // MODAL AND BUTTON FUNCTIONALITY
+        // ========================================
+        
+        // Show Add Issue Modal
+        function showAddIssueModal() {
+            document.getElementById('addIssueModal').style.display = 'flex';
+            document.getElementById('issueTitle').focus();
+        }
+        
+        // Show Process Bursary Modal
+        function showProcessBursaryModal() {
+            document.getElementById('processBursaryModal').style.display = 'flex';
+            document.getElementById('applicantName').focus();
+        }
+        
+        // Show Announcement Modal
+        function showAnnouncementModal() {
+            document.getElementById('announcementModal').style.display = 'flex';
+            document.getElementById('announcementTitle').focus();
+        }
+        
+        // Close Modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            
+            // Reset forms
+            const forms = document.getElementById(modalId).querySelectorAll('form');
+            forms.forEach(form => form.reset());
+        }
+        
+        // Submit New Issue
+        async function submitNewIssue(event) {
+            event.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('issueTitle').value,
+                description: document.getElementById('issueDescription').value,
+                priority: document.getElementById('issuePriority').value,
+                location: document.getElementById('issueLocation').value,
+                status: 'new',
+                created_at: new Date().toISOString(),
+                created_by: currentUser?.username || 'admin'
+            };
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showToast('Issue added successfully!', 'success');
+                closeModal('addIssueModal');
+                loadIssuesData();
+                
+            } catch (error) {
+                console.error('Error adding issue:', error);
+                showToast('Failed to add issue. Please try again.', 'error');
+            }
+        }
+        
+        // Submit Bursary Decision
+        async function submitBursaryDecision(event) {
+            event.preventDefault();
+            
+            const formData = {
+                applicantName: document.getElementById('applicantName').value,
+                applicationId: document.getElementById('applicationId').value,
+                amount: document.getElementById('bursaryAmount').value,
+                decision: document.getElementById('bursaryDecision').value,
+                reason: document.getElementById('decisionReason').value,
+                processed_at: new Date().toISOString(),
+                processed_by: currentUser?.username || 'admin'
+            };
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showToast(`Bursary application ${formData.decision} successfully!`, 'success');
+                closeModal('processBursaryModal');
+                loadBursariesData();
+                
+            } catch (error) {
+                console.error('Error processing bursary:', error);
+                showToast('Failed to process application. Please try again.', 'error');
+            }
+        }
+        
+        // Submit Announcement
+        async function submitAnnouncement(event) {
+            event.preventDefault();
+            
+            const formData = {
+                title: document.getElementById('announcementTitle').value,
+                message: document.getElementById('announcementMessage').value,
+                type: document.getElementById('announcementType').value,
+                sendSMS: document.getElementById('sendSMS').checked,
+                created_at: new Date().toISOString(),
+                created_by: currentUser?.username || 'admin'
+            };
+            
+            try {
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showToast('Announcement sent successfully!', 'success');
+                closeModal('announcementModal');
+                loadAnnouncementsData();
+                
+            } catch (error) {
+                console.error('Error sending announcement:', error);
+                showToast('Failed to send announcement. Please try again.', 'error');
+            }
+        }
+        
+        // Load Users Data
+        async function loadUsersData() {
+            const usersList = document.getElementById('usersList');
+            const loading = document.getElementById('usersLoading');
+            
+            try {
+                // Show loading
+                if (loading) loading.style.display = 'block';
+                
+                const response = await fetch(`${API_BASE}/api/auth/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                if (response.ok) {
+                    const users = await response.json();
+                    displayUsers(users);
+                } else if (response.status === 403) {
+                    // User doesn't have permission to view users
+                    usersList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fas fa-lock" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                            <p>You don't have permission to view users</p>
+                            <p style="font-size: 14px; margin-top: 8px;">Only MCA (Main Admin) can manage users</p>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('Failed to load users');
+                }
+                
+            } catch (error) {
+                console.error('Error loading users:', error);
+                usersList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Failed to load users data</p>
+                        <button class="btn" onclick="loadUsersData()" style="margin-top: 16px;">
+                            <i class="fas fa-refresh"></i> Retry
+                        </button>
+                    </div>
+                `;
+            } finally {
+                if (loading) loading.style.display = 'none';
+            }
+        }
+        
+        // Display Users
+        function displayUsers(users) {
+            const usersList = document.getElementById('usersList');
+            
+            if (!users || users.length === 0) {
+                usersList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>No users found</p>
+                        <a href="signup.html" class="btn" style="margin-top: 16px;">
+                            <i class="fas fa-user-plus"></i> Add First User
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            const usersHtml = users.map(user => `
+                <div class="user-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);">
+                    <div style="display: flex; align-items: center; gap: 16px;">
+                        <img src="${user.profilePicture || '/uploads/avatars/default-avatar.png'}" 
+                             alt="${user.full_name || user.username}" 
+                             style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover;"
+                             onerror="this.src='/uploads/avatars/default-avatar.png'">
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 4px 0; color: var(--text);">${user.full_name || user.username}</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">@${user.username}</p>
+                            <span style="display: inline-block; background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 4px;">
+                                ${user.role || 'User'}
+                            </span>
+                        </div>
+                        <div style="text-align: right; color: var(--text-secondary); font-size: 14px;">
+                            <div>Phone: ${user.phone || 'N/A'}</div>
+                            <div>Joined: ${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            usersList.innerHTML = `
+                <div style="margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--border);">
+                    <h4 style="margin: 0 0 8px 0; color: var(--text);">System Users (${users.length}/3)</h4>
+                    <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
+                        Current registered admin users. Maximum 3 users allowed.
+                    </p>
+                </div>
+                ${usersHtml}
+            `;
+        }
+        
+        // Load Issues Data
+        function loadIssuesData() {
+            const issuesList = document.getElementById('issuesList');
+            if (issuesList) {
+                issuesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-clipboard-list" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Issues management system ready</p>
+                        <button class="btn" onclick="showAddIssueModal()" style="margin-top: 16px;">
+                            <i class="fas fa-plus"></i> Add New Issue
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load Bursaries Data
+        function loadBursariesData() {
+            const bursariesList = document.getElementById('bursariesList');
+            if (bursariesList) {
+                bursariesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-graduation-cap" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Bursary management system ready</p>
+                        <button class="btn" onclick="showProcessBursaryModal()" style="margin-top: 16px;">
+                            <i class="fas fa-graduation-cap"></i> Process Application
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load Announcements Data
+        function loadAnnouncementsData() {
+            const announcementsList = document.getElementById('announcementsList');
+            if (announcementsList) {
+                announcementsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-bullhorn" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Announcements system ready</p>
+                        <button class="btn" onclick="showAnnouncementModal()" style="margin-top: 16px;">
+                            <i class="fas fa-bullhorn"></i> Send Announcement
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // Export Constituents
+        function exportConstituents() {
+            showToast('Export feature will be implemented soon!', 'info');
+        }
+        
+        // Refresh USSD Data
+        function refreshUssdData() {
+            const ussdList = document.getElementById('ussdList');
+            if (ussdList) {
+                ussdList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-mobile-alt" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>USSD interactions tracking ready</p>
+                        <p style="font-size: 14px; margin-top: 8px;">Real-time USSD data will appear here</p>
+                    </div>
+                `;
+            }
+            showToast('USSD data refreshed!', 'success');
+        }
+        
+        // Load Constituents Data
+        function loadConstituentsData() {
+            const constituentsList = document.getElementById('constituentsList');
+            if (constituentsList) {
+                constituentsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                        <i class="fas fa-users" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
+                        <p>Constituents database ready</p>
+                        <button class="btn" onclick="exportConstituents()" style="margin-top: 16px;">
+                            <i class="fas fa-download"></i> Export Data
+                        </button>
+                    </div>
+                `;
+            }
         }
 
         addPageTransition();
