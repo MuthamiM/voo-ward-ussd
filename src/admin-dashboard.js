@@ -48,6 +48,9 @@ function validatePassword(password) {
 
 const app = express();
 
+// Trust proxy for production deployment (Render.com)
+app.set('trust proxy', 1);
+
 // Security headers
 app.use((req, res, next) => {
   // Prevent clickjacking
@@ -189,6 +192,7 @@ if (rateLimit) {
     max: 10, // limit each IP to 10 login requests per windowMs
     standardHeaders: true,
     legacyHeaders: false,
+    trustProxy: true, // Trust proxy for accurate IP detection
     message: { error: 'Too many login attempts, please try again in a minute' }
   });
   console.log('Login limiter: express-rate-limit active');
