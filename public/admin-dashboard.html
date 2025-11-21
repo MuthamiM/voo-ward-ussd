@@ -760,6 +760,9 @@
             font-weight: 400;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             transition: all 0.3s ease;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
         }
 
         .form-input:focus {
@@ -772,7 +775,8 @@
         }
 
         .form-input:focus::placeholder {
-            transform: translateX(6px);
+            opacity: 0.7;
+            transform: translateX(4px);
             opacity: 0.85;
             color: rgba(255, 255, 255, 0.8);
         }
