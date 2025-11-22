@@ -1168,45 +1168,41 @@
                         <input type="text" class="search-input" placeholder="Search anything...">
                     </div>
                     
-                    <div class="user-profile">
-                        <div class="user-info">
-                            <div class="user-name" id="userName">Zak</div>
-                            <div class="user-role" id="userRole">MCA</div>
-                        </div>
-                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="cursor: pointer; border: 3px solid rgba(99,102,241,0.4); transition: all 0.3s ease; background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'; this.style.transform='scale(1)'">Z</div>
-                        <i class="fas fa-chevron-down" id="profileDropdownIcon" onclick="toggleProfileDropdown()" style="transition: transform 0.3s ease; cursor: pointer; padding: 8px; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'"></i>
-                    </div>
+                    <div class="user-profile" style="position: relative;">
+                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="width: 50px; height: 50px; cursor: pointer; border: 3px solid rgba(99,102,241,0.5); transition: all 0.3s ease; background: linear-gradient(135deg, #6366f1, #8b5cf6); background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 4px 16px rgba(99,102,241,0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white;" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.5)'; this.style.transform='scale(1)'; this.style.boxShadow='0 4px 16px rgba(99,102,241,0.4)'">Z</div>
                     
                     <!-- Profile Dropdown Menu -->
                     <!-- Hidden file input for profile picture -->
                     <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
                     
-                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 65px; right: 20px; background: rgba(10, 10, 15, 0.98); backdrop-filter: blur(25px); border: 2px solid rgba(99, 102, 241, 0.5); border-radius: 16px; padding: 20px; min-width: 300px; z-index: 9999; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
-                        <div class="dropdown-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
-                            <div style="color: #fff; font-weight: 600; font-size: 18px; margin-bottom: 4px;" id="profileDropdownName">Zak</div>
-                            <div style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px;" id="profileDropdownRole">MCA</div>
-                            <div style="color: #6366f1; font-size: 13px; font-weight: 500; background: rgba(99, 102, 241, 0.15); padding: 6px 12px; border-radius: 8px; display: inline-block;" id="profileDropdownPhone">
-                                <i class="fas fa-phone" style="margin-right: 6px;"></i>0706757140
+                    <!-- Profile Dropdown Menu -->
+                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 70px; right: 10px; background: rgba(8, 8, 12, 0.98); backdrop-filter: blur(30px); border: 2px solid rgba(99, 102, 241, 0.6); border-radius: 16px; padding: 24px; min-width: 320px; z-index: 9999; box-shadow: 0 30px 60px rgba(0,0,0,0.9);">
+                        <div class="dropdown-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid rgba(99, 102, 241, 0.4);">
+                            <div style="color: #fff; font-weight: 700; font-size: 20px; margin-bottom: 6px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);" id="profileDropdownName">Zak</div>
+                            <div style="color: #a1a1ff; font-size: 14px; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;" id="profileDropdownRole">MCA</div>
+                            <div style="color: #6366f1; font-size: 14px; font-weight: 600; background: rgba(99, 102, 241, 0.2); padding: 8px 14px; border-radius: 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(99, 102, 241, 0.4);" id="profileDropdownPhone">
+                                <i class="fas fa-phone" style="font-size: 12px;"></i>
+                                <span>0706757140</span>
                             </div>
                         </div>
                         
                         <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('profilePictureInput').click();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-camera" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
-                                <span style="font-size: 14px;">Upload Profile Picture</span>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('profilePictureInput').click(); toggleProfileDropdown();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <i class="fas fa-camera" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
+                                <span style="font-size: 15px; font-weight: 500;">Upload Profile Picture</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePhoneModal();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-phone-alt" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
-                                <span style="font-size: 14px;">Change Phone Number</span>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePhoneModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <i class="fas fa-phone-alt" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
+                                <span style="font-size: 15px; font-weight: 500;">Change Phone Number</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePasswordModal();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-key" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
-                                <span style="font-size: 14px;">Change Password</span>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePasswordModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <i class="fas fa-key" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
+                                <span style="font-size: 15px; font-weight: 500;">Change Password</span>
                             </a>
-                            <div style="height: 1px; background: rgba(99, 102, 241, 0.3); margin: 10px 0;"></div>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
-                                <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 18px;"></i>
-                                <span style="font-size: 14px; font-weight: 500;">Sign Out</span>
+                            <div style="height: 2px; background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent); margin: 12px 0;"></div>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();" style="display: flex; align-items: center; padding: 14px 16px; color: #ff6b6b; text-decoration: none; border-radius: 12px; transition: all 0.3s ease; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);">
+                                <i class="fas fa-sign-out-alt" style="margin-right: 14px; width: 20px; font-size: 16px;"></i>
+                                <span style="font-size: 15px; font-weight: 600;">Sign Out</span>
                             </a>
                         </div>
                     </div>
