@@ -9,27 +9,6 @@ import {
 } from 'react-native';
 
 export default function DashboardScreen({ navigation, onLogout }) {
-    const menuItems = [
-        {
-            icon: '📋',
-            title: 'Report Issue',
-            description: 'Report roads, water, security issues',
-            screen: 'ReportIssue',
-        },
-        {
-            icon: '📊',
-            title: 'My Issues',
-            description: 'Track your reported issues',
-            screen: 'MyIssues',
-        },
-        {
-            icon: '🎓',
-            title: 'Bursary Status',
-            description: 'Check bursary applications',
-            screen: 'BursaryStatus',
-        },
-    ];
-
     const handleLogout = () => {
         Alert.alert(
             'Logout',
@@ -43,19 +22,57 @@ export default function DashboardScreen({ navigation, onLogout }) {
 
     return (
         <View style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Kyamatu Ward</Text>
+                <Text style={styles.headerSubtitle}>Citizen Services</Text>
+            </View>
+
             <ScrollView style={styles.content}>
                 <View style={styles.grid}>
-                    {menuItems.map((item, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={styles.card}
-                            onPress={() => navigation.navigate(item.screen)}
-                        >
-                            <Text style={styles.cardIcon}>{item.icon}</Text>
-                            <Text style={styles.cardTitle}>{item.title}</Text>
-                            <Text style={styles.cardDescription}>{item.description}</Text>
-                        </TouchableOpacity>
-                    ))}
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('ReportIssue')}
+                    >
+                        <Text style={styles.cardIcon}>📝</Text>
+                        <Text style={styles.cardTitle}>Report Issue</Text>
+                        <Text style={styles.cardSubtitle}>Report community problems</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('MyIssues')}
+                    >
+                        <Text style={styles.cardIcon}>📋</Text>
+                        <Text style={styles.cardTitle}>My Issues</Text>
+                        <Text style={styles.cardSubtitle}>Track your reports</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('VoterRegistration')}
+                    >
+                        <Text style={styles.cardIcon}>🗳️</Text>
+                        <Text style={styles.cardTitle}>Voter Registration</Text>
+                        <Text style={styles.cardSubtitle}>Register to vote</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('Announcements')}
+                    >
+                        <Text style={styles.cardIcon}>📢</Text>
+                        <Text style={styles.cardTitle}>Announcements</Text>
+                        <Text style={styles.cardSubtitle}>Ward updates & news</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        style={styles.card}
+                        onPress={() => navigation.navigate('BursaryStatus')}
+                    >
+                        <Text style={styles.cardIcon}>🎓</Text>
+                        <Text style={styles.cardTitle}>Bursary Status</Text>
+                        <Text style={styles.cardSubtitle}>Check application status</Text>
+                    </TouchableOpacity>
                 </View>
 
                 <View style={styles.infoCard}>
@@ -78,12 +95,26 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f3f4f6',
     },
+    header: {
+        backgroundColor: '#7c3aed',
+        padding: 20,
+        paddingTop: 40,
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: '#e9d5ff',
+        marginTop: 4,
+    },
     content: {
         flex: 1,
     },
     grid: {
         padding: 16,
-        gap: 16,
     },
     card: {
         backgroundColor: '#fff',
@@ -106,7 +137,7 @@ const styles = StyleSheet.create({
         color: '#1f2937',
         marginBottom: 4,
     },
-    cardDescription: {
+    cardSubtitle: {
         fontSize: 14,
         color: '#6b7280',
     },
@@ -133,6 +164,7 @@ const styles = StyleSheet.create({
         margin: 16,
         borderRadius: 12,
         alignItems: 'center',
+        marginBottom: 32,
     },
     logoutText: {
         color: '#fff',

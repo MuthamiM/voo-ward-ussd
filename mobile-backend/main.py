@@ -10,7 +10,7 @@ import uvicorn
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.v1 import auth, issues, bursaries, upload
+from app.api.v1 import auth, issues, bursaries, upload, voter_registration
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -29,7 +29,6 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
-
         "status": "running"
     }
 
