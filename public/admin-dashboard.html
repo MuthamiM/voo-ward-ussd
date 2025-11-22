@@ -6,6 +6,7 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <title>VOO Ward - Modern Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -2444,6 +2445,11 @@
             const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
             
+            if (!modal || !panel) {
+                console.error('Chatbot elements not found');
+                return;
+            }
+            
             modal.style.display = 'flex';
             
             if (panel.style.display === 'none' || !panel.style.display) {
@@ -3327,10 +3333,28 @@
             const usersList = document.getElementById('usersList');
             const usersCount = document.getElementById('usersCount');
             
+            // Check if user is authenticated
+            if (!authToken) {
+                console.error('No auth token available for loading users');
+                if (usersList) {
+                    usersList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #f59e0b;"></i>
+                            <p>Please log in to view users</p>
+                        </div>
+                    `;
+                }
+                return;
+            }
+            
             try {
+                console.log('Fetching users with token:', authToken ? 'Present' : 'Missing');
                 // Try to fetch users from database
                 const response = await fetch(`${API_BASE}/api/auth/users`, {
-                    headers: { 'Authorization': `Bearer ${authToken}` }
+                    headers: { 
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 const loadingEl = document.getElementById('usersLoading');
@@ -3359,6 +3383,11 @@
                     displayUsers(users);
                     
                     console.log(`Loaded ${users.length} users from database`);
+                } else if (response.status === 401) {
+                    console.error('Unauthorized - token may be invalid or expired');
+                    authToken = null;
+                    localStorage.removeItem('authToken');
+                    throw new Error('Session expired. Please log in again.');
                 } else {
                     throw new Error(`Failed to load users: ${response.status}`);
                 }
