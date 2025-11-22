@@ -7,9 +7,6 @@
   "scripts": {
     "start": "node src/index.js",
     "admin": "node src/admin-dashboard.js",
-    "test": "jest --coverage",
-    "test:watch": "jest --watch",
-    "test:integration": "jest --testPathPattern=integration",
     "backup": "node scripts/backup-db.js"
   },
   "dependencies": {
@@ -30,10 +27,5 @@
     "compression": "^1.7.4",
     "twilio": "^4.20.0",
     "openai": "^4.24.0"
-  },
-  "devDependencies": {
-    "jest": "^29.7.0",
-    "supertest": "^6.3.3",
-    "@types/jest": "^29.5.11"
   }
 }
