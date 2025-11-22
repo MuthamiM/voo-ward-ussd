@@ -1959,15 +1959,44 @@
             const savedImage = localStorage.getItem(userKey);
             const savedPhone = currentUser.phone || localStorage.getItem('userPhone') || '0706757140';
             
+            console.log('🖼️ Loading profile picture for:', currentUser.username, 'Key:', userKey, 'Has image:', !!savedImage);
+            
             if (savedImage) {
+                // Update top-right avatar
                 const userAvatar = document.getElementById('userAvatar');
-                
                 if (userAvatar) {
                     userAvatar.style.backgroundImage = `url('${savedImage}')`;
                     userAvatar.style.backgroundSize = 'cover';
                     userAvatar.style.backgroundPosition = 'center';
                     userAvatar.style.backgroundRepeat = 'no-repeat';
                     userAvatar.textContent = ''; // Remove initial letter
+                }
+                
+                // Update profile dropdown avatar
+                const profileAvatarLarge = document.getElementById('profileAvatarLarge');
+                if (profileAvatarLarge) {
+                    profileAvatarLarge.style.backgroundImage = `url('${savedImage}')`;
+                    profileAvatarLarge.style.backgroundSize = 'cover';
+                    profileAvatarLarge.style.backgroundPosition = 'center';
+                    profileAvatarLarge.style.backgroundRepeat = 'no-repeat';
+                    profileAvatarLarge.textContent = ''; // Remove initial letter
+                }
+            } else {
+                // No saved image - reset avatars to show initials
+                console.log('⚠️ No profile picture found for:', currentUser.username);
+                const displayName = currentUser.fullName || currentUser.full_name || currentUser.username || 'Admin';
+                const initial = displayName.charAt(0).toUpperCase();
+                
+                const userAvatar = document.getElementById('userAvatar');
+                if (userAvatar) {
+                    userAvatar.style.backgroundImage = '';
+                    userAvatar.textContent = initial;
+                }
+                
+                const profileAvatarLarge = document.getElementById('profileAvatarLarge');
+                if (profileAvatarLarge) {
+                    profileAvatarLarge.style.backgroundImage = '';
+                    profileAvatarLarge.textContent = initial;
                 }
             }
             
@@ -3293,42 +3322,54 @@
                 return;
             }
             
-            const currentUserRole = currentUser?.role || 'User';
-            const canDeleteUsers = currentUserRole === 'MCA';
+            // Check if current user is MCA (can be 'MCA', 'mca', or 'super_admin')
+            const currentUserRole = (currentUser?.role || '').toLowerCase();
+            const isMCA = currentUserRole === 'mca' || currentUserRole === 'super_admin';
             
             const usersHtml = users.map(user => {
-                const isCurrentUserMCA = currentUserRole === 'MCA';
-                const isTargetUserMCA = user.role === 'MCA';
-                const canDeleteThisUser = isCurrentUserMCA && !isTargetUserMCA;
+                const userRole = (user.role || '').toLowerCase();
+                const isTargetUserMCA = userRole === 'mca' || userRole === 'super_admin';
+                const canDeleteThisUser = isMCA && !isTargetUserMCA;
+                
+                // Normalize role display
+                let roleDisplay = user.role;
+                let roleBadgeColor = '#7C3AED';
+                if (userRole === 'mca' || userRole === 'super_admin') {
+                    roleDisplay = 'MCA';
+                    roleBadgeColor = '#DC2626';
+                } else if (userRole === 'admin' || userRole === 'pa') {
+                    roleDisplay = 'PA';
+                    roleBadgeColor = '#059669';
+                } else if (userRole === 'clerk') {
+                    roleDisplay = 'Clerk';
+                    roleBadgeColor = '#7C3AED';
+                }
                 
                 return `
                 <div class="user-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);">
                     <div style="display: flex; align-items: center; gap: 16px;">
                         <img src="${user.profilePicture || '/uploads/avatars/default-avatar.png'}" 
-                             alt="${user.full_name || user.username}" 
+                             alt="${user.full_name || user.name || user.username}" 
                              style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--border); object-fit: cover;"
                              onerror="this.src='/uploads/avatars/default-avatar.png'">
                         <div style="flex: 1;">
-                            <h4 style="margin: 0 0 4px 0; color: var(--text);">${user.full_name || user.username}</h4>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">@${user.username}</p>
-                            <span style="display: inline-block; background: ${user.role === 'MCA' ? '#DC2626' : user.role === 'Clerk' ? '#059669' : '#7C3AED'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 4px;">
-                                ${user.role || 'User'} ${user.role === 'MCA' ? '(Main Admin)' : ''}
+                            <h4 style="margin: 0 0 4px 0; color: var(--text);">${user.full_name || user.name || user.username}</h4>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">@${user.username || (user.name || '').toLowerCase()}</p>
+                            <span style="display: inline-block; background: ${roleBadgeColor}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 4px;">
+                                ${roleDisplay} ${isTargetUserMCA ? '(Main Admin)' : ''}
                             </span>
                         </div>
                         <div style="text-align: right; color: var(--text-secondary); font-size: 14px;">
                             <div>Phone: ${user.phone || 'N/A'}</div>
                             <div>Joined: ${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
                             <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end;">
-                                <button onclick="editUser('${user.id || user._id}')" class="btn-edit" style="padding: 4px 8px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                    <i class="fas fa-edit"></i>
-                                </button>
                                 ${canDeleteThisUser ? `
-                                    <button onclick="confirmDeleteUser('${user.id || user._id}', '${user.username}', '${user.role}')" class="btn-delete" style="padding: 4px 8px; background: #DC2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                        <i class="fas fa-trash"></i>
+                                    <button onclick="confirmDeleteUser('${user.id || user._id}', '${user.username || user.name}', '${user.role}')" class="btn-delete" style="padding: 8px 12px; background: #DC2626; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'">
+                                        <i class="fas fa-trash"></i> Delete
                                     </button>
                                 ` : `
-                                    <button disabled title="${isTargetUserMCA ? 'MCA cannot be deleted' : 'Only MCA can delete users'}" style="padding: 4px 8px; background: #6B7280; color: #9CA3AF; border: none; border-radius: 4px; cursor: not-allowed; font-size: 12px;">
-                                        <i class="fas fa-lock"></i>
+                                    <button disabled title="${isTargetUserMCA ? 'MCA cannot be deleted' : 'Only MCA can delete users'}" style="padding: 8px 12px; background: #374151; color: #6B7280; border: none; border-radius: 6px; cursor: not-allowed; font-size: 13px;">
+                                        <i class="fas fa-lock"></i> ${isTargetUserMCA ? 'Protected' : 'No Access'}
                                     </button>
                                 `}
                             </div>
@@ -3341,7 +3382,7 @@
                 <div style="margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--border);">
                     <h4 style="margin: 0 0 8px 0; color: var(--text);">System Users (${users.length}/3)</h4>
                     <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
-                        Current registered admin users. Maximum 3 users allowed.
+                        ${isMCA ? '✓ You have full access to manage users' : '⚠️ Only MCA can delete users'}
                     </p>
                 </div>
                 ${usersHtml}
