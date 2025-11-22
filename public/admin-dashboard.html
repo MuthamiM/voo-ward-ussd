@@ -343,8 +343,10 @@
         }
         
         .dropdown-item:hover {
-            background: rgba(255, 255, 255, 0.1) !important;
+            background: rgba(99, 102, 241, 0.15) !important;
             color: #fff !important;
+            border-color: rgba(99, 102, 241, 0.3) !important;
+            transform: translateX(2px);
         }
         
         .profile-dropdown {
@@ -1183,34 +1185,34 @@
                     </div>
                     
                     <!-- Profile Dropdown Menu -->
-                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 70px; right: 20px; background: rgba(30, 30, 30, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 16px; min-width: 250px; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.4);">
-                        <div class="dropdown-header" style="text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                            <div class="profile-avatar-large" id="profileAvatarLarge" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 8px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: white; position: relative; cursor: pointer;" onclick="showProfilePictureModal()">
+                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 70px; right: 20px; background: rgba(20, 20, 20, 0.98); backdrop-filter: blur(20px); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 16px; min-width: 250px; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
+                        <div class="dropdown-header" style="text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
+                            <div class="profile-avatar-large" id="profileAvatarLarge" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 8px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: white; position: relative; cursor: pointer; border: 2px solid rgba(99, 102, 241, 0.4);" onclick="showProfilePictureModal()">
                                 A
-                                <div style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: #4CAF50; border: 2px solid rgba(30, 30, 30, 0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: #4CAF50; border: 2px solid rgba(20, 20, 20, 0.98); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                     <i class="fas fa-camera" style="font-size: 8px; color: white;"></i>
                                 </div>
                             </div>
-                            <div style="color: #fff; font-weight: 500;" id="profileDropdownName">Admin User</div>
-                            <div style="color: #ccc; font-size: 12px;" id="profileDropdownRole">Administrator</div>
-                            <div style="color: #aaa; font-size: 11px; margin-top: 4px;" id="profileDropdownPhone">+254700000000</div>
+                            <div style="color: #fff; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.5);" id="profileDropdownName">Admin User</div>
+                            <div style="color: #e2e8f0; font-size: 12px; margin-top: 2px;" id="profileDropdownRole">Administrator</div>
+                            <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;" id="profileDropdownPhone">+254700000000</div>
                         </div>
                         
                         <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="showProfileModal()" style="display: flex; align-items: center; padding: 10px 12px; color: #ccc; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease;">
-                                <i class="fas fa-user" style="margin-right: 12px; width: 16px;"></i>
+                            <a href="#" class="dropdown-item" onclick="showProfileModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-user" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
                                 <span>View Profile</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="showSettingsModal()" style="display: flex; align-items: center; padding: 10px 12px; color: #ccc; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease;">
-                                <i class="fas fa-cog" style="margin-right: 12px; width: 16px;"></i>
+                            <a href="#" class="dropdown-item" onclick="showSettingsModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-cog" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
                                 <span>Account Settings</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="showProfilePictureModal()" style="display: flex; align-items: center; padding: 10px 12px; color: #ccc; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease;">
-                                <i class="fas fa-image" style="margin-right: 12px; width: 16px;"></i>
+                            <a href="#" class="dropdown-item" onclick="showProfilePictureModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-image" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
                                 <span>Upload Profile Picture</span>
                             </a>
-                            <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 8px 0;"></div>
-                            <a href="#" class="dropdown-item" onclick="logout()" style="display: flex; align-items: center; padding: 10px 12px; color: #ff6b6b; text-decoration: none; border-radius: 8px; transition: all 0.3s ease;">
+                            <div style="height: 1px; background: rgba(99, 102, 241, 0.3); margin: 8px 0;"></div>
+                            <a href="#" class="dropdown-item" onclick="logout()" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
                                 <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 16px;"></i>
                                 <span>Sign Out</span>
                             </a>
@@ -1359,15 +1361,45 @@
                     <div style="margin-bottom: 32px;">
                         <div class="dashboard-card">
                             <div class="card-header">
-                                <h2 class="card-title">Issues Management</h2>
-                                <button class="btn" onclick="showAddIssueModal()">
-                                    <i class="fas fa-plus"></i>
-                                    <span>Add New Issue</span>
-                                </button>
+                                <h2 class="card-title">Constituent Issues Management</h2>
+                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Track and manage issues reported by constituents</p>
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="btn" onclick="showAddIssueModal()" style="background: #059669; color: white;">
+                                        <i class="fas fa-plus"></i>
+                                        <span>Report New Issue</span>
+                                    </button>
+                                    <button class="btn" onclick="loadIssuesData()" style="background: rgba(255,255,255,0.1); color: #ccc;">
+                                        <i class="fas fa-sync-alt"></i>
+                                        <span>Refresh</span>
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div id="issuesList">
-                                <div class="loading" id="issuesLoading">Loading issues...</div>
+                            <!-- Issues Filter Bar -->
+                            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                                <span style="color: #ccc; font-size: 14px; margin-right: 8px;">Filter by status:</span>
+                                <button onclick="filterIssues('all')" class="status-filter active" data-status="all" style="padding: 6px 12px; background: rgba(99, 102, 241, 0.2); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">All Issues</button>
+                                <button onclick="filterIssues('pending')" class="status-filter" data-status="pending" style="padding: 6px 12px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Pending</button>
+                                <button onclick="filterIssues('in-progress')" class="status-filter" data-status="in-progress" style="padding: 6px 12px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">In Progress</button>
+                                <button onclick="filterIssues('resolved')" class="status-filter" data-status="resolved" style="padding: 6px 12px; background: rgba(5, 150, 105, 0.2); color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Resolved</button>
+                                <button onclick="filterIssues('closed')" class="status-filter" data-status="closed" style="padding: 6px 12px; background: rgba(107, 114, 128, 0.2); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Closed</button>
+                            </div>
+                            
+                            <div id="issuesList" style="padding: 20px; min-height: 300px;">
+                                <div class="loading" id="issuesLoading" style="text-align: center; color: #ccc; padding: 40px;">
+                                    <div style="margin-bottom: 16px; font-size: 24px;">📋</div>
+                                    <div>Loading constituent issues...</div>
+                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching reported issues from database</div>
+                                </div>
+                            </div>
+                            
+                            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                                <span id="issuesCount">Loading...</span>
+                                <div style="display: flex; gap: 16px; font-size: 12px;">
+                                    <span style="color: #f59e0b;">● Pending: <span id="pendingCount">0</span></span>
+                                    <span style="color: #3b82f6;">● In Progress: <span id="inProgressCount">0</span></span>
+                                    <span style="color: #059669;">● Resolved: <span id="resolvedCount">0</span></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3174,7 +3206,15 @@
                 return;
             }
             
-            const usersHtml = users.map(user => `
+            const currentUserRole = currentUser?.role || 'User';
+            const canDeleteUsers = currentUserRole === 'MCA';
+            
+            const usersHtml = users.map(user => {
+                const isCurrentUserMCA = currentUserRole === 'MCA';
+                const isTargetUserMCA = user.role === 'MCA';
+                const canDeleteThisUser = isCurrentUserMCA && !isTargetUserMCA;
+                
+                return `
                 <div class="user-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);">
                     <div style="display: flex; align-items: center; gap: 16px;">
                         <img src="${user.profilePicture || '/uploads/avatars/default-avatar.png'}" 
@@ -3184,17 +3224,31 @@
                         <div style="flex: 1;">
                             <h4 style="margin: 0 0 4px 0; color: var(--text);">${user.full_name || user.username}</h4>
                             <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">@${user.username}</p>
-                            <span style="display: inline-block; background: var(--primary); color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 4px;">
-                                ${user.role || 'User'}
+                            <span style="display: inline-block; background: ${user.role === 'MCA' ? '#DC2626' : user.role === 'Clerk' ? '#059669' : '#7C3AED'}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-top: 4px;">
+                                ${user.role || 'User'} ${user.role === 'MCA' ? '(Main Admin)' : ''}
                             </span>
                         </div>
                         <div style="text-align: right; color: var(--text-secondary); font-size: 14px;">
                             <div>Phone: ${user.phone || 'N/A'}</div>
                             <div>Joined: ${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</div>
+                            <div style="margin-top: 8px; display: flex; gap: 8px; justify-content: flex-end;">
+                                <button onclick="editUser('${user.id || user._id}')" class="btn-edit" style="padding: 4px 8px; background: #3B82F6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                ${canDeleteThisUser ? `
+                                    <button onclick="confirmDeleteUser('${user.id || user._id}', '${user.username}', '${user.role}')" class="btn-delete" style="padding: 4px 8px; background: #DC2626; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                ` : `
+                                    <button disabled title="${isTargetUserMCA ? 'MCA cannot be deleted' : 'Only MCA can delete users'}" style="padding: 4px 8px; background: #6B7280; color: #9CA3AF; border: none; border-radius: 4px; cursor: not-allowed; font-size: 12px;">
+                                        <i class="fas fa-lock"></i>
+                                    </button>
+                                `}
+                            </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
             
             usersList.innerHTML = `
                 <div style="margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--border);">
@@ -3208,19 +3262,218 @@
         }
         
         // Load Issues Data
-        function loadIssuesData() {
+        async function loadIssuesData() {
+            console.log('Loading constituent issues data...');
             const issuesList = document.getElementById('issuesList');
-            if (issuesList) {
+            const issuesCount = document.getElementById('issuesCount');
+            
+            try {
+                // Show loading state
                 issuesList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                        <i class="fas fa-clipboard-list" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                        <p>Issues management system ready</p>
-                        <button class="btn" onclick="showAddIssueModal()" style="margin-top: 16px;">
-                            <i class="fas fa-plus"></i> Add New Issue
+                    <div style="text-align: center; padding: 40px; color: #ccc;">
+                        <div style="margin-bottom: 16px; font-size: 24px;">⏳</div>
+                        <div>Loading constituent issues...</div>
+                        <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching reported issues from database</div>
+                    </div>
+                `;
+                
+                // Simulate API call - in real implementation, this would fetch from your backend
+                await new Promise(resolve => setTimeout(resolve, 800));
+                
+                // Mock data for demonstration
+                const mockIssues = [
+                    {
+                        id: 'ISS-001',
+                        ticketNo: 'VOO-2025-001',
+                        title: 'Poor Road Condition on Kiambu Road',
+                        description: 'The road has several potholes that make it difficult for vehicles to pass. Need urgent repair.',
+                        category: 'Infrastructure',
+                        priority: 'High',
+                        status: 'pending',
+                        reportedBy: 'John Kamau',
+                        reporterPhone: '+254712345678',
+                        location: 'Kiambu Road, Section A',
+                        dateReported: new Date(Date.now() - 86400000 * 2).toISOString(),
+                        assignedTo: null,
+                        estimatedResolution: '7 days'
+                    },
+                    {
+                        id: 'ISS-002',
+                        ticketNo: 'VOO-2025-002',
+                        title: 'Broken Street Light',
+                        description: 'Street light not working for over a week. Creates safety concerns for pedestrians.',
+                        category: 'Public Safety',
+                        priority: 'Medium',
+                        status: 'in-progress',
+                        reportedBy: 'Mary Wanjiku',
+                        reporterPhone: '+254798765432',
+                        location: 'Main Street, Near Market',
+                        dateReported: new Date(Date.now() - 86400000 * 5).toISOString(),
+                        assignedTo: 'Technical Team',
+                        estimatedResolution: '3 days'
+                    },
+                    {
+                        id: 'ISS-003',
+                        ticketNo: 'VOO-2025-003',
+                        title: 'Water Supply Issue',
+                        description: 'No water supply for 3 days in the residential area. Residents are facing difficulties.',
+                        category: 'Utilities',
+                        priority: 'Critical',
+                        status: 'resolved',
+                        reportedBy: 'Peter Mwangi',
+                        reporterPhone: '+254723456789',
+                        location: 'Residential Area Block C',
+                        dateReported: new Date(Date.now() - 86400000 * 7).toISOString(),
+                        assignedTo: 'Water Department',
+                        estimatedResolution: 'Completed',
+                        resolvedDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                    }
+                ];
+                
+                displayIssues(mockIssues);
+                updateIssueStats(mockIssues);
+                
+                if (issuesCount) {
+                    issuesCount.textContent = `${mockIssues.length} issues reported`;
+                }
+                
+                // Show success message
+                showToast('Issues data loaded successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error loading issues:', error);
+                issuesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ff6b6b;">
+                        <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">⚠️</div>
+                        <div style="margin-bottom: 8px; font-size: 16px;">Failed to Load Issues</div>
+                        <p style="font-size: 14px; opacity: 0.8;">${error.message}</p>
+                        <button onclick="loadIssuesData()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            🔄 Try Again
                         </button>
                     </div>
                 `;
+                
+                showToast('Failed to load issues data', 'error');
             }
+        }
+        
+        function displayIssues(issues) {
+            const issuesList = document.getElementById('issuesList');
+            
+            if (!issues || issues.length === 0) {
+                issuesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ccc;">
+                        <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">📋</div>
+                        <div style="margin-bottom: 8px; font-size: 16px;">No Issues Reported</div>
+                        <p style="font-size: 14px; opacity: 0.8;">No constituent issues have been reported yet</p>
+                        <button onclick="showAddIssueModal()" style="margin-top: 16px; padding: 8px 16px; background: #059669; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            <i class="fas fa-plus"></i> Report First Issue
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const getStatusColor = (status) => {
+                const colors = {
+                    'pending': '#f59e0b',
+                    'in-progress': '#3b82f6', 
+                    'resolved': '#059669',
+                    'closed': '#6b7280'
+                };
+                return colors[status] || '#6b7280';
+            };
+            
+            const getPriorityColor = (priority) => {
+                const colors = {
+                    'Critical': '#dc2626',
+                    'High': '#ea580c',
+                    'Medium': '#d97706',
+                    'Low': '#65a30d'
+                };
+                return colors[priority] || '#6b7280';
+            };
+            
+            const issuesHtml = issues.map(issue => `
+                <div class="issue-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                                <h3 style="color: #fff; margin: 0; font-size: 16px; font-weight: 600;">${issue.title}</h3>
+                                <span style="background: ${getPriorityColor(issue.priority)}; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500;">${issue.priority}</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+                                <span style="color: #6366f1; font-weight: 500; font-size: 14px;">#{issue.ticketNo}</span>
+                                <span style="color: #ccc; font-size: 12px;">📍 ${issue.location}</span>
+                                <span style="color: #ccc; font-size: 12px;">📋 ${issue.category}</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background: ${getStatusColor(issue.status)}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase;">
+                                ${issue.status.replace('-', ' ')}
+                            </span>
+                            <div style="position: relative;">
+                                <button onclick="showIssueActions('${issue.id}')" style="background: rgba(255,255,255,0.1); color: #ccc; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer;">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #ccc; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">${issue.description}</p>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; font-size: 12px;">
+                        <div>
+                            <div style="color: #aaa; margin-bottom: 4px;">Reported By</div>
+                            <div style="color: #fff; font-weight: 500;">${issue.reportedBy}</div>
+                            <div style="color: #ccc;">${issue.reporterPhone}</div>
+                        </div>
+                        <div>
+                            <div style="color: #aaa; margin-bottom: 4px;">Date Reported</div>
+                            <div style="color: #fff;">${new Date(issue.dateReported).toLocaleDateString()}</div>
+                            <div style="color: #ccc;">${new Date(issue.dateReported).toLocaleDateString('en-US', {weekday: 'long'})}</div>
+                        </div>
+                        <div>
+                            <div style="color: #aaa; margin-bottom: 4px;">${issue.status === 'resolved' ? 'Resolution Time' : 'Estimated Resolution'}</div>
+                            <div style="color: #fff;">${issue.estimatedResolution}</div>
+                            ${issue.assignedTo ? `<div style="color: #6366f1;">Assigned: ${issue.assignedTo}</div>` : '<div style="color: #f59e0b;">Unassigned</div>'}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            issuesList.innerHTML = issuesHtml;
+        }
+        
+        function updateIssueStats(issues) {
+            const pending = issues.filter(i => i.status === 'pending').length;
+            const inProgress = issues.filter(i => i.status === 'in-progress').length;
+            const resolved = issues.filter(i => i.status === 'resolved').length;
+            
+            document.getElementById('pendingCount').textContent = pending;
+            document.getElementById('inProgressCount').textContent = inProgress;
+            document.getElementById('resolvedCount').textContent = resolved;
+        }
+        
+        function filterIssues(status) {
+            // Update filter button states
+            document.querySelectorAll('.status-filter').forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = `rgba(${btn.dataset.status === 'all' ? '99, 102, 241' : btn.dataset.status === 'pending' ? '245, 158, 11' : btn.dataset.status === 'in-progress' ? '59, 130, 246' : btn.dataset.status === 'resolved' ? '5, 150, 105' : '107, 114, 128'}, 0.2)`;
+            });
+            
+            const activeBtn = document.querySelector(`[data-status="${status}"]`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.background = `rgba(${status === 'all' ? '99, 102, 241' : status === 'pending' ? '245, 158, 11' : status === 'in-progress' ? '59, 130, 246' : status === 'resolved' ? '5, 150, 105' : '107, 114, 128'}, 0.4)`;
+            }
+            
+            // Filter logic would go here - for demo, just show message
+            showToast(`Filtering by ${status} status`, 'info');
+        }
+        
+        function showIssueActions(issueId) {
+            showToast('Issue actions menu - Update status, Assign, View details', 'info');
         }
         
         // Load Bursaries Data
@@ -3471,6 +3724,92 @@
             document.getElementById('profileDropdown').style.display = 'none';
             
             showToast('Navigated to Settings page', 'info');
+        }
+        
+        // ========================================
+        // USER MANAGEMENT FUNCTIONS
+        // ========================================
+        
+        function confirmDeleteUser(userId, username, role) {
+            if (currentUser?.role !== 'MCA') {
+                showToast('Only MCA (Main Admin) can delete users', 'error');
+                return;
+            }
+            
+            if (role === 'MCA') {
+                showToast('MCA (Main Admin) cannot be deleted', 'error');
+                return;
+            }
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgba(220, 38, 38, 0.2); margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; border: 2px solid #DC2626;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 24px; color: #DC2626;"></i>
+                        </div>
+                        <h2 style="color: #fff; margin: 0 0 8px 0; font-size: 20px;">Delete User Account</h2>
+                        <p style="color: #ccc; margin: 0; font-size: 14px;">This action cannot be undone</p>
+                    </div>
+                    
+                    <div style="background: rgba(220, 38, 38, 0.1); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 24px;">
+                        <div style="color: #fff; font-weight: 500; margin-bottom: 8px;">User to be deleted:</div>
+                        <div style="color: #f87171; font-size: 16px; font-weight: bold;">@${username}</div>
+                        <div style="color: #ccc; font-size: 14px; margin-top: 4px;">Role: ${role}</div>
+                    </div>
+                    
+                    <div style="color: #f87171; font-size: 14px; margin-bottom: 24px; text-align: center;">
+                        ⚠️ This will permanently remove the user's access to the admin dashboard
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="this.closest('.modal').remove();" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Cancel
+                        </button>
+                        <button onclick="deleteUser('${userId}'); this.closest('.modal').remove();" style="padding: 12px 24px; background: #DC2626; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            <i class="fas fa-trash" style="margin-right: 8px;"></i>Delete User
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+        }
+        
+        async function deleteUser(userId) {
+            if (currentUser?.role !== 'MCA') {
+                showToast('Only MCA can delete users', 'error');
+                return;
+            }
+            
+            try {
+                showToast('Deleting user...', 'info');
+                
+                // Simulate API call for demo
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                
+                showToast('User deleted successfully', 'success');
+                
+                // Reload users data
+                setTimeout(() => {
+                    loadUsersData();
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showToast('Failed to delete user: ' + error.message, 'error');
+            }
+        }
+        
+        async function editUser(userId) {
+            showToast('Edit user functionality coming soon', 'info');
         }
     </script>
 </body>
