@@ -1174,47 +1174,48 @@
                         <input type="text" class="search-input" placeholder="Search anything...">
                     </div>
                     
-                    <div class="user-profile" onclick="toggleProfileDropdown()">
-                        <div class="user-avatar" id="userAvatar">A</div>
+                    <div class="user-profile">
+                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: all 0.3s ease; background-size: cover; background-position: center; background-repeat: no-repeat;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">A</div>
                         <div class="user-info">
                             <div class="user-name" id="userName">Admin</div>
                             <div class="user-role" id="userRole">Administrator</div>
                             <div class="user-phone" id="userPhone" style="font-size: 11px; color: #ccc; margin-top: 2px;">+254700000000</div>
                         </div>
-                        <i class="fas fa-chevron-down" id="profileDropdownIcon" style="transition: transform 0.3s ease;"></i>
+                        <i class="fas fa-chevron-down" id="profileDropdownIcon" onclick="toggleProfileDropdown()" style="transition: transform 0.3s ease; cursor: pointer; padding: 8px; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'"></i>
                     </div>
                     
                     <!-- Profile Dropdown Menu -->
-                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 70px; right: 20px; background: rgba(20, 20, 20, 0.98); backdrop-filter: blur(20px); border: 2px solid rgba(99, 102, 241, 0.3); border-radius: 12px; padding: 16px; min-width: 250px; z-index: 9999; box-shadow: 0 20px 40px rgba(0,0,0,0.6);">
-                        <div class="dropdown-header" style="text-align: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
-                            <div class="profile-avatar-large" id="profileAvatarLarge" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 8px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: white; position: relative; cursor: pointer; border: 2px solid rgba(99, 102, 241, 0.4);" onclick="showProfilePictureModal()">
+                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 65px; right: 20px; background: rgba(10, 10, 15, 0.98); backdrop-filter: blur(25px); border: 2px solid rgba(99, 102, 241, 0.5); border-radius: 16px; padding: 20px; min-width: 280px; z-index: 9999; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+                        <div class="dropdown-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
+                            <div class="profile-avatar-large" id="profileAvatarLarge" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: white; position: relative; cursor: pointer; border: 3px solid rgba(99, 102, 241, 0.4); transition: all 0.3s ease;" onclick="document.getElementById('profilePictureInput').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                                 A
-                                <div style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: #4CAF50; border: 2px solid rgba(20, 20, 20, 0.98); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-camera" style="font-size: 8px; color: white;"></i>
+                                <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
+                                <div style="position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; background: #4CAF50; border: 2px solid rgba(15, 15, 20, 0.98); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-camera" style="font-size: 9px; color: white;"></i>
                                 </div>
                             </div>
-                            <div style="color: #fff; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.5);" id="profileDropdownName">Admin User</div>
-                            <div style="color: #e2e8f0; font-size: 12px; margin-top: 2px;" id="profileDropdownRole">Administrator</div>
-                            <div style="color: #cbd5e1; font-size: 11px; margin-top: 4px;" id="profileDropdownPhone">+254700000000</div>
+                            <div style="color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-size: 16px; margin-bottom: 4px;" id="profileDropdownName">Admin User</div>
+                            <div style="color: #e2e8f0; font-size: 13px; margin-bottom: 6px;" id="profileDropdownRole">Administrator</div>
+                            <div style="color: #6366f1; font-size: 12px; font-weight: 500; background: rgba(99, 102, 241, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block;" id="profileDropdownPhone">+254700000000</div>
                         </div>
                         
                         <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="showProfileModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-user" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
-                                <span>View Profile</span>
+                            <a href="#" class="dropdown-item" onclick="showProfileModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-user" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                                <span style="font-size: 14px;">View Profile</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="showSettingsModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-cog" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
-                                <span>Account Settings</span>
+                            <a href="#" class="dropdown-item" onclick="showSettingsModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-cog" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                                <span style="font-size: 14px;">Account Settings</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="showProfilePictureModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 8px; margin-bottom: 4px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-image" style="margin-right: 12px; width: 16px; color: #6366f1;"></i>
-                                <span>Upload Profile Picture</span>
+                            <a href="#" class="dropdown-item" onclick="showProfilePictureModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-image" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                                <span style="font-size: 14px;">Upload Profile Picture</span>
                             </a>
-                            <div style="height: 1px; background: rgba(99, 102, 241, 0.3); margin: 8px 0;"></div>
-                            <a href="#" class="dropdown-item" onclick="logout()" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 8px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
-                                <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 16px;"></i>
-                                <span>Sign Out</span>
+                            <div style="height: 1px; background: rgba(99, 102, 241, 0.3); margin: 10px 0;"></div>
+                            <a href="#" class="dropdown-item" onclick="logout()" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
+                                <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 18px;"></i>
+                                <span style="font-size: 14px; font-weight: 500;">Sign Out</span>
                             </a>
                         </div>
                     </div>
@@ -1767,25 +1768,25 @@
     </button>
 
     <!-- AI Assistant Modal -->
-    <div id="chatbotModal" style="display:none; position:fixed; right:20px; top:50%; transform:translateY(-50%); z-index:9500; pointer-events:none;" class="ai-assistant-container">
-        <div class="chatbot-modal" style="position:relative; margin:0; background:rgba(255,255,255,0.1); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:20px; padding:20px; box-shadow:0 25px 50px rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.2); max-width:320px; width:320px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
-            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.2);">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="width:36px; height:36px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:12px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4);">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <div id="chatbotModal" style="display:none; position:fixed; right:20px; bottom:80px; z-index:9500; pointer-events:none;" class="ai-assistant-container">
+        <div class="chatbot-modal" style="position:relative; margin:0; background:rgba(15,15,25,0.98); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 20px 40px rgba(0,0,0,0.4); border:1px solid rgba(99,102,241,0.3); max-width:350px; width:350px; max-height:450px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(99,102,241,0.3);">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:32px; height:32px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:10px; display:flex; align-items: center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4);">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
                             <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                             <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                         </svg>
                     </div>
-                    <span style="font-family: 'Space Grotesk', sans-serif; font-weight:700; font-size:18px; letter-spacing:0.5px; color:var(--text);">AI Assistant</span>
+                    <span style="font-family: 'Space Grotesk', sans-serif; font-weight:600; font-size:14px; letter-spacing:0.3px; color:var(--text);">AI Assistant</span>
                 </div>
-                <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.1); border:none; width:32px; height:32px; border-radius:50%; font-size:18px; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)'">&times;</button>
+                <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.1); border:none; width:28px; height:28px; border-radius:50%; font-size:14px; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)'">&times;</button>
             </div>
-            <div id="chatbot-messages" style="flex:1; min-height:200px; max-height:300px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.05); border-radius:16px; border:1px solid rgba(255,255,255,0.1); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;"></div>
-            <div style="margin-top:12px; display:flex; gap:8px;">
-                <input id="chatbot-input" placeholder="Ask me anything..." style="flex:1; padding:12px 16px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); font-size:14px; font-weight:400; color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backdrop-filter:blur(10px); transition:all 0.3s ease;" />
-                <button class="btn" onclick="sendChatbotMessage()" style="padding:12px 20px; border-radius:12px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:white; font-weight:600; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(99,102,241,0.4); font-size:13px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'">Send</button>
+            <div id="chatbot-messages" style="flex:1; min-height:250px; max-height:280px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.1); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;"></div>
+            <div style="margin-top:10px; display:flex; gap:6px;">
+                <input id="chatbot-input" placeholder="Ask me anything..." style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); font-size:13px; font-weight:400; color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backdrop-filter:blur(10px); transition:all 0.3s ease;" />
+                <button class="btn" onclick="sendChatbotMessage()" style="padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:white; font-weight:500; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(99,102,241,0.4); font-size:12px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'">Send</button>
             </div>
         </div>
     </div>
@@ -1903,6 +1904,9 @@
             console.log('API_BASE:', API_BASE);
             console.log('Current location:', window.location.href);
             
+            // Load saved profile picture
+            loadProfilePicture();
+            
             // Fix avatar path - set correct src after DOM loads
             setTimeout(() => {
                 const profilePic = document.getElementById('currentProfilePic');
@@ -1924,6 +1928,24 @@
             checkAuth();
             setupEventListeners();
         });
+        
+        function loadProfilePicture() {
+            const savedImage = localStorage.getItem('userProfilePicture');
+            if (savedImage) {
+                const userAvatar = document.getElementById('userAvatar');
+                const profileAvatarLarge = document.getElementById('profileAvatarLarge');
+                
+                if (userAvatar) {
+                    userAvatar.style.backgroundImage = `url('${savedImage}')`;
+                    userAvatar.textContent = '';
+                }
+                
+                if (profileAvatarLarge) {
+                    profileAvatarLarge.style.backgroundImage = `url('${savedImage}')`;
+                    profileAvatarLarge.textContent = '';
+                }
+            }
+        }
 
         function setupEventListeners() {
             // Login form - multiple event bindings to ensure it works
@@ -2235,9 +2257,21 @@
         // AI ASSISTANT FUNCTIONALITY
         // ========================================
         function showChatbot() {
-            document.getElementById('chatbotModal').style.display = 'flex';
+            const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
-            if (panel) panel.style.display = 'flex';
+            
+            modal.style.display = 'block';
+            if (panel) {
+                panel.style.display = 'flex';
+                panel.style.transform = 'translateY(20px)';
+                panel.style.opacity = '0';
+                
+                setTimeout(() => {
+                    panel.style.transform = 'translateY(0)';
+                    panel.style.opacity = '1';
+                    panel.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                }, 10);
+            }
 
             const convo = document.getElementById('chatbot-messages');
             if (!convo.children.length) {
@@ -2273,8 +2307,20 @@
         }
 
         function hideChatbot() {
+            const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
-            if (panel) panel.style.display = 'none';
+            
+            if (panel) {
+                panel.style.transform = 'translateY(20px)';
+                panel.style.opacity = '0';
+                panel.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+                
+                setTimeout(() => {
+                    panel.style.display = 'none';
+                    modal.style.display = 'none';
+                }, 300);
+            }
+            
             const input = document.getElementById('chatbot-input');
             if (input) input.onkeydown = null;
         }
@@ -2479,70 +2525,51 @@
             }
         }
 
-        async function uploadProfilePicture(input) {
+        function uploadProfilePicture(input) {
             const file = input.files[0];
             if (!file) return;
 
             // Validate file
             if (!file.type.match(/image\/(jpeg|jpg|png|gif)/)) {
-                alert('Please select a valid image file (JPG, PNG, or GIF).');
+                showToast('Please select a valid image file (JPG, PNG, or GIF).', 'error');
                 return;
             }
 
             if (file.size > 5 * 1024 * 1024) {
-                alert('File size must be less than 5MB.');
+                showToast('File size must be less than 5MB.', 'error');
                 return;
             }
 
-            const uploadBtn = document.getElementById('uploadProfileBtn');
-            const indicator = document.getElementById('uploadIndicator');
-            
-            // Show loading state
-            uploadBtn.innerHTML = '<div class="loading"></div> Uploading...';
-            uploadBtn.disabled = true;
-
-            try {
-                const formData = new FormData();
-                formData.append('profilePicture', file);
-
-                const response = await fetch(`${API_BASE}/api/admin/profile/upload`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${authToken}`
-                    },
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    throw new Error('Upload failed');
-                }
-
-                const result = await response.json();
+            // Read file and convert to base64
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
                 
-                // Update profile picture
-                document.getElementById('currentProfilePic').src = result.profilePicture;
+                // Update both avatars
+                const userAvatar = document.getElementById('userAvatar');
+                const profileAvatarLarge = document.getElementById('profileAvatarLarge');
                 
-                // Show success indicator
-                indicator.style.display = 'flex';
-                setTimeout(() => {
-                    indicator.style.display = 'none';
-                }, 3000);
-
-                // Update user data
-                if (currentUser) {
-                    currentUser.profilePicture = result.profilePicture;
-                    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                if (userAvatar) {
+                    userAvatar.style.backgroundImage = `url('${imageUrl}')`;
+                    userAvatar.textContent = ''; // Remove initial letter
                 }
-
+                
+                if (profileAvatarLarge) {
+                    profileAvatarLarge.style.backgroundImage = `url('${imageUrl}')`;
+                    profileAvatarLarge.textContent = ''; // Remove initial letter
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('userProfilePicture', imageUrl);
+                
                 showToast('Profile picture updated successfully!', 'success');
-
-            } catch (error) {
-                console.error('Upload error:', error);
-                showToast('Failed to upload profile picture. Please try again.', 'error');
-            } finally {
-                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> <span>Upload New Picture</span>';
-                uploadBtn.disabled = false;
-            }
+            };
+            
+            reader.onerror = function() {
+                showToast('Failed to read image file. Please try again.', 'error');
+            };
+            
+            reader.readAsDataURL(file);
         }
 
         async function updateProfile() {
