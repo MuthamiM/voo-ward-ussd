@@ -1,10 +1,21 @@
 ﻿const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
+const compression = require("compression");
 
 // IMPORTANT: load ENV first
 if (require.resolve("dotenv")) {
   require("dotenv").config();
+}
+
+// Initialize Sentry for error monitoring (production only)
+if (process.env.NODE_ENV === 'production' && process.env.SENTRY_DSN) {
+  const Sentry = require("@sentry/node");
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+  });
 }
 
 const app = express();
@@ -21,14 +32,60 @@ app.get('/', (req, res) => {
   res.redirect('/admin');
 });
 
-// 1) Health first, no DB dependency
-app.get("/health", (req, res) => {
-  res.json({ 
-    ok: true, 
-    service: "voo-kyamatu-ussd", 
-    ts: new Date().toISOString(),
-    deployment: "2025-11-20-fix-proxy" 
-  });
+// Enable compression for all responses
+app.use(compression());
+
+// 1) Health check with enhanced monitoring
+app.get("/health", async (req, res) => {
+  const health = {
+    ok: true,
+    service: "voo-kyamatu-ussd",
+    timestamp: new Date().toISOString(),
+    deployment: "2025-11-22-improvements",
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    version: require('../package.json').version || '1.0.0'
+  };
+
+  // Check database connection (optional - don't fail health check)
+  try {
+    if (app.locals.connectDB) {
+      const db = await app.locals.connectDB();
+      if (db) {
+        health.database = 'connected';
+      }
+    }
+  } catch (err) {
+    health.database = 'disconnected';
+    health.ok = false;
+  }
+
+  res.status(health.ok ? 200 : 503).json(health);
+});
+
+// Detailed health check endpoint
+app.get("/health/detailed", async (req, res) => {
+  const detailed = {
+    timestamp: new Date().toISOString(),
+    service: "voo-kyamatu-ussd",
+    status: "healthy",
+    checks: {
+      database: { status: "unknown" },
+      redis: { status: "unknown" },
+      memory: {
+        status: "healthy",
+        usage: process.memoryUsage(),
+        heapUsedMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024)
+      },
+      uptime: {
+        status: "healthy",
+        seconds: Math.floor(process.uptime()),
+        formatted: `${Math.floor(process.uptime() / 3600)}h ${Math.floor((process.uptime() % 3600) / 60)}m`
+      }
+    }
+  };
+
+  res.json(detailed);
 });
 
 // parsers & logs
@@ -59,7 +116,7 @@ app.post("/ussd", async (req, res) => {
 
     // Example next step (no DB)
     const [lang] = text.split("*");
-    if (["1","2","3"].includes(lang)) {
+    if (["1", "2", "3"].includes(lang)) {
       const langName = lang === "1" ? "English" : lang === "2" ? "Swahili" : "Kamba";
       const msg = [
         `Language: ${langName}`,
@@ -161,9 +218,28 @@ try {
   console.warn('USSD router not loaded:', err.message);
 }
 
+// Mount WhatsApp webhook routes
+try {
+  const whatsappRouter = require('./routes/whatsapp');
+  app.use('/api/whatsapp', whatsappRouter);
+  console.log('✅ WhatsApp routes mounted at /api/whatsapp');
+} catch (err) {
+  console.warn('WhatsApp router not loaded:', err.message);
+}
+
+// Mount citizen portal routes
+try {
+  const citizenRouter = require('./routes/citizenPortal');
+  app.use('/api/citizen', citizenRouter);
+  console.log('✅ Citizen portal routes mounted at /api/citizen');
+} catch (err) {
+  console.warn('Citizen portal router not loaded:', err.message);
+}
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`[PRODUCTION] VOO Kyamatu Ward USSD API listening on :${PORT}`);
   console.log("Health:", `http://localhost:${PORT}/health`);
   console.log("USSD:", `http://localhost:${PORT}/ussd`);
+  console.log("Citizen Portal:", `http://localhost:${PORT}/api/citizen`);
 });
