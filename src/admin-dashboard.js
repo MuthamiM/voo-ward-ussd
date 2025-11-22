@@ -162,16 +162,22 @@ function generateSessionToken() {
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
   
+  // Log authentication attempts for debugging
+  console.log('Auth check - Token present:', !!token, 'Value:', token ? token.substring(0, 10) + '...' : 'none');
+  
   // treat explicit 'null' or 'undefined' string values as missing token
   if (!token || token === 'null' || token === 'undefined') {
+    console.log('Auth failed: No valid token provided');
     return res.status(401).json({ error: "Authentication required" });
   }
   
   const session = sessions.get(token);
   if (!session) {
+    console.log('Auth failed: Session not found for token');
     return res.status(401).json({ error: "Invalid or expired session" });
   }
   
+  console.log('Auth success: User', session.user.username, 'Role:', session.user.role);
   req.user = session.user;
   next();
 }
@@ -469,6 +475,14 @@ app.get("/health", (req, res) => {
     ts: new Date().toISOString(),
     db: db ? "connected" : "disconnected"
   });
+});
+
+// Favicon endpoint - return simple SVG icon
+app.get("/favicon.ico", (req, res) => {
+  const svg = `<svg width="32" height="32" xmlns="http://www.w3.org/2000/svg"><rect width="32" height="32" fill="#6366f1"/><text x="16" y="22" font-family="Arial" font-size="20" fill="white" text-anchor="middle" font-weight="bold">V</text></svg>`;
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svg);
 });
 
 // Admin health check (simple)
