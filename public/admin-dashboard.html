@@ -1952,8 +1952,12 @@
         });
         
         function loadProfilePicture() {
-            const savedImage = localStorage.getItem('userProfilePicture');
-            const savedPhone = localStorage.getItem('userPhone') || '0706757140';
+            if (!currentUser) return;
+            
+            // Use user-specific key for profile picture
+            const userKey = `profilePic_${currentUser.username || currentUser.id}`;
+            const savedImage = localStorage.getItem(userKey);
+            const savedPhone = currentUser.phone || localStorage.getItem('userPhone') || '0706757140';
             
             if (savedImage) {
                 const userAvatar = document.getElementById('userAvatar');
@@ -2647,8 +2651,9 @@
                     userAvatar.textContent = ''; // Remove initial letter
                 }
                 
-                // Save to localStorage
-                localStorage.setItem('userProfilePicture', imageUrl);
+                // Save to localStorage with user-specific key
+                const userKey = `profilePic_${currentUser.username || currentUser.id}`;
+                localStorage.setItem(userKey, imageUrl);
                 
                 showToast('Profile picture updated successfully!', 'success');
                 
@@ -3211,25 +3216,64 @@
             const usersList = document.getElementById('usersList');
             const usersCount = document.getElementById('usersCount');
             
-            // Hide loading indicator
-            const loadingEl = document.getElementById('usersLoading');
-            if (loadingEl) loadingEl.style.display = 'none';
-            
-            // Show demo user data
-            const demoUsers = [
-                {
-                    id: '1',
-                    username: currentUser?.username || 'admin',
-                    full_name: currentUser?.fullName || currentUser?.full_name || 'System Administrator',
-                    role: currentUser?.role || 'MCA',
-                    phone: localStorage.getItem('userPhone') || '0706757140',
-                    profilePicture: localStorage.getItem('userProfilePicture') || null,
-                    created_at: new Date().toISOString()
+            try {
+                // Try to fetch users from database
+                const response = await fetch(`${API_BASE}/api/admin/users`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const loadingEl = document.getElementById('usersLoading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const users = data.users || [];
+                    
+                    // Load user-specific profile pictures
+                    users.forEach(user => {
+                        const userKey = `profilePic_${user.username || user.id}`;
+                        const savedPic = localStorage.getItem(userKey);
+                        if (savedPic) {
+                            user.profilePicture = savedPic;
+                        }
+                    });
+                    
+                    if (usersCount) usersCount.textContent = `${users.length}`;
+                    displayUsers(users);
+                } else {
+                    // Fallback: show current user only
+                    const currentUserData = {
+                        id: currentUser?.id || '1',
+                        username: currentUser?.username || 'admin',
+                        full_name: currentUser?.fullName || currentUser?.full_name || 'System Administrator',
+                        role: currentUser?.role || 'MCA',
+                        phone: currentUser?.phone || '0706757140',
+                        profilePicture: localStorage.getItem(`profilePic_${currentUser.username || currentUser.id}`) || null,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    if (usersCount) usersCount.textContent = '1';
+                    displayUsers([currentUserData]);
                 }
-            ];
-            
-            if (usersCount) usersCount.textContent = `${demoUsers.length}`;
-            displayUsers(demoUsers);
+            } catch (error) {
+                console.error('Error loading users:', error);
+                const loadingEl = document.getElementById('usersLoading');
+                if (loadingEl) loadingEl.style.display = 'none';
+                
+                // Show error message
+                if (usersList) {
+                    usersList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; color: #f59e0b;"></i>
+                            <p>Unable to load users</p>
+                            <p style="font-size: 14px; opacity: 0.7;">${error.message}</p>
+                            <button onclick="loadUsersData()" class="btn" style="margin-top: 16px;">
+                                <i class="fas fa-sync-alt"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            }
         }
         
         // Display Users - Disabled (User Management removed)
