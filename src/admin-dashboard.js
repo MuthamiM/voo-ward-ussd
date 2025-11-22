@@ -62,7 +62,7 @@ app.use((req, res, next) => {
   // Referrer Policy
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   // Content Security Policy - Allow external resources for maps, fonts, and charts
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https:;");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https:; frame-ancestors 'none';");
   next();
 });
 
@@ -864,7 +864,7 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
 });
 
 // Get all users (MCA only)
-app.get("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
+app.get("/api/auth/users", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
     if (!database) {

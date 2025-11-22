@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://voo-ward-ussd-1.onrender.com; frame-ancestors 'none';">
     <title>VOO Ward - Modern Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -3250,7 +3248,7 @@
             
             try {
                 // Try to fetch users from database
-                const response = await fetch(`${API_BASE}/users`, {
+                const response = await fetch(`${API_BASE}/api/auth/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 
@@ -3717,15 +3715,15 @@
                 </div>
                 
                 <div style="padding: 4px 0;">
-                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('profilePictureInput').click(); document.getElementById('profileDropdown').remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('profilePictureInput').click(); const dropdown = document.getElementById('profileDropdown'); if(dropdown) dropdown.remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
                         <i class="fas fa-camera" style="margin-right: 10px; width: 14px; font-size: 13px; color: #a78bfa;"></i>
                         <span>Upload Picture</span>
                     </a>
-                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showChangePhoneModal(); document.getElementById('profileDropdown').remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showChangePhoneModal(); const dropdown = document.getElementById('profileDropdown'); if(dropdown) dropdown.remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
                         <i class="fas fa-phone-alt" style="margin-right: 10px; width: 14px; font-size: 13px; color: #a78bfa;"></i>
                         <span>Change Phone</span>
                     </a>
-                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showChangePasswordModal(); document.getElementById('profileDropdown').remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
+                    <a href="#" onclick="event.preventDefault(); event.stopPropagation(); showChangePasswordModal(); const dropdown = document.getElementById('profileDropdown'); if(dropdown) dropdown.remove(); return false;" style="display: flex; align-items: center; padding: 8px 12px; color: rgba(255,255,255,0.9); text-decoration: none; border-radius: 6px; transition: all 0.15s ease; font-size: 13px;" onmouseover="this.style.background='rgba(99, 102, 241, 0.15)'" onmouseout="this.style.background='transparent'">
                         <i class="fas fa-key" style="margin-right: 10px; width: 14px; font-size: 13px; color: #a78bfa;"></i>
                         <span>Change Password</span>
                     </a>
