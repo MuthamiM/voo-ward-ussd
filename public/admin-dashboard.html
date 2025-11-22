@@ -2180,6 +2180,9 @@
                 if (profileDropdownRoleEl) profileDropdownRoleEl.textContent = currentUser.role || 'User';
                 if (profileDropdownPhoneEl) profileDropdownPhoneEl.innerHTML = `<i class="fas fa-phone" style="font-size: 12px;"></i><span>${userPhone}</span>`;
                 if (profileAvatarLargeEl) profileAvatarLargeEl.textContent = displayName.charAt(0).toUpperCase();
+                
+                // Load user-specific profile picture
+                loadProfilePicture();
             }
             
             // Set default page to dashboard
@@ -3218,7 +3221,7 @@
             
             try {
                 // Try to fetch users from database
-                const response = await fetch(`${API_BASE}/api/admin/users`, {
+                const response = await fetch(`${API_BASE}/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
                 
@@ -3226,41 +3229,37 @@
                 if (loadingEl) loadingEl.style.display = 'none';
                 
                 if (response.ok) {
-                    const data = await response.json();
-                    const users = data.users || [];
+                    const users = await response.json(); // Backend returns array directly
                     
-                    // Load user-specific profile pictures
+                    // Load user-specific profile pictures for each user
                     users.forEach(user => {
-                        const userKey = `profilePic_${user.username || user.id}`;
+                        const userKey = `profilePic_${user.username || user.name || user.id}`;
                         const savedPic = localStorage.getItem(userKey);
                         if (savedPic) {
                             user.profilePicture = savedPic;
+                        }
+                        // Normalize user data structure
+                        if (!user.full_name) {
+                            user.full_name = user.name;
+                        }
+                        if (!user.phone && !user.username) {
+                            user.username = user.name.toLowerCase();
                         }
                     });
                     
                     if (usersCount) usersCount.textContent = `${users.length}`;
                     displayUsers(users);
-                } else {
-                    // Fallback: show current user only
-                    const currentUserData = {
-                        id: currentUser?.id || '1',
-                        username: currentUser?.username || 'admin',
-                        full_name: currentUser?.fullName || currentUser?.full_name || 'System Administrator',
-                        role: currentUser?.role || 'MCA',
-                        phone: currentUser?.phone || '0706757140',
-                        profilePicture: localStorage.getItem(`profilePic_${currentUser.username || currentUser.id}`) || null,
-                        created_at: new Date().toISOString()
-                    };
                     
-                    if (usersCount) usersCount.textContent = '1';
-                    displayUsers([currentUserData]);
+                    console.log(`Loaded ${users.length} users from database`);
+                } else {
+                    throw new Error(`Failed to load users: ${response.status}`);
                 }
             } catch (error) {
                 console.error('Error loading users:', error);
                 const loadingEl = document.getElementById('usersLoading');
                 if (loadingEl) loadingEl.style.display = 'none';
                 
-                // Show error message
+                // Show error message with retry
                 if (usersList) {
                     usersList.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -3273,6 +3272,7 @@
                         </div>
                     `;
                 }
+                if (usersCount) usersCount.textContent = '0';
             }
         }
         
