@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://voo-ward-ussd-1.onrender.com; frame-ancestors 'none';">
     <title>VOO Ward - Modern Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1094,25 +1099,25 @@
                 <div class="nav-section">
                     <div class="nav-title">Main</div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link active" data-page="dashboard">
+                        <a href="#" class="nav-link active" data-page="dashboard" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-home"></i>
                             <span class="nav-text">Dashboard</span>
                         </a>
                     </div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="issues">
+                        <a href="#" class="nav-link" data-page="issues" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-exclamation-circle"></i>
                             <span class="nav-text">Issues</span>
                         </a>
                     </div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="bursaries">
+                        <a href="#" class="nav-link" data-page="bursaries" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-graduation-cap"></i>
                             <span class="nav-text">Bursaries</span>
                         </a>
                     </div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="constituents">
+                        <a href="#" class="nav-link" data-page="constituents" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-users"></i>
                             <span class="nav-text">Constituents</span>
                         </a>
@@ -1122,13 +1127,13 @@
                 <div class="nav-section">
                     <div class="nav-title">Communication</div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="announcements">
+                        <a href="#" class="nav-link" data-page="announcements" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-bullhorn"></i>
                             <span class="nav-text">Announcements</span>
                         </a>
                     </div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="ussd">
+                        <a href="#" class="nav-link" data-page="ussd" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-mobile-alt"></i>
                             <span class="nav-text">USSD Interactions</span>
                         </a>
@@ -1138,7 +1143,7 @@
                 <div class="nav-section">
                     <div class="nav-title">Management</div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="settings">
+                        <a href="#" class="nav-link" data-page="settings" onclick="handleNavigation(event)">
                             <i class="nav-icon fas fa-cog"></i>
                             <span class="nav-text">Settings</span>
                         </a>
@@ -1876,6 +1881,53 @@
     </style>
 
     <script>
+        // Security: Input sanitization
+        function sanitizeInput(input) {
+            if (!input) return '';
+            const div = document.createElement('div');
+            div.textContent = input;
+            return div.innerHTML;
+        }
+        
+        // Security: Validate input patterns
+        function validateInput(input, type) {
+            if (!input) return false;
+            
+            switch(type) {
+                case 'username':
+                    return /^[a-zA-Z0-9_]{3,30}$/.test(input);
+                case 'phone':
+                    return /^07\d{8}$/.test(input);
+                case 'password':
+                    return input.length >= 6 && input.length <= 100;
+                case 'text':
+                    return input.length > 0 && input.length <= 500;
+                default:
+                    return true;
+            }
+        }
+        
+        // Security: Rate limiting for login attempts
+        const loginAttempts = {
+            count: 0,
+            lastAttempt: 0,
+            maxAttempts: 5,
+            lockoutTime: 300000 // 5 minutes
+        };
+        
+        function checkRateLimit() {
+            const now = Date.now();
+            if (loginAttempts.count >= loginAttempts.maxAttempts) {
+                const timeSinceLastAttempt = now - loginAttempts.lastAttempt;
+                if (timeSinceLastAttempt < loginAttempts.lockoutTime) {
+                    const remainingTime = Math.ceil((loginAttempts.lockoutTime - timeSinceLastAttempt) / 1000);
+                    throw new Error(`Too many login attempts. Please try again in ${remainingTime} seconds.`);
+                } else {
+                    loginAttempts.count = 0;
+                }
+            }
+        }
+        
         // API Base URL
         const API_BASE = window.location.origin + '/admin';
         console.log('API_BASE:', API_BASE);
@@ -1988,20 +2040,49 @@
         async function handleLogin(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
             const loginError = document.getElementById('loginError');
             
+            // Security: Input validation
+            if (!validateInput(username, 'username')) {
+                loginError.innerHTML = '<div class="error-message">Invalid username format. Use 3-30 alphanumeric characters.</div>';
+                return;
+            }
+            
+            if (!validateInput(password, 'password')) {
+                loginError.innerHTML = '<div class="error-message">Invalid password length. Must be 6-100 characters.</div>';
+                return;
+            }
+            
+            // Security: Rate limiting
+            try {
+                checkRateLimit();
+            } catch (error) {
+                loginError.innerHTML = `<div class="error-message">${sanitizeInput(error.message)}</div>`;
+                return;
+            }
+            
             loginBtn.innerHTML = '<div class="loading"></div> Signing In...';
+            loginBtn.disabled = true;
             loginError.innerHTML = '';
             
             try {
+                loginAttempts.count++;
+                loginAttempts.lastAttempt = Date.now();
+                
                 console.log('Attempting login to:', `${API_BASE}/api/auth/login`);
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ 
+                        username: sanitizeInput(username), 
+                        password: password 
+                    })
                 });
                 
                 const data = await response.json();
@@ -2010,12 +2091,21 @@
                     throw new Error(data.error || 'Login failed');
                 }
                 
+                // Reset login attempts on success
+                loginAttempts.count = 0;
+                
                 authToken = data.token;
                 currentUser = data.user;
                 
-                // Store auth data
+                // Store auth data with expiration
+                const authData = {
+                    token: authToken,
+                    user: currentUser,
+                    expires: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                };
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                localStorage.setItem('authExpiry', authData.expires.toString());
                 
                 showApp();
                 loadDashboardData();
@@ -2029,29 +2119,43 @@
                 }, 500);
                 
             } catch (error) {
-                loginError.innerHTML = `<div class="error-message">${error.message}</div>`;
+                loginError.innerHTML = `<div class="error-message">${sanitizeInput(error.message)}</div>`;
             } finally {
                 loginBtn.innerHTML = '<span>Sign In</span>';
+                loginBtn.disabled = false;
             }
         }
 
         function checkAuth() {
             const storedToken = localStorage.getItem('authToken');
             const storedUser = localStorage.getItem('currentUser');
+            const authExpiry = localStorage.getItem('authExpiry');
+            
+            // Security: Check if auth is expired
+            if (authExpiry && Date.now() > parseInt(authExpiry)) {
+                console.log('Auth token expired, logging out...');
+                logout();
+                return;
+            }
             
             if (storedToken && storedUser) {
-                authToken = storedToken;
-                currentUser = JSON.parse(storedUser);
-                showApp();
-                loadDashboardData();
-                
-                // Show AI assistant button only after successful auth
-                setTimeout(() => {
-                    const chatbotBtn = document.getElementById('floatingChatbotBtn');
-                    if (chatbotBtn) {
-                        chatbotBtn.style.display = 'flex';
-                    }
-                }, 500);
+                try {
+                    authToken = storedToken;
+                    currentUser = JSON.parse(storedUser);
+                    showApp();
+                    loadDashboardData();
+                    
+                    // Show AI assistant button only after successful auth
+                    setTimeout(() => {
+                        const chatbotBtn = document.getElementById('floatingChatbotBtn');
+                        if (chatbotBtn) {
+                            chatbotBtn.style.display = 'flex';
+                        }
+                    }, 500);
+                } catch (error) {
+                    console.error('Error parsing stored user data:', error);
+                    logout();
+                }
             }
         }
 
@@ -2061,19 +2165,26 @@
             
             // Update user info
             if (currentUser) {
-                const displayName = currentUser.fullName || currentUser.full_name || currentUser.username;
+                const displayName = currentUser.fullName || currentUser.full_name || currentUser.username || 'Admin';
                 const userPhone = currentUser.phone || '+254700000000';
                 
-                document.getElementById('userName').textContent = displayName;
-                document.getElementById('userRole').textContent = currentUser.role || 'User';
-                document.getElementById('userPhone').textContent = userPhone;
-                document.getElementById('userAvatar').textContent = displayName.charAt(0).toUpperCase();
+                const userNameEl = document.getElementById('userName');
+                const userRoleEl = document.getElementById('userRole');
+                const userPhoneEl = document.getElementById('userPhone');
+                const userAvatarEl = document.getElementById('userAvatar');
+                const profileDropdownNameEl = document.getElementById('profileDropdownName');
+                const profileDropdownRoleEl = document.getElementById('profileDropdownRole');
+                const profileDropdownPhoneEl = document.getElementById('profileDropdownPhone');
+                const profileAvatarLargeEl = document.getElementById('profileAvatarLarge');
                 
-                // Update dropdown profile info
-                document.getElementById('profileDropdownName').textContent = displayName;
-                document.getElementById('profileDropdownRole').textContent = currentUser.role || 'User';
-                document.getElementById('profileDropdownPhone').textContent = userPhone;
-                document.getElementById('profileAvatarLarge').textContent = displayName.charAt(0).toUpperCase();
+                if (userNameEl) userNameEl.textContent = displayName;
+                if (userRoleEl) userRoleEl.textContent = currentUser.role || 'User';
+                if (userPhoneEl) userPhoneEl.textContent = userPhone;
+                if (userAvatarEl) userAvatarEl.textContent = displayName.charAt(0).toUpperCase();
+                if (profileDropdownNameEl) profileDropdownNameEl.textContent = displayName;
+                if (profileDropdownRoleEl) profileDropdownRoleEl.textContent = currentUser.role || 'User';
+                if (profileDropdownPhoneEl) profileDropdownPhoneEl.innerHTML = `<i class="fas fa-phone" style="font-size: 12px;"></i><span>${userPhone}</span>`;
+                if (profileAvatarLargeEl) profileAvatarLargeEl.textContent = displayName.charAt(0).toUpperCase();
             }
             
             // Set default page to dashboard
@@ -2216,9 +2327,10 @@
             // Show logout confirmation
             showToast('Signing out...', 'info');
             
-            // Clear auth data
+            // Security: Clear all auth data
             localStorage.removeItem('authToken');
             localStorage.removeItem('currentUser');
+            localStorage.removeItem('authExpiry');
             authToken = null;
             currentUser = null;
             
