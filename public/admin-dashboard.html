@@ -1138,12 +1138,6 @@
                 <div class="nav-section">
                     <div class="nav-title">Management</div>
                     <div class="nav-item">
-                        <a href="#" class="nav-link" data-page="users">
-                            <i class="nav-icon fas fa-user-cog"></i>
-                            <span class="nav-text">User Management</span>
-                        </a>
-                    </div>
-                    <div class="nav-item">
                         <a href="#" class="nav-link" data-page="settings">
                             <i class="nav-icon fas fa-cog"></i>
                             <span class="nav-text">Settings</span>
@@ -1175,45 +1169,42 @@
                     </div>
                     
                     <div class="user-profile">
-                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="cursor: pointer; border: 2px solid rgba(255,255,255,0.2); transition: all 0.3s ease; background-size: cover; background-position: center; background-repeat: no-repeat;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'">A</div>
                         <div class="user-info">
-                            <div class="user-name" id="userName">Admin</div>
-                            <div class="user-role" id="userRole">Administrator</div>
-                            <div class="user-phone" id="userPhone" style="font-size: 11px; color: #ccc; margin-top: 2px;">+254700000000</div>
+                            <div class="user-name" id="userName">Zak</div>
+                            <div class="user-role" id="userRole">MCA</div>
                         </div>
+                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="cursor: pointer; border: 3px solid rgba(99,102,241,0.4); transition: all 0.3s ease; background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 4px 12px rgba(0,0,0,0.3);" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='scale(1.05)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.4)'; this.style.transform='scale(1)'">Z</div>
                         <i class="fas fa-chevron-down" id="profileDropdownIcon" onclick="toggleProfileDropdown()" style="transition: transform 0.3s ease; cursor: pointer; padding: 8px; border-radius: 4px;" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='transparent'"></i>
                     </div>
                     
                     <!-- Profile Dropdown Menu -->
-                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 65px; right: 20px; background: rgba(10, 10, 15, 0.98); backdrop-filter: blur(25px); border: 2px solid rgba(99, 102, 241, 0.5); border-radius: 16px; padding: 20px; min-width: 280px; z-index: 9999; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
+                    <!-- Hidden file input for profile picture -->
+                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
+                    
+                    <div class="profile-dropdown" id="profileDropdown" style="display: none; position: absolute; top: 65px; right: 20px; background: rgba(10, 10, 15, 0.98); backdrop-filter: blur(25px); border: 2px solid rgba(99, 102, 241, 0.5); border-radius: 16px; padding: 20px; min-width: 300px; z-index: 9999; box-shadow: 0 25px 50px rgba(0,0,0,0.8);">
                         <div class="dropdown-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(99, 102, 241, 0.3);">
-                            <div class="profile-avatar-large" id="profileAvatarLarge" style="width: 70px; height: 70px; border-radius: 50%; margin: 0 auto 12px; background: linear-gradient(135deg, #6366f1, #8b5cf6); background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; color: white; position: relative; cursor: pointer; border: 3px solid rgba(99, 102, 241, 0.4); transition: all 0.3s ease;" onclick="document.getElementById('profilePictureInput').click()" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                                A
-                                <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
-                                <div style="position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; background: #4CAF50; border: 2px solid rgba(15, 15, 20, 0.98); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-camera" style="font-size: 9px; color: white;"></i>
-                                </div>
+                            <div style="color: #fff; font-weight: 600; font-size: 18px; margin-bottom: 4px;" id="profileDropdownName">Zak</div>
+                            <div style="color: #e2e8f0; font-size: 14px; margin-bottom: 8px;" id="profileDropdownRole">MCA</div>
+                            <div style="color: #6366f1; font-size: 13px; font-weight: 500; background: rgba(99, 102, 241, 0.15); padding: 6px 12px; border-radius: 8px; display: inline-block;" id="profileDropdownPhone">
+                                <i class="fas fa-phone" style="margin-right: 6px;"></i>0706757140
                             </div>
-                            <div style="color: #fff; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5); font-size: 16px; margin-bottom: 4px;" id="profileDropdownName">Admin User</div>
-                            <div style="color: #e2e8f0; font-size: 13px; margin-bottom: 6px;" id="profileDropdownRole">Administrator</div>
-                            <div style="color: #6366f1; font-size: 12px; font-weight: 500; background: rgba(99, 102, 241, 0.1); padding: 4px 8px; border-radius: 6px; display: inline-block;" id="profileDropdownPhone">+254700000000</div>
                         </div>
                         
                         <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="showProfileModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-user" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
-                                <span style="font-size: 14px;">View Profile</span>
-                            </a>
-                            <a href="#" class="dropdown-item" onclick="showSettingsModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-cog" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
-                                <span style="font-size: 14px;">Account Settings</span>
-                            </a>
-                            <a href="#" class="dropdown-item" onclick="showProfilePictureModal()" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
-                                <i class="fas fa-image" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('profilePictureInput').click();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-camera" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
                                 <span style="font-size: 14px;">Upload Profile Picture</span>
                             </a>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePhoneModal();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 6px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-phone-alt" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                                <span style="font-size: 14px;">Change Phone Number</span>
+                            </a>
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePasswordModal();" style="display: flex; align-items: center; padding: 12px 14px; color: #e2e8f0; text-decoration: none; border-radius: 10px; margin-bottom: 10px; transition: all 0.3s ease; background: rgba(255,255,255,0.02); border: 1px solid transparent;">
+                                <i class="fas fa-key" style="margin-right: 12px; width: 18px; color: #6366f1;"></i>
+                                <span style="font-size: 14px;">Change Password</span>
+                            </a>
                             <div style="height: 1px; background: rgba(99, 102, 241, 0.3); margin: 10px 0;"></div>
-                            <a href="#" class="dropdown-item" onclick="logout()" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();" style="display: flex; align-items: center; padding: 12px 14px; color: #f87171; text-decoration: none; border-radius: 10px; transition: all 0.3s ease; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.2);">
                                 <i class="fas fa-sign-out-alt" style="margin-right: 12px; width: 18px;"></i>
                                 <span style="font-size: 14px; font-weight: 500;">Sign Out</span>
                             </a>
@@ -1931,19 +1922,21 @@
         
         function loadProfilePicture() {
             const savedImage = localStorage.getItem('userProfilePicture');
+            const savedPhone = localStorage.getItem('userPhone') || '0706757140';
+            
             if (savedImage) {
                 const userAvatar = document.getElementById('userAvatar');
-                const profileAvatarLarge = document.getElementById('profileAvatarLarge');
                 
                 if (userAvatar) {
                     userAvatar.style.backgroundImage = `url('${savedImage}')`;
                     userAvatar.textContent = '';
                 }
-                
-                if (profileAvatarLarge) {
-                    profileAvatarLarge.style.backgroundImage = `url('${savedImage}')`;
-                    profileAvatarLarge.textContent = '';
-                }
+            }
+            
+            // Update phone number display
+            const phoneDisplay = document.getElementById('profileDropdownPhone');
+            if (phoneDisplay) {
+                phoneDisplay.innerHTML = `<i class="fas fa-phone" style="margin-right: 6px;"></i>${savedPhone}`;
             }
         }
 
@@ -3751,6 +3744,162 @@
             document.getElementById('profileDropdown').style.display = 'none';
             
             showToast('Navigated to Settings page', 'info');
+        }
+        
+        function showChangePhoneModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
+            `;
+            
+            const currentPhone = '0706757140';
+            
+            modal.innerHTML = `
+                <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
+                    <h2 style="color: #fff; margin: 0 0 20px 0; text-align: center;">
+                        <i class="fas fa-phone-alt" style="margin-right: 12px; color: #6366f1;"></i>
+                        Change Phone Number
+                    </h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #ccc; margin-bottom: 8px; font-size: 14px;">Current Phone</label>
+                        <input type="text" value="${currentPhone}" disabled style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #aaa; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #ccc; margin-bottom: 8px; font-size: 14px;">New Phone Number</label>
+                        <input type="tel" id="newPhoneInput" placeholder="0712345678" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="updatePhone()" style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            <i class="fas fa-check" style="margin-right: 8px;"></i>Update Phone
+                        </button>
+                        <button onclick="this.closest('.modal').remove();" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+            
+            // Close dropdown
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+        
+        function showChangePasswordModal() {
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); display: flex; align-items: center;
+                justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
+                    <h2 style="color: #fff; margin: 0 0 20px 0; text-align: center;">
+                        <i class="fas fa-key" style="margin-right: 12px; color: #6366f1;"></i>
+                        Change Password
+                    </h2>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: #ccc; margin-bottom: 8px; font-size: 14px;">Current Password</label>
+                        <input type="password" id="currentPasswordInput" placeholder="Enter current password" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; color: #ccc; margin-bottom: 8px; font-size: 14px;">New Password</label>
+                        <input type="password" id="newPasswordInput" placeholder="Enter new password" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 14px;">
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: #ccc; margin-bottom: 8px; font-size: 14px;">Confirm New Password</label>
+                        <input type="password" id="confirmPasswordInput" placeholder="Confirm new password" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: #fff; font-size: 14px;">
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="updatePassword()" style="padding: 12px 24px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                            <i class="fas fa-check" style="margin-right: 8px;"></i>Change Password
+                        </button>
+                        <button onclick="this.closest('.modal').remove();" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+            
+            // Close dropdown
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown) dropdown.style.display = 'none';
+        }
+        
+        function updatePhone() {
+            const newPhone = document.getElementById('newPhoneInput').value.trim();
+            
+            if (!newPhone) {
+                showToast('Please enter a phone number', 'error');
+                return;
+            }
+            
+            if (!/^07\d{8}$/.test(newPhone)) {
+                showToast('Please enter a valid Kenyan phone number (07XXXXXXXX)', 'error');
+                return;
+            }
+            
+            // Update phone in UI
+            const phoneDisplay = document.getElementById('profileDropdownPhone');
+            if (phoneDisplay) {
+                phoneDisplay.innerHTML = `<i class="fas fa-phone" style="margin-right: 6px;"></i>${newPhone}`;
+            }
+            
+            // Save to localStorage
+            localStorage.setItem('userPhone', newPhone);
+            
+            showToast('Phone number updated successfully!', 'success');
+            
+            // Close modal
+            setTimeout(() => {
+                const modal = document.querySelector('.modal');
+                if (modal) modal.remove();
+            }, 1000);
+        }
+        
+        function updatePassword() {
+            const currentPassword = document.getElementById('currentPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmPassword = document.getElementById('confirmPasswordInput').value;
+            
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (newPassword !== confirmPassword) {
+                showToast('New passwords do not match', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showToast('Password must be at least 6 characters long', 'error');
+                return;
+            }
+            
+            // In a real app, you would send this to the server
+            showToast('Password changed successfully!', 'success');
+            
+            // Close modal
+            setTimeout(() => {
+                const modal = document.querySelector('.modal');
+                if (modal) modal.remove();
+            }, 1000);
         }
         
         // ========================================
