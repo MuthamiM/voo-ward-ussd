@@ -1067,7 +1067,7 @@
                     <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-full" id="loginBtn" style="user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+                <button type="submit" class="btn btn-full" id="loginBtn">
                     <span>Sign In</span>
                 </button>
                 
@@ -1191,21 +1191,21 @@
                             </div>
                         </div>
                         
-                        <div class="dropdown-menu">
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); document.getElementById('profilePictureInput').click(); toggleProfileDropdown();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                        <div class="dropdown-menu" style="display: block;">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('profilePictureInput').click(); toggleProfileDropdown();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); cursor: pointer; pointer-events: auto;">
                                 <i class="fas fa-camera" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
                                 <span style="font-size: 15px; font-weight: 500;">Upload Profile Picture</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePhoneModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); event.stopPropagation(); showChangePhoneModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 8px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); cursor: pointer; pointer-events: auto;">
                                 <i class="fas fa-phone-alt" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
                                 <span style="font-size: 15px; font-weight: 500;">Change Phone Number</span>
                             </a>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); showChangePasswordModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2);">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); event.stopPropagation(); showChangePasswordModal();" style="display: flex; align-items: center; padding: 14px 16px; color: #fff; text-decoration: none; border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.2); cursor: pointer; pointer-events: auto;">
                                 <i class="fas fa-key" style="margin-right: 14px; width: 20px; color: #6366f1; font-size: 16px;"></i>
                                 <span style="font-size: 15px; font-weight: 500;">Change Password</span>
                             </a>
                             <div style="height: 2px; background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.4), transparent); margin: 12px 0;"></div>
-                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); logout();" style="display: flex; align-items: center; padding: 14px 16px; color: #ff6b6b; text-decoration: none; border-radius: 12px; transition: all 0.3s ease; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3);">
+                            <a href="#" class="dropdown-item" onclick="event.preventDefault(); event.stopPropagation(); logout();" style="display: flex; align-items: center; padding: 14px 16px; color: #ff6b6b; text-decoration: none; border-radius: 12px; transition: all 0.3s ease; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); cursor: pointer; pointer-events: auto;">
                                 <i class="fas fa-sign-out-alt" style="margin-right: 14px; width: 20px; font-size: 16px;"></i>
                                 <span style="font-size: 15px; font-weight: 600;">Sign Out</span>
                             </a>
@@ -2013,16 +2013,21 @@
             if (loginForm) {
                 loginForm.addEventListener('submit', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
                     handleLogin(e);
+                    return false;
                 });
             }
             
             if (loginBtn) {
                 loginBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
                     handleLogin(e);
+                    return false;
+                });
+                
+                // Also handle mousedown
+                loginBtn.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
                 });
             }
             
@@ -3602,11 +3607,9 @@
         
         function toggleProfileDropdown() {
             const dropdown = document.getElementById('profileDropdown');
-            const icon = document.getElementById('profileDropdownIcon');
             
             if (dropdown.style.display === 'none' || !dropdown.style.display) {
                 dropdown.style.display = 'block';
-                icon.style.transform = 'rotate(180deg)';
                 
                 // Close dropdown when clicking outside
                 setTimeout(() => {
@@ -3614,7 +3617,6 @@
                 }, 100);
             } else {
                 dropdown.style.display = 'none';
-                icon.style.transform = 'rotate(0deg)';
                 document.removeEventListener('click', closeDropdownOutside);
             }
         }
@@ -3625,7 +3627,6 @@
             
             if (!dropdown.contains(event.target) && !profile.contains(event.target)) {
                 dropdown.style.display = 'none';
-                document.getElementById('profileDropdownIcon').style.transform = 'rotate(0deg)';
                 document.removeEventListener('click', closeDropdownOutside);
             }
         }
