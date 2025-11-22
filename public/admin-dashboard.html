@@ -1477,14 +1477,29 @@
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h2 class="card-title">User Management</h2>
-                                <a href="signup.html" class="btn">
-                                    <i class="fas fa-user-plus"></i>
-                                    <span>Add New User</span>
-                                </a>
+                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Manage system users and their roles (MCA, Clerk, PA - Max 3 total)</p>
+                                <div style="display: flex; gap: 12px;">
+                                    <a href="signup.html" class="btn" style="background: #6366f1; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-user-plus"></i>
+                                        <span>Add New User</span>
+                                    </a>
+                                    <button class="btn" onclick="loadUsersData()" style="background: rgba(255,255,255,0.1); color: #ccc; padding: 8px 16px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-sync-alt"></i>
+                                        <span>Refresh</span>
+                                    </button>
+                                </div>
                             </div>
                             
-                            <div id="usersList" style="padding: 20px;">
-                                <div class="loading" id="usersLoading" style="text-align: center;">Loading users...</div>
+                            <div id="usersList" style="padding: 20px; min-height: 200px;">
+                                <div class="loading" id="usersLoading" style="text-align: center; color: #ccc; padding: 40px;">
+                                    <div style="margin-bottom: 16px; font-size: 24px;">👥</div>
+                                    <div>Loading user data...</div>
+                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Please wait while we fetch user information</div>
+                                </div>
+                            </div>
+                            
+                            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px;">
+                                <span id="usersCount">Loading...</span> users registered • Role-based access control active
                             </div>
                         </div>
                     </div>
@@ -1948,6 +1963,19 @@
                 document.getElementById('userRole').textContent = currentUser.role;
                 document.getElementById('userAvatar').textContent = (currentUser.fullName || currentUser.username).charAt(0).toUpperCase();
             }
+            
+            // Set default page to dashboard
+            setActivePage('dashboard');
+            showPageContent('dashboard');
+            
+            // Show AI Assistant after successful login
+            setTimeout(() => {
+                const chatbotBtn = document.getElementById('floatingChatbotBtn');
+                if (chatbotBtn) {
+                    chatbotBtn.style.display = 'flex';
+                    console.log('AI Assistant button shown after login');
+                }
+            }, 500);
         }
 
         function handleNavigation(e) {
@@ -2011,6 +2039,24 @@
                 // Add more cases as needed
             }
         }
+        
+        function setActivePage(page) {
+            // Update navigation active state
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+                if (link.dataset.page === page) {
+                    link.classList.add('active');
+                    
+                    // Update page title and breadcrumb
+                    const pageTitle = link.querySelector('.nav-text').textContent;
+                    const titleElement = document.getElementById('pageTitle');
+                    const breadcrumbElement = document.getElementById('breadcrumbCurrent');
+                    
+                    if (titleElement) titleElement.textContent = pageTitle;
+                    if (breadcrumbElement) breadcrumbElement.textContent = pageTitle;
+                }
+            });
+        }
 
         async function loadDashboardData() {
             try {
@@ -2058,6 +2104,12 @@
             
             document.getElementById('loginContainer').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
+            
+            // Hide AI Assistant completely on logout
+            const chatbotBtn = document.getElementById('floatingChatbotBtn');
+            const chatbotModal = document.getElementById('chatbotModal');
+            if (chatbotBtn) chatbotBtn.style.display = 'none';
+            if (chatbotModal) chatbotModal.style.display = 'none';
             
             // Clear form
             document.getElementById('username').value = '';
@@ -2284,17 +2336,6 @@
                 console.error('Database check error:', error);
             }
         }
-
-        // Show AI assistant button on dashboard load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Show chatbot button after login
-            setTimeout(() => {
-                const chatbotBtn = document.getElementById('floatingChatbotBtn');
-                if (chatbotBtn && authToken) {
-                    chatbotBtn.style.display = 'flex';
-                }
-            }, 1000);
-        });
 
         // ========================================
         // PROFILE & SETTINGS MANAGEMENT
@@ -2933,12 +2974,20 @@
         
         // Load Users Data
         async function loadUsersData() {
+            console.log('Loading users data...');
             const usersList = document.getElementById('usersList');
             const loading = document.getElementById('usersLoading');
+            const usersCount = document.getElementById('usersCount');
             
             try {
-                // Show loading
-                if (loading) loading.style.display = 'block';
+                // Show loading state
+                usersList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ccc;">
+                        <div style="margin-bottom: 16px; font-size: 24px;">⏳</div>
+                        <div>Loading user data...</div>
+                        <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching user information from server</div>
+                    </div>
+                `;
                 
                 const response = await fetch(`${API_BASE}/api/auth/users`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -2946,33 +2995,59 @@
                 
                 if (response.ok) {
                     const users = await response.json();
+                    console.log('Users loaded successfully:', users);
                     displayUsers(users);
+                    
+                    // Update count
+                    if (usersCount) {
+                        usersCount.textContent = users.length;
+                    }
+                    
                 } else if (response.status === 403) {
                     // User doesn't have permission to view users
                     usersList.innerHTML = `
-                        <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                            <i class="fas fa-lock" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                            <p>You don't have permission to view users</p>
-                            <p style="font-size: 14px; margin-top: 8px;">Only MCA (Main Admin) can manage users</p>
+                        <div style="text-align: center; padding: 40px; color: #ccc;">
+                            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">🔒</div>
+                            <div style="margin-bottom: 8px; font-size: 16px;">Access Restricted</div>
+                            <p style="font-size: 14px; opacity: 0.8;">You don't have permission to view users</p>
+                            <p style="font-size: 12px; margin-top: 8px; opacity: 0.6;">Only MCA (Main Admin) can manage users</p>
+                        </div>
+                    `;
+                } else if (response.status === 404) {
+                    // API endpoint not found
+                    usersList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #ccc;">
+                            <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">🚧</div>
+                            <div style="margin-bottom: 8px; font-size: 16px;">Feature Under Development</div>
+                            <p style="font-size: 14px; opacity: 0.8;">User management API is not yet implemented</p>
+                            <p style="font-size: 12px; margin-top: 8px; opacity: 0.6;">This feature will be available soon</p>
+                            <div style="margin-top: 20px;">
+                                <a href="signup.html" style="display: inline-block; padding: 8px 16px; background: #6366f1; color: white; text-decoration: none; border-radius: 6px; font-size: 14px;">Add New User</a>
+                            </div>
                         </div>
                     `;
                 } else {
-                    throw new Error('Failed to load users');
+                    throw new Error(`Server error: ${response.status}`);
                 }
                 
             } catch (error) {
                 console.error('Error loading users:', error);
                 usersList.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;"></i>
-                        <p>Failed to load users data</p>
-                        <button class="btn" onclick="loadUsersData()" style="margin-top: 16px;">
-                            <i class="fas fa-refresh"></i> Retry
+                    <div style="text-align: center; padding: 40px; color: #ff6b6b;">
+                        <div style="font-size: 48px; margin-bottom: 16px; opacity: 0.5;">⚠️</div>
+                        <div style="margin-bottom: 8px; font-size: 16px;">Failed to Load Users</div>
+                        <p style="font-size: 14px; opacity: 0.8;">${error.message}</p>
+                        <button onclick="loadUsersData()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                            <span>🔄</span> Try Again
                         </button>
                     </div>
                 `;
-            } finally {
-                if (loading) loading.style.display = 'none';
+                
+                if (usersCount) {
+                    usersCount.textContent = 'Error';
+                }
+                
+                showToast('Failed to load user data: ' + error.message, 'error');
             }
         }
         
