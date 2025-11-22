@@ -8,6 +8,9 @@ import DashboardScreen from './src/screens/DashboardScreen';
 import ReportIssueScreen from './src/screens/ReportIssueScreen';
 import MyIssuesScreen from './src/screens/MyIssuesScreen';
 import BursaryStatusScreen from './src/screens/BursaryStatusScreen';
+import VoterRegistrationScreen from './src/screens/VoterRegistrationScreen';
+import EnhancedIssueDetailScreen from './src/screens/EnhancedIssueDetailScreen';
+import AnnouncementsScreen from './src/screens/AnnouncementsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -59,14 +62,7 @@ export default function App() {
           },
         }}
       >
-        {!isAuthenticated ? (
-          <Stack.Screen
-            name="Login"
-            options={{ headerShown: false }}
-          >
-            {props => <LoginScreen {...props} onLogin={handleLogin} />}
-          </Stack.Screen>
-        ) : (
+        {isAuthenticated ? (
           <>
             <Stack.Screen
               name="Dashboard"
@@ -85,11 +81,33 @@ export default function App() {
               options={{ title: 'My Issues' }}
             />
             <Stack.Screen
+              name="IssueDetail"
+              component={EnhancedIssueDetailScreen}
+              options={{ title: 'Issue Details' }}
+            />
+            <Stack.Screen
               name="BursaryStatus"
               component={BursaryStatusScreen}
               options={{ title: 'Bursary Status' }}
             />
+            <Stack.Screen
+              name="VoterRegistration"
+              component={VoterRegistrationScreen}
+              options={{ title: 'Voter Registration' }}
+            />
+            <Stack.Screen
+              name="Announcements"
+              component={AnnouncementsScreen}
+              options={{ title: 'Announcements' }}
+            />
           </>
+        ) : (
+          <Stack.Screen
+            name="Login"
+            options={{ headerShown: false }}
+          >
+            {props => <LoginScreen {...props} onLogin={handleLogin} />}
+          </Stack.Screen>
         )}
       </Stack.Navigator>
     </NavigationContainer>
