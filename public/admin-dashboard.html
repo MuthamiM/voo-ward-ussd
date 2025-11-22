@@ -1677,6 +1677,41 @@
         </div>
     </div>
 
+    <!-- Update Issue Status Modal -->
+    <div id="updateIssueModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Update Issue Status</h3>
+                <button onclick="closeModal('updateIssueModal')">&times;</button>
+            </div>
+            <form id="updateIssueForm" onsubmit="submitIssueUpdate(event)">
+                <input type="hidden" id="updateIssueId">
+                <div class="form-group">
+                    <label for="issueTitle">Issue Title</label>
+                    <input type="text" id="issueTitle" readonly style="background: rgba(255,255,255,0.05);">
+                </div>
+                <div class="form-group">
+                    <label for="issueStatus">Status</label>
+                    <select id="issueStatus" required>
+                        <option value="">Select Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="issueActionNote">Action Note</label>
+                    <textarea id="issueActionNote" placeholder="Enter notes about the action taken" rows="3"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal('updateIssueModal')" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Send Announcement Modal -->
     <div id="announcementModal" class="modal" style="display: none;">
         <div class="modal-content">
@@ -2998,16 +3033,9 @@
         }
 
         function showNewAnnouncementModal() {
-            // Create and show announcement modal
-            const modal = document.createElement('div');
-            modal.id = 'announcementModal';
-            modal.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
+            // Open the existing announcement modal
+            openModal('announcementModal');
+        }
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -3220,25 +3248,78 @@
             
             const formData = {
                 title: document.getElementById('announcementTitle').value,
-                message: document.getElementById('announcementMessage').value,
+                body: document.getElementById('announcementMessage').value,
                 type: document.getElementById('announcementType').value,
-                sendSMS: document.getElementById('sendSMS').checked,
-                created_at: new Date().toISOString(),
-                created_by: currentUser?.username || 'admin'
+                sendSMS: document.getElementById('sendSMS').checked
             };
             
             try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = await fetch(`${API_BASE}/api/admin/announcements`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to send announcement');
+                }
                 
                 showToast('Announcement sent successfully!', 'success');
+                document.getElementById('announcementForm').reset();
                 closeModal('announcementModal');
-                loadAnnouncementsData();
+                if (typeof loadAnnouncementsData === 'function') loadAnnouncementsData();
                 
             } catch (error) {
                 console.error('Error sending announcement:', error);
-                showToast('Failed to send announcement. Please try again.', 'error');
+                showToast(error.message || 'Failed to send announcement. Please try again.', 'error');
             }
+        }
+        
+        // Update Issue Status
+        async function submitIssueUpdate(event) {
+            event.preventDefault();
+            
+            const issueId = document.getElementById('updateIssueId').value;
+            const status = document.getElementById('issueStatus').value;
+            const action_note = document.getElementById('issueActionNote').value;
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/admin/issues/${issueId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ status, action_note })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to update issue');
+                }
+                
+                showToast('Issue status updated successfully!', 'success');
+                document.getElementById('updateIssueForm').reset();
+                closeModal('updateIssueModal');
+                if (typeof loadIssuesData === 'function') loadIssuesData();
+                
+            } catch (error) {
+                console.error('Error updating issue:', error);
+                showToast(error.message || 'Failed to update issue. Please try again.', 'error');
+            }
+        }
+        
+        // Show Update Issue Modal
+        function showUpdateIssueModal(issue) {
+            document.getElementById('updateIssueId').value = issue.ticketNo || issue.ticket || issue.id;
+            document.getElementById('issueTitle').value = issue.title;
+            document.getElementById('issueStatus').value = issue.status || '';
+            document.getElementById('issueActionNote').value = '';
+            openModal('updateIssueModal');
         }
         
         // Load Users Data - User Management removed, function disabled
@@ -3535,18 +3616,14 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
+                            <button onclick='showUpdateIssueModal(${JSON.stringify(issue).replace(/'/g, "&#39;")})' style="background: #6366f1; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-edit"></i> Update Status
+                            </button>
                             <span style="background: ${getStatusColor(issue.status)}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; text-transform: uppercase;">
                                 ${issue.status.replace('-', ' ')}
                             </span>
-                            <div style="position: relative;">
-                                <button onclick="showIssueActions('${issue.id}')" style="background: rgba(255,255,255,0.1); color: #ccc; border: none; padding: 6px 8px; border-radius: 6px; cursor: pointer;">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                            </div>
                         </div>
-                    </div>
-                    
-                    <p style="color: #ccc; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">${issue.description}</p>
+                    </div>                    <p style="color: #ccc; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">${issue.description}</p>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; font-size: 12px;">
                         <div>
