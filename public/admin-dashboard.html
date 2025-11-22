@@ -3208,9 +3208,28 @@
         
         // Load Users Data - User Management removed, function disabled
         async function loadUsersData() {
-            console.log('User Management section has been removed from navigation');
-            // This function is no longer needed
-            return;
+            const usersList = document.getElementById('usersList');
+            const usersCount = document.getElementById('usersCount');
+            
+            // Hide loading indicator
+            const loadingEl = document.getElementById('usersLoading');
+            if (loadingEl) loadingEl.style.display = 'none';
+            
+            // Show demo user data
+            const demoUsers = [
+                {
+                    id: '1',
+                    username: currentUser?.username || 'admin',
+                    full_name: currentUser?.fullName || currentUser?.full_name || 'System Administrator',
+                    role: currentUser?.role || 'MCA',
+                    phone: localStorage.getItem('userPhone') || '0706757140',
+                    profilePicture: localStorage.getItem('userProfilePicture') || null,
+                    created_at: new Date().toISOString()
+                }
+            ];
+            
+            if (usersCount) usersCount.textContent = `${demoUsers.length}`;
+            displayUsers(demoUsers);
         }
         
         // Display Users - Disabled (User Management removed)
