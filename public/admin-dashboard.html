@@ -1689,7 +1689,7 @@
                 <input type="hidden" id="updateIssueId">
                 <div class="form-group">
                     <label for="issueTitle">Issue Title</label>
-                    <input type="text" id="issueTitle" readonly style="background: rgba(255,255,255,0.05);">
+                    <input type="text" id="updateIssueTitle" readonly style="background: rgba(255,255,255,0.05);">
                 </div>
                 <div class="form-group">
                     <label for="issueStatus">Status</label>
@@ -1967,7 +1967,7 @@
             setTimeout(() => {
                 const profilePic = document.getElementById('currentProfilePic');
                 if (profilePic) {
-                    profilePic.src = API_BASE + '/api/admin/default-avatar.png';
+                    profilePic.src = API_BASE + '/uploads/avatars/default-avatar.png';
                     profilePic.onerror = function() {
                         this.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
                         this.style.color = 'white';
