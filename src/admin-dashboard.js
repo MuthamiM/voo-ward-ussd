@@ -2257,7 +2257,9 @@ app.get('/uploads/avatars/default-avatar.png', (req, res) => {
     res.setHeader('Content-Type', 'image/svg+xml');
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(svgAvatar);
-});\n\n// Start server when run directly. When required as a module, export the app so
+});
+
+// Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
 async function startServer() {
