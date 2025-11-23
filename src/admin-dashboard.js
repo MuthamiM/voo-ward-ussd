@@ -2237,19 +2237,27 @@ app.post('/api/admin/chatbot', requireAuth, (req, res) => {
 
 // Default avatar endpoint
 app.get('/api/admin/default-avatar.png', (req, res) => {
-    // Return a simple SVG avatar
-    const svgAvatar = `
-    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="20" fill="#6366f1"/>
-        <circle cx="20" cy="16" r="6" fill="white"/>
-        <path d="M8 32c0-8 5.373-12 12-12s12 4 12 12" fill="white"/>
+    const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="40" fill="#6366f1"/>
+        <circle cx="40" cy="32" r="12" fill="white"/>
+        <path d="M16 64c0-16 10.746-24 24-24s24 8 24 24" fill="white"/>
     </svg>`;
-    
     res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
     res.send(svgAvatar);
 });
 
-// Handle the exact 404 path from the logs - this is what the frontend is requesting\napp.get('/uploads/avatars/default-avatar.png', (req, res) => {\n    console.log('📸 Avatar request received at /uploads/avatars/default-avatar.png');\n    // Return a simple SVG avatar\n    const svgAvatar = `<svg width=\"40\" height=\"40\" viewBox=\"0 0 40 40\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"20\" cy=\"20\" r=\"20\" fill=\"#6366f1\"/><circle cx=\"20\" cy=\"16\" r=\"6\" fill=\"white\"/><path d=\"M8 32c0-8 5.373-12 12-12s12 4 12 12\" fill=\"white\"/></svg>`;\n    \n    res.setHeader('Content-Type', 'image/svg+xml');\n    res.send(svgAvatar);\n});\n\n// Start server when run directly. When required as a module, export the app so
+// Handle the exact 404 path from the logs - this is what the frontend is requesting
+app.get('/uploads/avatars/default-avatar.png', (req, res) => {
+    const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="40" cy="40" r="40" fill="#6366f1"/>
+        <circle cx="40" cy="32" r="12" fill="white"/>
+        <path d="M16 64c0-16 10.746-24 24-24s24 8 24 24" fill="white"/>
+    </svg>`;
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.send(svgAvatar);
+});\n\n// Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
 async function startServer() {
