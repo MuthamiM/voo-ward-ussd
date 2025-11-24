@@ -3043,37 +3043,6 @@
             openModal('announcementModal');
         }
 
-            modal.innerHTML = `
-                <div style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); border-radius: 20px; padding: 32px; max-width: 500px; width: 90%; border: 1px solid var(--border);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                        <h3 style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--text);">New Announcement</h3>
-                        <button onclick="closeAnnouncementModal()" style="background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label class="form-label">Title</label>
-                        <input type="text" id="announcementTitle" class="form-input" placeholder="Enter announcement title" required>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label class="form-label">Content</label>
-                        <textarea id="announcementContent" class="form-input" rows="4" placeholder="Enter announcement content" required style="resize: vertical;"></textarea>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                        <button onclick="closeAnnouncementModal()" style="padding: 12px 24px; background: rgba(255,255,255,0.1); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); cursor: pointer;">Cancel</button>
-                        <button onclick="createAnnouncement()" id="createAnnouncementBtn" class="btn">
-                            <i class="fas fa-plus"></i>
-                            <span>Create Announcement</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-            document.getElementById('announcementTitle').focus();
-        }
-
         function closeAnnouncementModal() {
             const modal = document.getElementById('announcementModal');
             if (modal) {
