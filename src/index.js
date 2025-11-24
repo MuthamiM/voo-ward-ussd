@@ -236,6 +236,29 @@ try {
   console.warn('Citizen portal router not loaded:', err.message);
 }
 
+// Default avatar endpoint (SVG fallback for missing profile pictures)
+app.get('/uploads/avatars/default-avatar.png', (req, res) => {
+  const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="40" fill="#6366f1"/>
+    <circle cx="40" cy="32" r="12" fill="white"/>
+    <path d="M16 64c0-16 10.746-24 24-24s24 8 24 24" fill="white"/>
+  </svg>`;
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svgAvatar);
+});
+
+// Favicon endpoint
+app.get('/favicon.ico', (req, res) => {
+  const svgIcon = `<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <rect width="32" height="32" fill="#6366f1" rx="6"/>
+    <text x="16" y="22" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white" text-anchor="middle">V</text>
+  </svg>`;
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svgIcon);
+});
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`[PRODUCTION] VOO Kyamatu Ward USSD API listening on :${PORT}`);
