@@ -1070,7 +1070,7 @@
                     <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-full" id="loginBtn" onclick="handleLogin(event); return false;">
+                <button type="button" class="btn btn-full" id="loginBtn" onclick="handleLogin(event); return false;">
                     <span>Sign In</span>
                 </button>
                 
@@ -4201,8 +4201,18 @@
             try {
                 showToast('Deleting user...', 'info');
                 
-                // Simulate API call for demo
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                const response = await fetch(`${API_BASE}/api/auth/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to delete user');
+                }
                 
                 showToast('User deleted successfully', 'success');
                 
