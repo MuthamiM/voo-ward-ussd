@@ -35,32 +35,14 @@ app.get('/', (req, res) => {
 // Enable compression for all responses
 app.use(compression());
 
-// 1) Health check with enhanced monitoring
-app.get("/health", async (req, res) => {
-  const health = {
+// 1) Health check - FAST response for Render (no DB checks)
+app.get("/health", (req, res) => {
+  res.status(200).json({
     ok: true,
     service: "voo-kyamatu-ussd",
     timestamp: new Date().toISOString(),
-    deployment: "2025-11-22-improvements",
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    version: require('../package.json').version || '1.0.0'
-  };
-
-  // Check database connection (optional - don't fail health check)
-  try {
-    if (app.locals.connectDB) {
-      const db = await app.locals.connectDB();
-      if (db) {
-        health.database = 'connected';
-      }
-    }
-  } catch (err) {
-    health.database = 'disconnected';
-    health.ok = false;
-  }
-
-  res.status(health.ok ? 200 : 503).json(health);
+    uptime: process.uptime()
+  });
 });
 
 // Detailed health check endpoint
