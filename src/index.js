@@ -75,47 +75,41 @@ app.use(morgan("combined"));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// 2) USSD route (never crash on missing body.text)
+// Import USSD core handler
+const { handleUssdCore } = require('./ussdCore');
+
+// 2) USSD route with database integration
 app.post("/ussd", async (req, res) => {
   try {
-    const sessionId = req.body?.sessionId || "SESSION";
-    const phone = req.body?.phoneNumber || "";
-    const text = (req.body?.text || "").trim();
+    const sessionId = req.body?.sessionId || req.body?.SessionId || "SESSION";
+    const phone = req.body?.phoneNumber || req.body?.From || req.body?.msisdn || "";
+    const text = (req.body?.text || req.body?.Body || "").trim();
+    const serviceCode = req.body?.serviceCode || "*384#";
 
-    // Minimal happy-path menu (no DB required for first response)
-    if (text === "") {
-      // language menu
-      const msg = [
-        "KYAMATU WARD - FREE SERVICE",
-        "",
-        "Select Language:",
-        "1. English",
-        "2. Swahili",
-        "3. Kamba"
-      ].join("\n");
-      return res.send(`CON ${msg}`);
+    // Get database connection if available
+    let db = null;
+    if (app.locals.connectDB) {
+      try {
+        db = await app.locals.connectDB();
+      } catch (dbErr) {
+        console.error('USSD DB connection error:', dbErr.message);
+      }
     }
 
-    // Example next step (no DB)
-    const [lang] = text.split("*");
-    if (["1", "2", "3"].includes(lang)) {
-      const langName = lang === "1" ? "English" : lang === "2" ? "Swahili" : "Kamba";
-      const msg = [
-        `Language: ${langName}`,
-        "",
-        "1. Register as Constituent",
-        "2. Report an Issue",
-        "3. Announcements",
-        "4. Projects",
-        "0. Back"
-      ].join("\n");
-      return res.send(`CON ${msg}`);
-    }
+    // Use ussdCore handler with database support
+    const response = await handleUssdCore({ 
+      text, 
+      sessionId, 
+      phoneNumber: phone,
+      serviceCode,
+      db 
+    });
 
-    // Default
-    return res.send("END Thank you.");
+    // Send response
+    return res.send(response);
   } catch (e) {
-    // never crash; show fail-safe END so aggregator doesn''t retry-loop
+    console.error('USSD error:', e);
+    // never crash; show fail-safe END so aggregator doesn't retry-loop
     return res.send("END Service temporarily unavailable. Try again later.");
   }
 });

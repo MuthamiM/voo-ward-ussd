@@ -1,6 +1,49 @@
 const buildResponse = (isEnd, text) => (isEnd ? "END " : "CON ") + text;
 
-function handleUssdCore({ text="" }) {
+// Helper to save constituent registration to database
+async function saveConstituent(phoneNumber, fullName, nationalId, db) {
+  try {
+    if (!db) {
+      console.error('Database not available for USSD registration');
+      return { success: false, error: 'Database unavailable' };
+    }
+
+    // Check if already registered
+    const existing = await db.collection('constituents').findOne({ 
+      $or: [
+        { phone_number: phoneNumber },
+        { national_id: nationalId }
+      ]
+    });
+
+    if (existing) {
+      return { success: false, error: 'Already registered', duplicate: true };
+    }
+
+    // Insert new constituent
+    const result = await db.collection('constituents').insertOne({
+      phone_number: phoneNumber,
+      full_name: fullName,
+      national_id: nationalId,
+      name: fullName, // Backward compatibility
+      location: 'Kyamatu Ward', // Default location
+      area: 'Kyamatu Ward',
+      registration_source: 'USSD',
+      created_at: new Date(),
+      updated_at: new Date(),
+      terms_accepted: true,
+      terms_accepted_at: new Date()
+    });
+
+    console.log(`✅ USSD Registration: ${fullName} (${phoneNumber}) - ID: ${nationalId}`);
+    return { success: true, insertedId: result.insertedId };
+  } catch (error) {
+    console.error('USSD registration error:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+function handleUssdCore({ text="", sessionId="", phoneNumber="", db=null }) {
   // text is a *384*code# style aggregator text string like "1*2*3" (levels separated by *)
   const parts = (text || "").split("*").filter(Boolean);
 
@@ -39,12 +82,35 @@ function handleUssdCore({ text="" }) {
           "Ingiza kitambulisho:",
           "Andika ID yako:"
         ));
-      } else {
-        return buildResponse(true, L(
-          "Thanks! You are registered.",
-          "Asante! Umesajiliwa.",
-          "Nîwega! Wîkwandikîlwa."
-        ));
+      } else if (parts.length === 4) {
+        // Save to database
+        const fullName = parts[2];
+        const nationalId = parts[3];
+        
+        // Async save - return promise for async handling
+        return (async () => {
+          const saveResult = await saveConstituent(phoneNumber, fullName, nationalId, db);
+          
+          if (saveResult.success) {
+            return buildResponse(true, L(
+              `Thanks ${fullName}! You are registered as constituent #${saveResult.insertedId}. Your ID: ${nationalId}`,
+              `Asante ${fullName}! Umesajiliwa kama mwenyeji. ID yako: ${nationalId}`,
+              `Nîwega ${fullName}! Wîkwandikîlwa. ID yaku: ${nationalId}`
+            ));
+          } else if (saveResult.duplicate) {
+            return buildResponse(true, L(
+              "You are already registered with this phone or ID number.",
+              "Tayari umesajiliwa na nambari hii.",
+              "Wîsu wîkwandikîlwa na nambâ yî."
+            ));
+          } else {
+            return buildResponse(true, L(
+              "Registration failed. Please try again later or visit the ward office.",
+              "Usajili umeshindwa. Jaribu baadaye au tembelea ofisi.",
+              "Kwîkyandikya kwatekite. Ngalatya kwa maasavî."
+            ));
+          }
+        })();
       }
 
     case "2": // Report Issue
