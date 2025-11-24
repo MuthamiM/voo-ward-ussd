@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- VERSION: 2025-11-24-FIX-LOGIN-v2 - Force browser refresh -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +7,9 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-XSS-Protection" content="1; mode=block">
     <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <title>VOO Ward - Modern Admin Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1066,7 +1070,7 @@
                     <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
                 </div>
                 
-                <button type="submit" class="btn btn-full" id="loginBtn">
+                <button type="submit" class="btn btn-full" id="loginBtn" onclick="handleLogin(event); return false;">
                     <span>Sign In</span>
                 </button>
                 
