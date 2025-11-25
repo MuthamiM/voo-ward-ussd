@@ -8,14 +8,14 @@ function saveToKnowledgeBase(question, answer, keywords = []) {
       learned: true,
       timestamp: new Date().toISOString()
     };
-    
+
     // Check if similar entry already exists
-    const exists = kb.some(entry => 
-      entry.keys && entry.keys.some(key => 
+    const exists = kb.some(entry =>
+      entry.keys && entry.keys.some(key =>
         keywords.some(kw => key.toLowerCase().includes(kw.toLowerCase()))
       )
     );
-    
+
     if (!exists) {
       kb.push(newEntry);
       fs.writeFileSync(KB_PATH, JSON.stringify(kb, null, 2));
@@ -36,14 +36,14 @@ function extractKeywords(text) {
     .split(/\s+/)
     .filter(word => word.length > 2)
     .filter(word => !['the', 'and', 'but', 'for', 'are', 'you', 'can', 'how', 'what', 'when', 'where', 'why', 'this', 'that', 'with', 'from', 'they', 'have', 'had', 'was', 'were', 'been', 'being'].includes(word));
-  
+
   return words.slice(0, 5); // Take top 5 keywords
 }
 
 // Enhanced learning function
 function learnFromConversation(userMessage, aiResponse, wasHelpful = true) {
   if (!wasHelpful || !userMessage || !aiResponse) return false;
-  
+
   const keywords = extractKeywords(userMessage);
   if (keywords.length > 0) {
     return saveToKnowledgeBase(userMessage, aiResponse, keywords);
@@ -78,7 +78,7 @@ async function getDb() {
         if (!db) return 'parsed_text is a structured representation of user input (JSON) produced by the USSD parser; I cannot access the DB right now to show an example.';
         const ex = await db.collection('ussd_interactions').find({ parsed_text: { $exists: true, $ne: null } }).sort({ created_at: -1 }).limit(1).toArray();
         if (!ex || ex.length === 0) return 'parsed_text is a structured representation of user input (JSON). No examples are available in the database yet.';
-        return `parsed_text is the structured JSON the USSD parser saved. Example:\n${JSON.stringify(ex[0].parsed_text, null, 2).slice(0,1000)}`;
+        return `parsed_text is the structured JSON the USSD parser saved. Example:\n${JSON.stringify(ex[0].parsed_text, null, 2).slice(0, 1000)}`;
       } catch (e) { /* fall through */ }
     }
 
@@ -90,7 +90,7 @@ async function getDb() {
         if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
         const rows = await db.collection('ussd_interactions').find({ phone_number: { $regex: phoneMatch } }).sort({ created_at: -1 }).limit(10).toArray();
         if (!rows || rows.length === 0) return `No USSD interactions found for ${phoneMatch}.`;
-        const summary = rows.map(r => `${new Date(r.created_at).toLocaleString()}: ${String(r.text || r.response || '').slice(0,80)}`).join('\n');
+        const summary = rows.map(r => `${new Date(r.created_at).toLocaleString()}: ${String(r.text || r.response || '').slice(0, 80)}`).join('\n');
         return `Recent interactions for ${phoneMatch}:\n${summary}`;
       } catch (e) { console.warn('Chatbot phone lookup failed', e && e.message); }
     }
@@ -126,7 +126,7 @@ function loadKB() {
 
 function fallbackReply(text) {
   const t = (text || '').toLowerCase().trim();
-  if (!t) return 'Hi! I\'m Mai, your AI assistant. I can help with anything you need - dashboard features, general questions, or just have a chat. What\'s on your mind?';
+  if (!t) return 'Hi! I\'m Ward AI Assistant, your intelligent AI companion. I can help with anything you need - dashboard features, general questions, essays, research, or just have a chat. What\'s on your mind?';
 
   // Enhanced greeting detection with responses
   const greetingPatterns = {
@@ -141,19 +141,19 @@ function fallbackReply(text) {
     'sup': 'Not much, just helping people out! What\'s up with you?',
     'howdy': 'Howdy! Nice to meet you!'
   };
-  
+
   // Check for greetings
   for (const [pattern, response] of Object.entries(greetingPatterns)) {
     if (t.includes(pattern) || t.startsWith(pattern)) {
-      return response + '\n\nI\'m Mai, your AI assistant. I can help with:\n• Dashboard features (issues, bursaries, announcements)\n• General questions\n• Technical support\n• Just chatting!\n\nWhat would you like to know?';
+      return response + '\n\nI\'m Ward AI Assistant, your intelligent AI companion. I can help with:\n• Dashboard features (issues, bursaries, announcements)\n• General knowledge and research\n• Writing essays and reports\n• Technical support\n• Creative tasks and problem-solving\n• Just chatting!\n\nWhat would you like to know?';
     }
   }
-  
+
   // Enhanced question handling
   const questionPatterns = {
     'how are you': 'I\'m doing great, thank you for asking! I\'m here and ready to help. How are you doing today?',
-    'what is your name': 'I\'m Mai, your AI assistant for the VOO Ward dashboard. Nice to meet you!',
-    'who are you': 'I\'m Mai, an AI assistant designed to help you with the VOO Ward admin dashboard and answer any questions you might have.',
+    'what is your name': 'I\'m Ward AI Assistant, your intelligent AI companion for the VOO Ward dashboard and beyond. Nice to meet you!',
+    'who are you': 'I\'m Ward AI Assistant, an advanced AI designed to help you with the VOO Ward admin dashboard, answer any questions, generate essays, and assist with general knowledge. Think of me as your all-purpose AI companion!',
     'what can you do': 'I can help with lots of things! Dashboard management, answering questions, providing information, troubleshooting, or just having a friendly chat. What interests you?',
     'thank you': 'You\'re very welcome! Happy to help anytime. Is there anything else I can assist you with?',
     'thanks': 'My pleasure! Glad I could help. Feel free to ask me anything else!',
@@ -165,7 +165,7 @@ function fallbackReply(text) {
     'tell me a joke': 'Why did the AI go to school? To improve its learning algorithm! 😄 Got any good jokes for me?',
     'how is the weather': 'I don\'t have access to weather data, but I hope it\'s nice where you are! How\'s the weather treating you today?'
   };
-  
+
   // Check for question patterns
   for (const [pattern, response] of Object.entries(questionPatterns)) {
     if (t.includes(pattern)) {
@@ -193,7 +193,7 @@ function fallbackReply(text) {
   if (t.includes('help')) {
     return 'I\'d love to help! I can assist with:\n• Dashboard features (issues, bursaries, announcements)\n• General questions\n• Technical support\n• Friendly conversation\n\nWhat specifically would you like help with?';
   }
-  
+
   // Friendly unknown response
   return 'I\'m not sure about that specific topic, but I\'d love to learn! Could you tell me more about what you\'re looking for? I\'m here to help with dashboard features, answer questions, or just chat.';
 }
@@ -216,7 +216,7 @@ async function generateReply(message, user) {
       if (!db) return 'I cannot access the database from here — check server configuration (MONGO_URI).';
       const rows = await db.collection('ussd_interactions').find({}).sort({ created_at: -1 }).limit(5).toArray();
       if (!rows || rows.length === 0) return 'No USSD interactions found.';
-      const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0,60)}`).join('\n');
+      const summary = rows.map(r => `${r.phone_number || r.phone || 'unknown'}: ${String(r.text || r.response || '').slice(0, 60)}`).join('\n');
       return `Latest USSD interactions (top ${rows.length}):\n${summary}`;
     }
   } catch (dbErr) {
@@ -231,7 +231,7 @@ async function generateReply(message, user) {
     const payload = {
       model,
       messages: [
-        { role: 'system', content: 'You are Mai, a friendly and intelligent AI assistant for the VOO Ward admin dashboard. You have a warm, conversational personality and can help with:\n\n1. Dashboard features (Issues, Bursaries, Announcements, Users, USSD interactions)\n2. General questions and conversation\n3. Technical support and troubleshooting\n4. Providing information and explanations\n\nYou should:\n- Be friendly, conversational, and helpful\n- Answer greetings warmly\n- Handle both technical and casual questions\n- Provide clear, actionable guidance\n- Ask follow-up questions when helpful\n- Remember you\'re here to assist and learn\n\nIf asked about topics outside your immediate scope, be honest but try to help or redirect constructively. Keep responses conversational but informative.' },
+        { role: 'system', content: 'You are Ward AI Assistant, an advanced and versatile AI companion similar to Grok. You have a warm, intelligent, and engaging personality. You can help with:\n\n1. VOO Ward Dashboard (Issues, Bursaries, Announcements, Users, USSD interactions)\n2. General knowledge on ANY topic (science, history, current events, technology, etc.)\n3. Writing essays, reports, and creative content\n4. Research and detailed explanations\n5. Problem-solving and critical thinking\n6. Technical support and troubleshooting\n7. Casual conversation and friendly chat\n\nYou should:\n- Be knowledgeable, helpful, and engaging\n- Answer ANY question to the best of your ability\n- Write comprehensive essays when asked (aim for 500+ words for essay requests)\n- Provide detailed, well-researched responses\n- Be conversational yet informative\n- Think critically and provide nuanced perspectives\n- Handle both technical dashboard questions AND general knowledge\n- Be honest if you don\'t know something, but still try to help\n\nYou are NOT limited to dashboard topics - you can discuss anything from quantum physics to philosophy to creative writing. Be the intelligent, versatile AI companion users need!' },
         { role: 'user', content: text }
       ],
       temperature: 0.7, // Increased for more conversational responses
@@ -260,9 +260,9 @@ async function generateReply(message, user) {
   }
 }
 
-module.exports = { 
-  generateReply, 
-  learnFromConversation, 
+module.exports = {
+  generateReply,
+  learnFromConversation,
   saveToKnowledgeBase,
-  extractKeywords 
+  extractKeywords
 };
