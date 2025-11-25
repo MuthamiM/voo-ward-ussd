@@ -3481,68 +3481,29 @@
                     </div>
                 `;
                 
-                // Simulate API call - in real implementation, this would fetch from your backend
-                await new Promise(resolve => setTimeout(resolve, 800));
-                
-                // Mock data for demonstration
-                const mockIssues = [
-                    {
-                        id: 'ISS-001',
-                        ticketNo: 'VOO-2025-001',
-                        title: 'Poor Road Condition on Kiambu Road',
-                        description: 'The road has several potholes that make it difficult for vehicles to pass. Need urgent repair.',
-                        category: 'Infrastructure',
-                        priority: 'High',
-                        status: 'pending',
-                        reportedBy: 'John Kamau',
-                        reporterPhone: '+254712345678',
-                        location: 'Kiambu Road, Section A',
-                        dateReported: new Date(Date.now() - 86400000 * 2).toISOString(),
-                        assignedTo: null,
-                        estimatedResolution: '7 days'
-                    },
-                    {
-                        id: 'ISS-002',
-                        ticketNo: 'VOO-2025-002',
-                        title: 'Broken Street Light',
-                        description: 'Street light not working for over a week. Creates safety concerns for pedestrians.',
-                        category: 'Public Safety',
-                        priority: 'Medium',
-                        status: 'in-progress',
-                        reportedBy: 'Mary Wanjiku',
-                        reporterPhone: '+254798765432',
-                        location: 'Main Street, Near Market',
-                        dateReported: new Date(Date.now() - 86400000 * 5).toISOString(),
-                        assignedTo: 'Technical Team',
-                        estimatedResolution: '3 days'
-                    },
-                    {
-                        id: 'ISS-003',
-                        ticketNo: 'VOO-2025-003',
-                        title: 'Water Supply Issue',
-                        description: 'No water supply for 3 days in the residential area. Residents are facing difficulties.',
-                        category: 'Utilities',
-                        priority: 'Critical',
-                        status: 'resolved',
-                        reportedBy: 'Peter Mwangi',
-                        reporterPhone: '+254723456789',
-                        location: 'Residential Area Block C',
-                        dateReported: new Date(Date.now() - 86400000 * 7).toISOString(),
-                        assignedTo: 'Water Department',
-                        estimatedResolution: 'Completed',
-                        resolvedDate: new Date(Date.now() - 86400000 * 1).toISOString()
+                // Fetch real issues from API
+                const response = await fetch(`${API_BASE}/api/admin/issues`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
                     }
-                ];
+                });
                 
-                displayIssues(mockIssues);
-                updateIssueStats(mockIssues);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const issues = await response.json();
+                
+                displayIssues(issues);
+                updateIssueStats(issues);
                 
                 if (issuesCount) {
-                    issuesCount.textContent = `${mockIssues.length} issues reported`;
+                    issuesCount.textContent = `${issues.length} issue${issues.length !== 1 ? 's' : ''} reported`;
                 }
                 
                 // Show success message
-                showToast('Issues data loaded successfully', 'success');
+                showToast(`Loaded ${issues.length} issues from database`, 'success');
                 
             } catch (error) {
                 console.error('Error loading issues:', error);
@@ -4178,10 +4139,10 @@
                     </div>
                     
                     <div style="display: flex; gap: 12px; justify-content: center;">
-                        <button onclick="this.closest('.modal').remove();" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
+                        <button onclick="document.querySelectorAll('.modal').forEach(m => m.remove());" style="padding: 12px 24px; background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; cursor: pointer; font-size: 14px;">
                             Cancel
                         </button>
-                        <button onclick="deleteUser('${userId}'); this.closest('.modal').remove();" style="padding: 12px 24px; background: #DC2626; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                        <button onclick="deleteUser('${userId}');" style="padding: 12px 24px; background: #DC2626; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
                             <i class="fas fa-trash" style="margin-right: 8px;"></i>Delete User
                         </button>
                     </div>
@@ -4198,7 +4159,12 @@
                 return;
             }
             
+            // Close the confirmation modal immediately
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(m => m.remove());
+            
             try {
+                console.log('Deleting user with ID:', userId);
                 showToast('Deleting user...', 'info');
                 
                 const response = await fetch(`${API_BASE}/api/auth/users/${userId}`, {
@@ -4209,21 +4175,27 @@
                     }
                 });
                 
+                console.log('Delete response status:', response.status);
+                
                 if (!response.ok) {
                     const data = await response.json();
+                    console.error('Delete failed:', data);
                     throw new Error(data.error || 'Failed to delete user');
                 }
                 
-                showToast('User deleted successfully', 'success');
+                const result = await response.json();
+                console.log('Delete successful:', result);
                 
-                // Reload users data
-                setTimeout(() => {
-                    loadUsersData();
-                }, 500);
+                showToast('✅ User deleted successfully', 'success');
+                
+                // Immediately reload users data (no delay)
+                console.log('Reloading users list...');
+                await loadUsersData();
+                console.log('Users list reloaded');
                 
             } catch (error) {
                 console.error('Error deleting user:', error);
-                showToast('Failed to delete user: ' + error.message, 'error');
+                showToast('❌ Failed to delete user: ' + error.message, 'error');
             }
         }
         

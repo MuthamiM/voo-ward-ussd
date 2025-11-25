@@ -1021,6 +1021,41 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   }
 });
 
+// Get recent activity/audit logs (all authenticated users)
+app.get("/api/admin/activity", requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+    
+    const limit = parseInt(req.query.limit) || 10;
+    
+    // Get recent audit events from MongoDB
+    const activities = await database.collection("admin_audit")
+      .find({})
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .toArray();
+    
+    // Transform to standardized format
+    const formattedActivities = activities.map(activity => ({
+      id: activity._id,
+      action: activity.action,
+      user: activity.user || activity.username,
+      details: activity.details || activity.description,
+      timestamp: activity.timestamp || activity.created_at,
+      ip: activity.ip_address,
+      severity: activity.severity || 'info'
+    }));
+    
+    res.json(formattedActivities);
+  } catch (err) {
+    console.error("Error fetching activity logs:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get USSD news feed (announcements + recent issue updates)
 app.get("/api/ussd/news", async (req, res) => {
   try {
