@@ -587,16 +587,23 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
     
     // PRODUCTION: Use database authentication
     // Find user
+    const searchUsername = username.toLowerCase().trim();
+    console.log('🔍 Searching for username:', searchUsername);
+    
     const user = await database.collection("admin_users").findOne({
-      username: username.toLowerCase().trim()
+      username: searchUsername
     });
 
     if (!user) {
       console.warn(`⚠️  Failed login attempt for unknown user '${username}' from ${req.ip}`);
+      console.log('📋 Debug: Available users in database:');
+      const allUsers = await database.collection("admin_users").find({}).project({ username: 1, role: 1 }).toArray();
+      console.log(allUsers);
       return res.status(401).json({ error: "Invalid username or password" });
     }
 
     console.log('✅ User found in database:', user.username);
+    console.log('🔑 Password hash type:', isBcryptHash(user.password) ? 'bcrypt' : 'legacy SHA-256');
 
     // Support both bcrypt (new) and legacy SHA-256 passwords.
     let passwordMatches = false;
