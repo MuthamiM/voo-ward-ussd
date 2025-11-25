@@ -4202,6 +4202,14 @@
         async function editUser(userId) {
             showToast('Edit user functionality coming soon', 'info');
         }
+        
+        // Initialize application when DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing VOO Ward Admin Dashboard...');
+            setupEventListeners();
+            checkAuth();
+            console.log('✅ Dashboard initialized');
+        });
     </script>
 </body>
 </html>
