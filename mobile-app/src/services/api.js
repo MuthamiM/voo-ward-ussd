@@ -1,8 +1,11 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
-const API_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:8000';
+// Use 10.0.2.2 for Android Emulator, localhost for iOS/Web
+const DEV_API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
+const API_URL = Constants.expoConfig?.extra?.apiUrl || DEV_API_URL;
 
 const api = axios.create({
     baseURL: API_URL,
@@ -28,28 +31,31 @@ api.interceptors.request.use(
 
 // Auth APIs
 export const requestOTP = async (phoneNumber) => {
-    const response = await api.post('/api/v1/auth/request-otp', {
-        phone_number: phoneNumber,
+    // Backend expects { phoneNumber }
+    const response = await api.post('/api/citizen/request-otp', {
+        phoneNumber: phoneNumber,
     });
     return response.data;
 };
 
 export const verifyOTP = async (phoneNumber, otpCode) => {
-    const response = await api.post('/api/v1/auth/verify-otp', {
-        phone_number: phoneNumber,
-        otp_code: otpCode,
+    // Backend expects { phoneNumber, otp }
+    const response = await api.post('/api/citizen/verify-otp', {
+        phoneNumber: phoneNumber,
+        otp: otpCode,
     });
     return response.data;
 };
 
 // Issues APIs
-export const getIssues = async (phoneNumber) => {
-    const response = await api.get(`/api/v1/issues?phone_number=${phoneNumber}`);
+export const getIssues = async () => {
+    const response = await api.get('/api/citizen/issues');
     return response.data;
 };
 
-export const createIssue = async (issueData, phoneNumber) => {
-    const response = await api.post(`/api/v1/issues?phone_number=${phoneNumber}`, issueData);
+export const createIssue = async (issueData) => {
+    // issueData should contain { category, description, location, title }
+    const response = await api.post('/api/citizen/issues', issueData);
     return response.data;
 };
 
@@ -62,7 +68,8 @@ export const uploadPhoto = async (uri) => {
         name: 'photo.jpg',
     });
 
-    const response = await api.post('/api/v1/upload/photo', formData, {
+    // Note: You might need to implement this endpoint in citizenPortal.js or use existing upload route
+    const response = await api.post('/api/citizen/upload/photo', formData, {
         headers: {
             'Content-Type': 'multipart/form-data',
         },
@@ -71,8 +78,14 @@ export const uploadPhoto = async (uri) => {
 };
 
 // Bursaries API
-export const getBursaries = async (phoneNumber) => {
-    const response = await api.get(`/api/v1/bursaries?phone_number=${phoneNumber}`);
+export const getBursaries = async () => {
+    const response = await api.get('/api/citizen/bursaries');
+    return response.data;
+};
+
+// Announcements API
+export const getAnnouncements = async () => {
+    const response = await api.get('/api/citizen/announcements');
     return response.data;
 };
 
