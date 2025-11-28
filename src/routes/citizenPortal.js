@@ -7,6 +7,8 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../lib/logger');
 const crypto = require('crypto');
+const { getDb } = require('../lib/mongo');
+const { ObjectId } = require('mongodb');
 
 // In-memory OTP storage (use Redis in production)
 const otpStore = new Map();
@@ -99,6 +101,15 @@ router.post('/verify-otp', async (req, res) => {
 
         citizenSessions.set(token, sessionData);
 
+        // Check if citizen exists in DB, if not create/update
+        const db = await getDb();
+        const citizen = await db.collection('constituents').findOne({ phone_number: phoneNumber });
+
+        if (!citizen) {
+            // Optional: Auto-register or just log
+            logger.info(`New citizen login: ${phoneNumber}`);
+        }
+
         logger.info(`Citizen logged in: ${phoneNumber}`);
 
         res.json({
@@ -106,7 +117,8 @@ router.post('/verify-otp', async (req, res) => {
             token,
             user: {
                 phoneNumber,
-                registeredAt: new Date().toISOString()
+                name: citizen ? citizen.full_name : 'Citizen',
+                registeredAt: citizen ? citizen.created_at : new Date().toISOString()
             }
         });
     } catch (err) {
@@ -147,21 +159,12 @@ function authenticateCitizen(req, res, next) {
 router.get('/issues', authenticateCitizen, async (req, res) => {
     try {
         const phoneNumber = req.citizen.phoneNumber;
+        const db = await getDb();
 
-        // TODO: Fetch from database
-        // For now, return mock data
-        const issues = [
-            {
-                id: 1,
-                ticket: 'ISS-001',
-                category: 'Roads & Infrastructure',
-                message: 'Pothole on Main Street',
-                location: 'Near Chief Office',
-                status: 'in_progress',
-                created_at: new Date().toISOString(),
-                comments: ['Technician dispatched', 'Work in progress']
-            }
-        ];
+        const issues = await db.collection('issues')
+            .find({ phone_number: phoneNumber })
+            .sort({ created_at: -1 })
+            .toArray();
 
         res.json(issues);
     } catch (err) {
@@ -176,32 +179,42 @@ router.get('/issues', authenticateCitizen, async (req, res) => {
  */
 router.post('/issues', authenticateCitizen, async (req, res) => {
     try {
-        const { category, description, location } = req.body;
+        const { category, description, location, title } = req.body;
         const phoneNumber = req.citizen.phoneNumber;
 
         if (!category || !description) {
             return res.status(400).json({ error: 'Category and description required' });
         }
 
-        // TODO: Save to database and handle photo upload
-        const ticket = 'ISS-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+        const db = await getDb();
+
+        // Generate ticket ID
+        const count = await db.collection('issues').countDocuments();
+        const ticket = 'ISS-' + String(count + 1).padStart(3, '0');
 
         const issue = {
             ticket,
+            title: title || category, // Fallback if title not provided
             category,
-            message: description,
+            message: description, // Dashboard uses 'message'
+            description, // Keep description for compatibility
             location,
             phone_number: phoneNumber,
             status: 'open',
-            created_at: new Date().toISOString()
+            source: 'Mobile App',
+            created_at: new Date(),
+            updated_at: new Date(),
+            comments: []
         };
+
+        const result = await db.collection('issues').insertOne(issue);
 
         logger.info(`Issue created via citizen portal: ${ticket}`);
 
         res.status(201).json({
             success: true,
             ticket,
-            issue
+            issue: { ...issue, _id: result.insertedId }
         });
     } catch (err) {
         logger.error('Create issue error:', err);
@@ -216,25 +229,39 @@ router.post('/issues', authenticateCitizen, async (req, res) => {
 router.get('/bursaries', authenticateCitizen, async (req, res) => {
     try {
         const phoneNumber = req.citizen.phoneNumber;
+        const db = await getDb();
 
-        // TODO: Fetch from database
-        // For now, return mock data
-        const applications = [
-            {
-                id: 1,
-                reference: 'BUR-001',
-                student_name: 'John Doe',
-                institution: 'Nairobi University',
-                amount: 50000,
-                status: 'pending',
-                created_at: new Date().toISOString()
-            }
-        ];
+        const applications = await db.collection('bursaries')
+            .find({ phone_number: phoneNumber })
+            .sort({ created_at: -1 })
+            .toArray();
 
         res.json(applications);
     } catch (err) {
         logger.error('Get bursaries error:', err);
         res.status(500).json({ error: 'Failed to fetch bursary applications' });
+    }
+});
+
+/**
+ * Get announcements
+ * GET /api/citizen/announcements
+ */
+router.get('/announcements', authenticateCitizen, async (req, res) => {
+    try {
+        const db = await getDb();
+
+        // Fetch published announcements
+        const announcements = await db.collection('announcements')
+            .find({}) // Assuming all announcements are public for now, or filter by { published: true }
+            .sort({ created_at: -1 })
+            .limit(20)
+            .toArray();
+
+        res.json(announcements);
+    } catch (err) {
+        logger.error('Get announcements error:', err);
+        res.status(500).json({ error: 'Failed to fetch announcements' });
     }
 });
 

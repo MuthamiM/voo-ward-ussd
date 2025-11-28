@@ -162,7 +162,7 @@
             
             <div id="message"></div>
             
-            <button type="submit" class="btn" id="signupBtn">
+            <button type="submit" class="btn" id="signupBtn" onclick="document.getElementById('signupForm').dispatchEvent(new Event('submit', {cancelable: true, bubbles: true})); return false;">
                 Create Account
             </button>
         </form>
