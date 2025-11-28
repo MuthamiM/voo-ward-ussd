@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <!-- VERSION: 2025-11-24-FIX-LOGIN-v2 - Force browser refresh -->
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,9 +12,7 @@
     <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/svg+xml" href="/favicon.ico">
     <title>VOO Ward - Modern Admin Dashboard</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -59,7 +56,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background:
+            background: 
                 radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
@@ -68,15 +65,8 @@
         }
 
         @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px) rotate(0deg);
-            }
-
-            50% {
-                transform: translateY(-20px) rotate(1deg);
-            }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
         }
 
         /* Layout */
@@ -151,17 +141,9 @@
         }
 
         @keyframes shine {
-            0% {
-                transform: translateX(-100%);
-            }
-
-            50% {
-                transform: translateX(100%);
-            }
-
-            100% {
-                transform: translateX(-100%);
-            }
+            0% { transform: translateX(-100%); }
+            50% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
         }
 
         .logo-text {
@@ -367,30 +349,29 @@
             background: rgba(255, 255, 255, 0.1);
             transform: translateY(-1px);
         }
-
+        
         .dropdown-item:hover {
             background: rgba(99, 102, 241, 0.15) !important;
             color: #fff !important;
             border-color: rgba(99, 102, 241, 0.3) !important;
             transform: translateX(2px);
         }
-
+        
         .profile-dropdown {
             animation: dropdownFadeIn 0.3s ease;
         }
-
+        
         @keyframes dropdownFadeIn {
             from {
                 opacity: 0;
                 transform: translateY(-10px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
+        
 
         .user-avatar {
             width: 40px;
@@ -641,7 +622,7 @@
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .search-box {
                 width: 240px;
             }
@@ -652,19 +633,19 @@
                 width: 0;
                 transform: translateX(-100%);
             }
-
+            
             .header {
                 padding: 16px 20px;
             }
-
+            
             .content-area {
                 padding: 20px;
             }
-
+            
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-
+            
             .search-box {
                 display: none;
             }
@@ -682,9 +663,7 @@
         }
 
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         /* Smooth scrollbar */
@@ -954,7 +933,6 @@
                 opacity: 0;
                 transform: translateY(-50px) scale(0.9);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -1006,8 +984,8 @@
             font-weight: 500;
         }
 
-        .modal input,
-        .modal select,
+        .modal input, 
+        .modal select, 
         .modal textarea {
             width: 100%;
             padding: 12px 16px;
@@ -1019,8 +997,8 @@
             transition: all 0.3s;
         }
 
-        .modal input:focus,
-        .modal select:focus,
+        .modal input:focus, 
+        .modal select:focus, 
         .modal textarea:focus {
             outline: none;
             border-color: var(--primary);
@@ -1070,42 +1048,35 @@
         }
     </style>
 </head>
-
 <body>
     <!-- Login Form -->
     <div id="loginContainer" class="login-container">
-        <div class="login-card"
-            style="background: var(--surface); padding: 48px 40px; border-radius: 24px; box-shadow: var(--shadow-elevated); border: 1px solid var(--border); max-width: 420px; width: 100%; margin: 0 24px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-            <div class="login-header"
-                style="text-align: center; margin-bottom: 32px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-                <h1 class="login-title"
-                    style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; text-align: center; letter-spacing: -0.5px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-                    Welcome Back</h1>
-                <p class="login-subtitle"
-                    style="color: var(--text-secondary); font-size: 16px; margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-                    Sign in to VOO Ward Admin Dashboard</p>
+        <div class="login-card" style="background: var(--surface); padding: 48px 40px; border-radius: 24px; box-shadow: var(--shadow-elevated); border: 1px solid var(--border); max-width: 420px; width: 100%; margin: 0 24px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+            <div class="login-header" style="text-align: center; margin-bottom: 32px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
+                <h1 class="login-title" style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; text-align: center; letter-spacing: -0.5px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">Welcome Back</h1>
+                <p class="login-subtitle" style="color: var(--text-secondary); font-size: 16px; margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">Sign in to VOO Ward Admin Dashboard</p>
             </div>
-
+            
             <form id="loginForm">
                 <div id="loginError"></div>
-
+                
                 <div class="form-group">
                     <label class="form-label" for="username">Username</label>
                     <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
                 </div>
-
+                
                 <div class="form-group">
                     <label class="form-label" for="password">Password</label>
                     <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
                 </div>
-
-                <button type="submit" class="btn btn-primary" id="loginBtn" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);" onmouseover="this.style.transform='translateY(-2px) scale(1.02)'; this.style.boxShadow='0 8px 25px rgba(99, 102, 241, 0.6)'; this.style.background='linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 4px 15px rgba(99, 102, 241, 0.4)'; this.style.background='linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'">
+                
+                <button type="button" class="btn btn-full" id="loginBtn" onclick="handleLogin(event); return false;">
                     <span>Sign In</span>
                 </button>
-
+                
                 <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
                     <p style="color: var(--text-secondary); margin-bottom: 10px;">Don't have an account?</p>
-                    <a href="signup.html" style="color: var(--primary); text-decoration: none; font-weight: 500; padding: 10px 20px; border: 2px solid var(--primary); border-radius: 10px; display: inline-block; transition: all 0.3s ease; background: rgba(99, 102, 241, 0.1);" onmouseover="this.style.transform='translateY(-2px) scale(1.05)'; this.style.background='var(--primary)'; this.style.color='white'; this.style.boxShadow='0 6px 20px rgba(99, 102, 241, 0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.background='rgba(99, 102, 241, 0.1)'; this.style.color='var(--primary)'; this.style.boxShadow='none'">
+                    <a href="signup.html" style="color: var(--primary); text-decoration: none; font-weight: 500; padding: 8px 16px; border: 1px solid var(--primary); border-radius: 6px; display: inline-block; transition: all 0.3s ease;">
                         Create New Account
                     </a>
                 </div>
@@ -1126,7 +1097,7 @@
                     </div>
                 </div>
             </div>
-
+            
             <nav class="nav">
                 <div class="nav-section">
                     <div class="nav-title">Main</div>
@@ -1155,7 +1126,7 @@
                         </a>
                     </div>
                 </div>
-
+                
                 <div class="nav-section">
                     <div class="nav-title">Communication</div>
                     <div class="nav-item">
@@ -1171,7 +1142,7 @@
                         </a>
                     </div>
                 </div>
-
+                
                 <div class="nav-section">
                     <div class="nav-title">Management</div>
                     <div class="nav-item">
@@ -1198,27 +1169,22 @@
                         </div>
                     </div>
                 </div>
-
+                
                 <div class="header-right">
                     <div class="search-box">
                         <i class="search-icon fas fa-search"></i>
                         <input type="text" class="search-input" placeholder="Search anything...">
                     </div>
-
+                    
                     <div class="user-profile" style="position: relative;">
-                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()"
-                            style="width: 60px; height: 60px; cursor: pointer; border: 4px solid rgba(99,102,241,0.6); transition: all 0.3s ease; background: linear-gradient(135deg, #6366f1, #8b5cf6); background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 6px 20px rgba(99,102,241,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white; text-transform: uppercase;"
-                            onmouseover="this.style.borderColor='#6366f1'; this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 25px rgba(99,102,241,0.7)'"
-                            onmouseout="this.style.borderColor='rgba(99,102,241,0.6)'; this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.5)'">
-                            Z</div>
-
-                        <!-- Profile Dropdown Menu -->
-                        <!-- Hidden file input for profile picture -->
-                        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;"
-                            onchange="uploadProfilePicture(this)">
-
-                        <!-- Profile Dropdown Menu: Now created dynamically by toggleProfileDropdown() function -->
-                    </div>
+                        <div class="user-avatar" id="userAvatar" onclick="toggleProfileDropdown()" style="width: 60px; height: 60px; cursor: pointer; border: 4px solid rgba(99,102,241,0.6); transition: all 0.3s ease; background: linear-gradient(135deg, #6366f1, #8b5cf6); background-size: cover; background-position: center; background-repeat: no-repeat; box-shadow: 0 6px 20px rgba(99,102,241,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700; color: white; text-transform: uppercase;" onmouseover="this.style.borderColor='#6366f1'; this.style.transform='scale(1.15)'; this.style.boxShadow='0 8px 25px rgba(99,102,241,0.7)'" onmouseout="this.style.borderColor='rgba(99,102,241,0.6)'; this.style.transform='scale(1)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.5)'">Z</div>
+                    
+                    <!-- Profile Dropdown Menu -->
+                    <!-- Hidden file input for profile picture -->
+                    <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
+                    
+                    <!-- Profile Dropdown Menu: Now created dynamically by toggleProfileDropdown() function -->
+                </div>
             </header>
 
             <!-- Content Area -->
@@ -1240,7 +1206,7 @@
                                 <span>12% from last month</span>
                             </div>
                         </div>
-
+                        
                         <div class="stat-card">
                             <div class="stat-header">
                                 <div class="stat-icon success">
@@ -1254,7 +1220,7 @@
                                 <span>8% from last month</span>
                             </div>
                         </div>
-
+                        
                         <div class="stat-card">
                             <div class="stat-header">
                                 <div class="stat-icon secondary">
@@ -1268,7 +1234,7 @@
                                 <span>15% from last month</span>
                             </div>
                         </div>
-
+                        
                         <div class="stat-card">
                             <div class="stat-header">
                                 <div class="stat-icon warning">
@@ -1298,38 +1264,35 @@
                                     </div>
                                     <div class="activity-content">
                                         <div class="activity-title">Issue #2024-001 Resolved</div>
-                                        <div class="activity-description">Water shortage complaint has been addressed
-                                        </div>
+                                        <div class="activity-description">Water shortage complaint has been addressed</div>
                                     </div>
                                     <div class="activity-time">5 min ago</div>
                                 </div>
-
+                                
                                 <div class="activity-item">
                                     <div class="activity-icon primary">
                                         <i class="fas fa-graduation-cap"></i>
                                     </div>
                                     <div class="activity-content">
                                         <div class="activity-title">New Bursary Application</div>
-                                        <div class="activity-description">John Doe submitted application #BUR-2024-045
-                                        </div>
+                                        <div class="activity-description">John Doe submitted application #BUR-2024-045</div>
                                     </div>
                                     <div class="activity-time">12 min ago</div>
                                 </div>
-
+                                
                                 <div class="activity-item">
                                     <div class="activity-icon secondary">
                                         <i class="fas fa-user-plus"></i>
                                     </div>
                                     <div class="activity-content">
                                         <div class="activity-title">New Constituent Registration</div>
-                                        <div class="activity-description">Mary Smith registered as a new constituent
-                                        </div>
+                                        <div class="activity-description">Mary Smith registered as a new constituent</div>
                                     </div>
                                     <div class="activity-time">25 min ago</div>
                                 </div>
                             </div>
                         </div>
-
+                        
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h2 class="card-title">Quick Actions</h2>
@@ -1339,20 +1302,18 @@
                                     <i class="fas fa-plus"></i>
                                     <span>Add New Issue</span>
                                 </button>
-
+                                
                                 <button class="btn" onclick="showProcessBursaryModal()">
                                     <i class="fas fa-graduation-cap"></i>
                                     <span>Process Bursary</span>
                                 </button>
-
+                                
                                 <button class="btn" onclick="showAnnouncementModal()">
                                     <i class="fas fa-bullhorn"></i>
                                     <span>Send Announcement</span>
                                 </button>
-
-                                <button class="btn"
-                                    onclick="event.preventDefault(); setActivePage('users'); showPageContent('users'); return false;"
-                                    onmousedown="event.preventDefault(); setActivePage('users'); showPageContent('users'); return false;">
+                                
+                                <button class="btn" onclick="event.preventDefault(); setActivePage('users'); showPageContent('users'); return false;" onmousedown="event.preventDefault(); setActivePage('users'); showPageContent('users'); return false;">
                                     <i class="fas fa-user-cog"></i>
                                     <span>Manage Users</span>
                                 </button>
@@ -1367,58 +1328,42 @@
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h2 class="card-title">Constituent Issues Management</h2>
-                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Track and manage issues reported
-                                    by constituents</p>
+                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Track and manage issues reported by constituents</p>
                                 <div style="display: flex; gap: 12px;">
-                                    <button class="btn" onclick="showAddIssueModal()"
-                                        style="background: #059669; color: white;">
+                                    <button class="btn" onclick="showAddIssueModal()" style="background: #059669; color: white;">
                                         <i class="fas fa-plus"></i>
                                         <span>Report New Issue</span>
                                     </button>
-                                    <button class="btn" onclick="loadIssuesData()"
-                                        style="background: rgba(255,255,255,0.1); color: #ccc;">
+                                    <button class="btn" onclick="loadIssuesData()" style="background: rgba(255,255,255,0.1); color: #ccc;">
                                         <i class="fas fa-sync-alt"></i>
                                         <span>Refresh</span>
                                     </button>
                                 </div>
                             </div>
-
+                            
                             <!-- Issues Filter Bar -->
-                            <div
-                                style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                            <div style="padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                                 <span style="color: #ccc; font-size: 14px; margin-right: 8px;">Filter by status:</span>
-                                <button onclick="filterIssues('all')" class="status-filter active" data-status="all"
-                                    style="padding: 6px 12px; background: rgba(99, 102, 241, 0.2); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">All
-                                    Issues</button>
-                                <button onclick="filterIssues('pending')" class="status-filter" data-status="pending"
-                                    style="padding: 6px 12px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Pending</button>
-                                <button onclick="filterIssues('in-progress')" class="status-filter"
-                                    data-status="in-progress"
-                                    style="padding: 6px 12px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">In
-                                    Progress</button>
-                                <button onclick="filterIssues('resolved')" class="status-filter" data-status="resolved"
-                                    style="padding: 6px 12px; background: rgba(5, 150, 105, 0.2); color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Resolved</button>
-                                <button onclick="filterIssues('closed')" class="status-filter" data-status="closed"
-                                    style="padding: 6px 12px; background: rgba(107, 114, 128, 0.2); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Closed</button>
+                                <button onclick="filterIssues('all')" class="status-filter active" data-status="all" style="padding: 6px 12px; background: rgba(99, 102, 241, 0.2); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">All Issues</button>
+                                <button onclick="filterIssues('pending')" class="status-filter" data-status="pending" style="padding: 6px 12px; background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Pending</button>
+                                <button onclick="filterIssues('in-progress')" class="status-filter" data-status="in-progress" style="padding: 6px 12px; background: rgba(59, 130, 246, 0.2); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">In Progress</button>
+                                <button onclick="filterIssues('resolved')" class="status-filter" data-status="resolved" style="padding: 6px 12px; background: rgba(5, 150, 105, 0.2); color: #059669; border: 1px solid rgba(5, 150, 105, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Resolved</button>
+                                <button onclick="filterIssues('closed')" class="status-filter" data-status="closed" style="padding: 6px 12px; background: rgba(107, 114, 128, 0.2); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); border-radius: 6px; cursor: pointer; font-size: 12px;">Closed</button>
                             </div>
-
+                            
                             <div id="issuesList" style="padding: 20px; min-height: 300px;">
-                                <div class="loading" id="issuesLoading"
-                                    style="text-align: center; color: #ccc; padding: 40px;">
+                                <div class="loading" id="issuesLoading" style="text-align: center; color: #ccc; padding: 40px;">
                                     <div style="margin-bottom: 16px; font-size: 24px;">📋</div>
                                     <div>Loading constituent issues...</div>
-                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching reported
-                                        issues from database</div>
+                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching reported issues from database</div>
                                 </div>
                             </div>
-
-                            <div
-                                style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
+                            
+                            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px; display: flex; justify-content: space-between; align-items: center;">
                                 <span id="issuesCount">Loading...</span>
                                 <div style="display: flex; gap: 16px; font-size: 12px;">
                                     <span style="color: #f59e0b;">● Pending: <span id="pendingCount">0</span></span>
-                                    <span style="color: #3b82f6;">● In Progress: <span
-                                            id="inProgressCount">0</span></span>
+                                    <span style="color: #3b82f6;">● In Progress: <span id="inProgressCount">0</span></span>
                                     <span style="color: #059669;">● Resolved: <span id="resolvedCount">0</span></span>
                                 </div>
                             </div>
@@ -1436,7 +1381,7 @@
                                     <span>Process Application</span>
                                 </button>
                             </div>
-
+                            
                             <div id="bursariesList">
                                 <div class="loading" id="bursariesLoading">Loading bursary applications...</div>
                             </div>
@@ -1450,26 +1395,20 @@
                             <div class="card-header">
                                 <h2 class="card-title">Profile Settings</h2>
                             </div>
-
+                            
                             <!-- Profile Picture Section -->
                             <div style="margin-bottom: 32px;">
                                 <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Profile Picture</h3>
                                 <div style="display: flex; align-items: center; gap: 20px;">
                                     <div style="position: relative;">
-                                        <img id="currentProfilePic" src="/uploads/avatars/default-avatar.png"
-                                            alt="Profile"
-                                            style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary));">
-                                        <div id="uploadIndicator"
-                                            style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--success); border-radius: 50%; border: 2px solid var(--surface); display: none; align-items: center; justify-content: center;">
+                                        <img id="currentProfilePic" src="/uploads/avatars/default-avatar.png" alt="Profile" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: linear-gradient(135deg, var(--primary), var(--secondary));">
+                                        <div id="uploadIndicator" style="position: absolute; bottom: 0; right: 0; width: 24px; height: 24px; background: var(--success); border-radius: 50%; border: 2px solid var(--surface); display: none; align-items: center; justify-content: center;">
                                             <i class="fas fa-check" style="color: white; font-size: 12px;"></i>
                                         </div>
                                     </div>
                                     <div style="flex: 1;">
-                                        <input type="file" id="profilePictureInput" accept="image/*"
-                                            style="display: none;" onchange="uploadProfilePicture(this)">
-                                        <button class="btn"
-                                            onclick="document.getElementById('profilePictureInput').click()"
-                                            id="uploadProfileBtn">
+                                        <input type="file" id="profilePictureInput" accept="image/*" style="display: none;" onchange="uploadProfilePicture(this)">
+                                        <button class="btn" onclick="document.getElementById('profilePictureInput').click()" id="uploadProfileBtn">
                                             <i class="fas fa-upload"></i>
                                             <span>Upload New Picture</span>
                                         </button>
@@ -1482,31 +1421,26 @@
 
                             <!-- Account Information -->
                             <div style="margin-bottom: 32px;">
-                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Account Information
-                                </h3>
+                                <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">Account Information</h3>
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                                     <div class="form-group">
                                         <label class="form-label">Full Name</label>
-                                        <input type="text" id="fullNameInput" class="form-input"
-                                            placeholder="Enter your full name">
+                                        <input type="text" id="fullNameInput" class="form-input" placeholder="Enter your full name">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Email Address</label>
-                                        <input type="email" id="emailInput" class="form-input"
-                                            placeholder="Enter your email">
+                                        <input type="email" id="emailInput" class="form-input" placeholder="Enter your email">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Phone Number</label>
-                                        <input type="tel" id="phoneInput" class="form-input"
-                                            placeholder="Enter your phone number">
+                                        <input type="tel" id="phoneInput" class="form-input" placeholder="Enter your phone number">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Role</label>
                                         <input type="text" id="roleInput" class="form-input" readonly>
                                     </div>
                                 </div>
-                                <button class="btn" onclick="updateProfile()" id="updateProfileBtn"
-                                    style="margin-top: 16px;">
+                                <button class="btn" onclick="updateProfile()" id="updateProfileBtn" style="margin-top: 16px;">
                                     <i class="fas fa-save"></i>
                                     <span>Update Profile</span>
                                 </button>
@@ -1518,18 +1452,15 @@
                                 <div style="max-width: 400px;">
                                     <div class="form-group">
                                         <label class="form-label">Current Password</label>
-                                        <input type="password" id="currentPassword" class="form-input"
-                                            placeholder="Enter current password">
+                                        <input type="password" id="currentPassword" class="form-input" placeholder="Enter current password">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">New Password</label>
-                                        <input type="password" id="newPassword" class="form-input"
-                                            placeholder="Enter new password">
+                                        <input type="password" id="newPassword" class="form-input" placeholder="Enter new password">
                                     </div>
                                     <div class="form-group">
                                         <label class="form-label">Confirm New Password</label>
-                                        <input type="password" id="confirmPassword" class="form-input"
-                                            placeholder="Confirm new password">
+                                        <input type="password" id="confirmPassword" class="form-input" placeholder="Confirm new password">
                                     </div>
                                     <button class="btn" onclick="changePassword()" id="changePasswordBtn">
                                         <i class="fas fa-lock"></i>
@@ -1541,16 +1472,12 @@
                             <!-- System Information -->
                             <div style="margin-bottom: 32px;">
                                 <h3 style="margin-bottom: 16px; font-size: 18px; font-weight: 600;">System Status</h3>
-                                <div id="systemStatus"
-                                    style="padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--border);">
+                                <div id="systemStatus" style="padding: 20px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--border);">
                                     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                                        <div id="dbStatusIndicator"
-                                            style="width: 12px; height: 12px; border-radius: 50%; background: var(--warning);">
-                                        </div>
+                                        <div id="dbStatusIndicator" style="width: 12px; height: 12px; border-radius: 50%; background: var(--warning);"></div>
                                         <span>Database Connectivity: <span id="dbStatusText">Checking...</span></span>
                                     </div>
-                                    <button class="btn" onclick="refreshSystemStatus()" id="refreshStatusBtn"
-                                        style="font-size: 14px; padding: 8px 16px;">
+                                    <button class="btn" onclick="refreshSystemStatus()" id="refreshStatusBtn" style="font-size: 14px; padding: 8px 16px;">
                                         <i class="fas fa-refresh"></i>
                                         <span>Refresh Status</span>
                                     </button>
@@ -1570,7 +1497,7 @@
                                     <span>New Announcement</span>
                                 </button>
                             </div>
-
+                            
                             <div id="announcementsList" style="margin-top: 20px;">
                                 <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
                                     <div class="loading"></div>
@@ -1588,61 +1515,53 @@
                                     <span>Refresh Preview</span>
                                 </button>
                             </div>
-
+                            
                             <div id="ussdNewsPreview" style="margin-top: 20px;">
                                 <p style="color: var(--text-secondary); font-size: 14px; margin-bottom: 16px;">
                                     This shows how announcements and resolved issues appear in the USSD news feed:
                                 </p>
-                                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--border);"
-                                    id="ussdPreviewText">
+                                <div style="background: rgba(0,0,0,0.2); padding: 16px; border-radius: 8px; font-family: monospace; white-space: pre-wrap; border: 1px solid var(--border);" id="ussdPreviewText">
                                     Loading preview...
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- User Management Content -->
                 <div id="usersContent" class="page-content" style="display: none;">
                     <div style="margin-bottom: 32px;">
                         <div class="dashboard-card">
                             <div class="card-header">
                                 <h2 class="card-title">User Management</h2>
-                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Manage system users and their
-                                    roles (MCA, Clerk, PA - Max 3 total)</p>
+                                <p style="color: #ccc; margin: 8px 0; font-size: 14px;">Manage system users and their roles (MCA, Clerk, PA - Max 3 total)</p>
                                 <div style="display: flex; gap: 12px;">
-                                    <a href="signup.html" class="btn"
-                                        style="background: #6366f1; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                                    <a href="signup.html" class="btn" style="background: #6366f1; color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
                                         <i class="fas fa-user-plus"></i>
                                         <span>Add New User</span>
                                     </a>
-                                    <button class="btn" onclick="loadUsersData()"
-                                        style="background: rgba(255,255,255,0.1); color: #ccc; padding: 8px 16px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                                    <button class="btn" onclick="loadUsersData()" style="background: rgba(255,255,255,0.1); color: #ccc; padding: 8px 16px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
                                         <i class="fas fa-sync-alt"></i>
                                         <span>Refresh</span>
                                     </button>
                                 </div>
                             </div>
-
+                            
                             <div id="usersList" style="padding: 20px; min-height: 200px;">
-                                <div class="loading" id="usersLoading"
-                                    style="text-align: center; color: #ccc; padding: 40px;">
+                                <div class="loading" id="usersLoading" style="text-align: center; color: #ccc; padding: 40px;">
                                     <div style="margin-bottom: 16px; font-size: 24px;">👥</div>
                                     <div>Loading user data...</div>
-                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Please wait while we
-                                        fetch user information</div>
+                                    <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Please wait while we fetch user information</div>
                                 </div>
                             </div>
-
-                            <div
-                                style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px;">
-                                <span id="usersCount">Loading...</span> users registered • Role-based access control
-                                active
+                            
+                            <div style="border-top: 1px solid rgba(255,255,255,0.1); padding: 16px 20px; color: #ccc; font-size: 14px;">
+                                <span id="usersCount">Loading...</span> users registered • Role-based access control active
                             </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Constituents Content -->
                 <div id="constituentsContent" class="page-content" style="display: none;">
                     <div style="margin-bottom: 32px;">
@@ -1654,15 +1573,14 @@
                                     <span>Export Data</span>
                                 </button>
                             </div>
-
+                            
                             <div id="constituentsList" style="padding: 20px;">
-                                <div class="loading" id="constituentsLoading" style="text-align: center;">Loading
-                                    constituents...</div>
+                                <div class="loading" id="constituentsLoading" style="text-align: center;">Loading constituents...</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- USSD Interactions Content -->
                 <div id="ussdContent" class="page-content" style="display: none;">
                     <div style="margin-bottom: 32px;">
@@ -1674,10 +1592,9 @@
                                     <span>Refresh Data</span>
                                 </button>
                             </div>
-
+                            
                             <div id="ussdList" style="padding: 20px;">
-                                <div class="loading" id="ussdLoading" style="text-align: center;">Loading USSD
-                                    interactions...</div>
+                                <div class="loading" id="ussdLoading" style="text-align: center;">Loading USSD interactions...</div>
                             </div>
                         </div>
                     </div>
@@ -1700,8 +1617,7 @@
                 </div>
                 <div class="form-group">
                     <label for="issueDescription">Description</label>
-                    <textarea id="issueDescription" required placeholder="Detailed description of the issue"
-                        rows="4"></textarea>
+                    <textarea id="issueDescription" required placeholder="Detailed description of the issue" rows="4"></textarea>
                 </div>
                 <div class="form-group">
                     <label for="issuePriority">Priority</label>
@@ -1756,12 +1672,10 @@
                 </div>
                 <div class="form-group">
                     <label for="decisionReason">Reason/Notes</label>
-                    <textarea id="decisionReason" placeholder="Reason for decision or additional notes"
-                        rows="3"></textarea>
+                    <textarea id="decisionReason" placeholder="Reason for decision or additional notes" rows="3"></textarea>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" onclick="closeModal('processBursaryModal')"
-                        class="btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('processBursaryModal')" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn">Process Application</button>
                 </div>
             </form>
@@ -1836,8 +1750,7 @@
                     </label>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" onclick="closeModal('announcementModal')"
-                        class="btn-secondary">Cancel</button>
+                    <button type="button" onclick="closeModal('announcementModal')" class="btn-secondary">Cancel</button>
                     <button type="submit" class="btn">Send Announcement</button>
                 </div>
             </form>
@@ -1845,83 +1758,56 @@
     </div>
 
     <!-- AI Assistant Floating Button -->
-    <button id="chatbotButtonContainer" onclick="toggleChatbot()"
-        style="position:fixed; right:30px; bottom:30px; z-index:9400; display:none; width:70px; height:70px; border-radius:50%; border:3px solid rgba(99,102,241,0.8); background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 10px 30px rgba(99,102,241,0.7), 0 0 0 0 rgba(99,102,241,0.9); cursor:pointer; align-items:center; justify-content:center; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotBounce 2s ease-in-out infinite;"
-        class="chatbot-button"
-        onmouseover="this.style.transform='scale(1.2)'; this.style.boxShadow='0 15px 40px rgba(99,102,241,0.9)'"
-        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 10px 30px rgba(99,102,241,0.7)'">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-            style="transition: transform 0.3s ease;">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white" />
-            <circle cx="9" cy="10" r="1.5" fill="#6366f1" />
-            <circle cx="12" cy="10" r="1.5" fill="#6366f1" />
-            <circle cx="15" cy="10" r="1.5" fill="#6366f1" />
+    <button id="chatbotButtonContainer" onclick="toggleChatbot()" style="position:fixed; right:30px; bottom:30px; z-index:9400; display:none; width:70px; height:70px; border-radius:50%; border:3px solid rgba(99,102,241,0.8); background:linear-gradient(135deg,#6366f1,#8b5cf6); box-shadow:0 10px 30px rgba(99,102,241,0.7), 0 0 0 0 rgba(99,102,241,0.9); cursor:pointer; align-items:center; justify-content:center; transition:all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); animation:chatbotBounce 2s ease-in-out infinite;" class="chatbot-button" onmouseover="this.style.transform='scale(1.2)'; this.style.boxShadow='0 15px 40px rgba(99,102,241,0.9)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 10px 30px rgba(99,102,241,0.7)'">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="transition: transform 0.3s ease;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="white"/>
+            <circle cx="9" cy="10" r="1.5" fill="#6366f1"/>
+            <circle cx="12" cy="10" r="1.5" fill="#6366f1"/>
+            <circle cx="15" cy="10" r="1.5" fill="#6366f1"/>
         </svg>
     </button>
 
     <!-- AI Assistant Modal -->
-    <div id="chatbotModal"
-        style="display:none; position:fixed; right:20px; bottom:80px; z-index:9500; pointer-events:none;"
-        class="ai-assistant-container">
-        <div class="chatbot-modal"
-            style="position:relative; margin:0; background:rgba(15,15,25,0.98); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 20px 40px rgba(0,0,0,0.4); border:1px solid rgba(99,102,241,0.3); max-width:350px; width:350px; max-height:450px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
-            <div class="modal-header"
-                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(99,102,241,0.3);">
+    <div id="chatbotModal" style="display:none; position:fixed; right:20px; bottom:80px; z-index:9500; pointer-events:none;" class="ai-assistant-container">
+        <div class="chatbot-modal" style="position:relative; margin:0; background:rgba(15,15,25,0.98); backdrop-filter:blur(20px) saturate(180%); -webkit-backdrop-filter:blur(20px) saturate(180%); border-radius:16px; padding:16px; box-shadow:0 20px 40px rgba(0,0,0,0.4); border:1px solid rgba(99,102,241,0.3); max-width:350px; width:350px; max-height:450px; display:none; z-index:9500; flex-direction:column; pointer-events:all;">
+            <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(99,102,241,0.3);">
                 <div style="display:flex; align-items:center; gap:10px;">
-                    <div
-                        style="width:32px; height:32px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:10px; display:flex; align-items: center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4);">
+                    <div style="width:32px; height:32px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:10px; display:flex; align-items: center; justify-content:center; box-shadow:0 4px 12px rgba(99,102,241,0.4);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9" />
-                            <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round"
-                                opacity="0.9" />
-                            <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round"
-                                opacity="0.9" />
+                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
+                            <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                            <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
                         </svg>
                     </div>
-                    <span
-                        style="font-family: 'Space Grotesk', sans-serif; font-weight:600; font-size:14px; letter-spacing:0.3px; color:var(--text);">Ward AI
-                        <span style="font-size:10px; opacity:0.6; margin-left:4px;">• Intelligent Research Assistant</span></span>
+                    <span style="font-family: 'Space Grotesk', sans-serif; font-weight:600; font-size:14px; letter-spacing:0.3px; color:var(--text);">AI Assistant</span>
                 </div>
-                <button onclick="hideChatbot()"
-                    style="background:rgba(255,255,255,0.1); border:none; width:28px; height:28px; border-radius:50%; font-size:14px; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.3s;"
-                    onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444'"
-                    onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)'">&times;</button>
+                <button onclick="hideChatbot()" style="background:rgba(255,255,255,0.1); border:none; width:28px; height:28px; border-radius:50%; font-size:14px; cursor:pointer; color:var(--text-secondary); display:flex; align-items:center; justify-content:center; transition:all 0.3s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'; this.style.color='#ef4444'" onmouseout="this.style.background='rgba(255,255,255,0.1)'; this.style.color='var(--text-secondary)'">&times;</button>
             </div>
-            <div id="chatbot-messages"
-                style="flex:1; min-height:250px; max-height:280px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.1); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;">
-            </div>
+            <div id="chatbot-messages" style="flex:1; min-height:250px; max-height:280px; overflow-y:auto; margin-bottom:12px; padding:12px; background:rgba(255,255,255,0.03); border-radius:12px; border:1px solid rgba(255,255,255,0.1); scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.3) transparent;"></div>
             <div style="margin-top:10px; display:flex; gap:6px;">
-                <input id="chatbot-input" placeholder="Ask me anything... essays, research, questions, help..."
-                    style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); font-size:13px; font-weight:400; color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backdrop-filter:blur(10px); transition:all 0.3s ease;" />
-                <button class="btn" onclick="sendChatbotMessage()"
-                    style="padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:white; font-weight:500; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(99,102,241,0.4); font-size:12px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;"
-                    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'"
-                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'">Send</button>
+                <input id="chatbot-input" placeholder="Ask me anything..." style="flex:1; padding:10px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.05); font-size:13px; font-weight:400; color:var(--text); font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backdrop-filter:blur(10px); transition:all 0.3s ease;" />
+                <button class="btn" onclick="sendChatbotMessage()" style="padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#6366f1,#8b5cf6); border:none; color:white; font-weight:500; cursor:pointer; transition:all 0.3s; box-shadow:0 4px 12px rgba(99,102,241,0.4); font-size:12px; font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;" onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(99,102,241,0.6)'" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(99,102,241,0.4)'">Send</button>
             </div>
         </div>
     </div>
 
     <style>
         @keyframes chatbotBounce {
-
-            0%,
-            100% {
+            0%, 100% {
                 transform: translateY(0);
-                box-shadow: 0 10px 30px rgba(99, 102, 241, 0.7), 0 0 0 0 rgba(99, 102, 241, 0.9);
+                box-shadow: 0 10px 30px rgba(99,102,241,0.7), 0 0 0 0 rgba(99,102,241,0.9);
             }
-
             50% {
                 transform: translateY(-10px);
-                box-shadow: 0 15px 35px rgba(99, 102, 241, 0.8), 0 0 0 20px rgba(99, 102, 241, 0);
+                box-shadow: 0 15px 35px rgba(99,102,241,0.8), 0 0 0 20px rgba(99,102,241,0);
             }
         }
-
+        
         @keyframes dropdownFadeIn {
             from {
                 opacity: 0;
                 transform: translateY(-10px) scale(0.95);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0) scale(1);
@@ -2007,7 +1893,7 @@
                 bottom: 80px !important;
                 transform: none !important;
             }
-
+            
             .chatbot-modal {
                 max-width: 280px !important;
                 width: 280px !important;
@@ -2023,12 +1909,12 @@
             div.textContent = input;
             return div.innerHTML;
         }
-
+        
         // Security: Validate input patterns
         function validateInput(input, type) {
             if (!input) return false;
-
-            switch (type) {
+            
+            switch(type) {
                 case 'username':
                     return /^[a-zA-Z0-9_]{3,30}$/.test(input);
                 case 'phone':
@@ -2041,7 +1927,7 @@
                     return true;
             }
         }
-
+        
         // Security: Rate limiting for login attempts
         const loginAttempts = {
             count: 0,
@@ -2049,7 +1935,7 @@
             maxAttempts: 5,
             lockoutTime: 300000 // 5 minutes
         };
-
+        
         function checkRateLimit() {
             const now = Date.now();
             if (loginAttempts.count >= loginAttempts.maxAttempts) {
@@ -2062,31 +1948,31 @@
                 }
             }
         }
-
+        
         // API Base URL
         const API_BASE = window.location.origin + '/admin';
         console.log('API_BASE:', API_BASE);
         console.log('Current location:', window.location.href);
-
+        
         // Current user data
         let currentUser = null;
         let authToken = null;
 
         // Initialize the app
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 Admin Dashboard initializing...');
             console.log('API_BASE:', API_BASE);
             console.log('Current location:', window.location.href);
-
+            
             // Load saved profile picture
             loadProfilePicture();
-
+            
             // Fix avatar path - set correct src after DOM loads
             setTimeout(() => {
                 const profilePic = document.getElementById('currentProfilePic');
                 if (profilePic) {
                     profilePic.src = API_BASE + '/uploads/avatars/default-avatar.png';
-                    profilePic.onerror = function () {
+                    profilePic.onerror = function() {
                         this.style.background = 'linear-gradient(135deg, #6366f1, #8b5cf6)';
                         this.style.color = 'white';
                         this.style.fontSize = '24px';
@@ -2098,21 +1984,21 @@
                     };
                 }
             }, 100);
-
+            
             checkAuth();
             setupEventListeners();
         });
-
+        
         function loadProfilePicture() {
             if (!currentUser) return;
-
+            
             // Use user-specific key for profile picture
             const userKey = `profilePic_${currentUser.username || currentUser.id}`;
             const savedImage = localStorage.getItem(userKey);
             const savedPhone = currentUser.phone || localStorage.getItem('userPhone') || '0706757140';
-
+            
             console.log('🖼️ Loading profile picture for:', currentUser.username, 'Key:', userKey, 'Has image:', !!savedImage);
-
+            
             if (savedImage) {
                 // Update top-right avatar
                 const userAvatar = document.getElementById('userAvatar');
@@ -2123,7 +2009,7 @@
                     userAvatar.style.backgroundRepeat = 'no-repeat';
                     userAvatar.textContent = ''; // Remove initial letter
                 }
-
+                
                 // Update profile dropdown avatar
                 const profileAvatarLarge = document.getElementById('profileAvatarLarge');
                 if (profileAvatarLarge) {
@@ -2138,20 +2024,20 @@
                 console.log('⚠️ No profile picture found for:', currentUser.username);
                 const displayName = currentUser.fullName || currentUser.full_name || currentUser.username || 'Admin';
                 const initial = displayName.charAt(0).toUpperCase();
-
+                
                 const userAvatar = document.getElementById('userAvatar');
                 if (userAvatar) {
                     userAvatar.style.backgroundImage = '';
                     userAvatar.textContent = initial;
                 }
-
+                
                 const profileAvatarLarge = document.getElementById('profileAvatarLarge');
                 if (profileAvatarLarge) {
                     profileAvatarLarge.style.backgroundImage = '';
                     profileAvatarLarge.textContent = initial;
                 }
             }
-
+            
             // Update phone number display
             const phoneDisplay = document.getElementById('profileDropdownPhone');
             if (phoneDisplay) {
@@ -2163,50 +2049,50 @@
             // Login form - multiple event bindings to ensure it works
             const loginForm = document.getElementById('loginForm');
             const loginBtn = document.getElementById('loginBtn');
-
+            
             if (loginForm) {
-                loginForm.addEventListener('submit', function (e) {
+                loginForm.addEventListener('submit', function(e) {
                     e.preventDefault();
                     handleLogin(e);
                     return false;
                 });
             }
-
+            
             if (loginBtn) {
-                loginBtn.addEventListener('click', function (e) {
+                loginBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     handleLogin(e);
                     return false;
                 });
-
+                
                 // Also handle mousedown
-                loginBtn.addEventListener('mousedown', function (e) {
+                loginBtn.addEventListener('mousedown', function(e) {
                     e.preventDefault();
                 });
             }
-
+            
             // Enter key handling for inputs
             const usernameInput = document.getElementById('username');
             const passwordInput = document.getElementById('password');
-
+            
             if (usernameInput) {
-                usernameInput.addEventListener('keypress', function (e) {
+                usernameInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         handleLogin(e);
                     }
                 });
             }
-
+            
             if (passwordInput) {
-                passwordInput.addEventListener('keypress', function (e) {
+                passwordInput.addEventListener('keypress', function(e) {
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         handleLogin(e);
                     }
                 });
             }
-
+            
             // Navigation
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.addEventListener('click', handleNavigation);
@@ -2215,23 +2101,23 @@
 
         async function handleLogin(e) {
             e.preventDefault();
-
+            
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
             const loginError = document.getElementById('loginError');
-
+            
             // Security: Input validation
             if (!validateInput(username, 'username')) {
                 loginError.innerHTML = '<div class="error-message">Invalid username format. Use 3-30 alphanumeric characters.</div>';
                 return;
             }
-
+            
             if (!validateInput(password, 'password')) {
                 loginError.innerHTML = '<div class="error-message">Invalid password length. Must be 6-100 characters.</div>';
                 return;
             }
-
+            
             // Security: Rate limiting
             try {
                 checkRateLimit();
@@ -2239,40 +2125,40 @@
                 loginError.innerHTML = `<div class="error-message">${sanitizeInput(error.message)}</div>`;
                 return;
             }
-
+            
             loginBtn.innerHTML = '<div class="loading"></div> Signing In...';
             loginBtn.disabled = true;
             loginError.innerHTML = '';
-
+            
             try {
                 loginAttempts.count++;
                 loginAttempts.lastAttempt = Date.now();
-
+                
                 console.log('Attempting login to:', `${API_BASE}/api/auth/login`);
                 const response = await fetch(`${API_BASE}/api/auth/login`, {
                     method: 'POST',
-                    headers: {
+                    headers: { 
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({
-                        username: sanitizeInput(username),
-                        password: password
+                    body: JSON.stringify({ 
+                        username: sanitizeInput(username), 
+                        password: password 
                     })
                 });
-
+                
                 const data = await response.json();
-
+                
                 if (!response.ok) {
                     throw new Error(data.error || 'Login failed');
                 }
-
+                
                 // Reset login attempts on success
                 loginAttempts.count = 0;
-
+                
                 authToken = data.token;
                 currentUser = data.user;
-
+                
                 // Store auth data with expiration
                 const authData = {
                     token: authToken,
@@ -2282,10 +2168,10 @@
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 localStorage.setItem('authExpiry', authData.expires.toString());
-
+                
                 showApp();
                 loadDashboardData();
-
+                
                 // Show AI assistant button
                 setTimeout(() => {
                     const chatbotContainer = document.getElementById('chatbotButtonContainer');
@@ -2293,7 +2179,7 @@
                         chatbotContainer.style.display = 'flex';
                     }
                 }, 500);
-
+                
             } catch (error) {
                 loginError.innerHTML = `<div class="error-message">${sanitizeInput(error.message)}</div>`;
             } finally {
@@ -2306,21 +2192,21 @@
             const storedToken = localStorage.getItem('authToken');
             const storedUser = localStorage.getItem('currentUser');
             const authExpiry = localStorage.getItem('authExpiry');
-
+            
             // Security: Check if auth is expired
             if (authExpiry && Date.now() > parseInt(authExpiry)) {
                 console.log('Auth token expired, logging out...');
                 logout();
                 return;
             }
-
+            
             if (storedToken && storedUser) {
                 try {
                     authToken = storedToken;
                     currentUser = JSON.parse(storedUser);
                     showApp();
                     loadDashboardData();
-
+                    
                     // Show AI assistant button only after successful auth
                     setTimeout(() => {
                         const chatbotContainer = document.getElementById('chatbotButtonContainer');
@@ -2338,12 +2224,12 @@
         function showApp() {
             document.getElementById('loginContainer').style.display = 'none';
             document.getElementById('appContainer').style.display = 'flex';
-
+            
             // Update user info
             if (currentUser) {
                 const displayName = currentUser.fullName || currentUser.full_name || currentUser.username || 'Admin';
                 const userPhone = currentUser.phone || '+254700000000';
-
+                
                 const userNameEl = document.getElementById('userName');
                 const userRoleEl = document.getElementById('userRole');
                 const userPhoneEl = document.getElementById('userPhone');
@@ -2352,7 +2238,7 @@
                 const profileDropdownRoleEl = document.getElementById('profileDropdownRole');
                 const profileDropdownPhoneEl = document.getElementById('profileDropdownPhone');
                 const profileAvatarLargeEl = document.getElementById('profileAvatarLarge');
-
+                
                 if (userNameEl) userNameEl.textContent = displayName;
                 if (userRoleEl) userRoleEl.textContent = currentUser.role || 'User';
                 if (userPhoneEl) userPhoneEl.textContent = userPhone;
@@ -2361,15 +2247,15 @@
                 if (profileDropdownRoleEl) profileDropdownRoleEl.textContent = currentUser.role || 'User';
                 if (profileDropdownPhoneEl) profileDropdownPhoneEl.innerHTML = `<i class="fas fa-phone" style="font-size: 12px;"></i><span>${userPhone}</span>`;
                 if (profileAvatarLargeEl) profileAvatarLargeEl.textContent = displayName.charAt(0).toUpperCase();
-
+                
                 // Load user-specific profile picture
                 loadProfilePicture();
             }
-
+            
             // Set default page to dashboard
             setActivePage('dashboard');
             showPageContent('dashboard');
-
+            
             // Show AI Assistant after successful login
             setTimeout(() => {
                 const chatbotContainer = document.getElementById('chatbotButtonContainer');
@@ -2382,20 +2268,20 @@
 
         function handleNavigation(e) {
             e.preventDefault();
-
+            
             const page = e.currentTarget.dataset.page;
-
+            
             // Update active nav item
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
             });
             e.currentTarget.classList.add('active');
-
+            
             // Update page title and breadcrumb
             const pageTitle = e.currentTarget.querySelector('.nav-text').textContent;
             document.getElementById('pageTitle').textContent = pageTitle;
             document.getElementById('breadcrumbCurrent').textContent = pageTitle;
-
+            
             // Show appropriate content
             showPageContent(page);
         }
@@ -2405,13 +2291,13 @@
             document.querySelectorAll('.page-content').forEach(content => {
                 content.style.display = 'none';
             });
-
+            
             // Show selected page content
             const pageContent = document.getElementById(`${page}Content`);
             if (pageContent) {
                 pageContent.style.display = 'block';
             }
-
+            
             // Load page-specific data
             switch (page) {
                 case 'dashboard':
@@ -2441,19 +2327,19 @@
                 // Add more cases as needed
             }
         }
-
+        
         function setActivePage(page) {
             // Update navigation active state
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.remove('active');
                 if (link.dataset.page === page) {
                     link.classList.add('active');
-
+                    
                     // Update page title and breadcrumb
                     const pageTitle = link.querySelector('.nav-text').textContent;
                     const titleElement = document.getElementById('pageTitle');
                     const breadcrumbElement = document.getElementById('breadcrumbCurrent');
-
+                    
                     if (titleElement) titleElement.textContent = pageTitle;
                     if (breadcrumbElement) breadcrumbElement.textContent = pageTitle;
                 }
@@ -2465,17 +2351,17 @@
                 const response = await fetch(`${API_BASE}/api/admin/stats`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
-
+                
                 if (!response.ok) throw new Error('Failed to load stats');
-
+                
                 const stats = await response.json();
-
+                
                 // Update stat cards
                 document.getElementById('totalIssues').textContent = stats.totalIssues || 0;
                 document.getElementById('totalBursaries').textContent = stats.totalBursaries || 0;
                 document.getElementById('totalConstituents').textContent = stats.totalConstituents || 0;
                 document.getElementById('totalUssd').textContent = stats.totalUssd || 0;
-
+                
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
@@ -2502,31 +2388,31 @@
             // Close any open dropdowns
             const dropdown = document.getElementById('profileDropdown');
             if (dropdown) dropdown.style.display = 'none';
-
+            
             // Show logout confirmation
             showToast('Signing out...', 'info');
-
+            
             // Security: Clear all auth data
             localStorage.removeItem('authToken');
             localStorage.removeItem('currentUser');
             localStorage.removeItem('authExpiry');
             authToken = null;
             currentUser = null;
-
+            
             // Hide app and show login
             document.getElementById('loginContainer').style.display = 'flex';
             document.getElementById('appContainer').style.display = 'none';
-
+            
             // Hide AI Assistant completely on logout
             const chatbotContainer = document.getElementById('chatbotButtonContainer');
             const chatbotModal = document.getElementById('chatbotModal');
             if (chatbotContainer) chatbotContainer.style.display = 'none';
             if (chatbotModal) chatbotModal.style.display = 'none';
-
+            
             // Clear login form
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
-
+            
             // Show success message
             setTimeout(() => {
                 showToast('Successfully signed out', 'success');
@@ -2539,13 +2425,13 @@
         function showChatbot() {
             const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
-
+            
             modal.style.display = 'block';
             if (panel) {
                 panel.style.display = 'flex';
                 panel.style.transform = 'translateY(20px)';
                 panel.style.opacity = '0';
-
+                
                 setTimeout(() => {
                     panel.style.transform = 'translateY(0)';
                     panel.style.opacity = '1';
@@ -2562,24 +2448,24 @@
         function toggleChatbot() {
             const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
-
+            
             if (!modal || !panel) {
                 console.error('Chatbot elements not found');
                 return;
             }
-
+            
             modal.style.display = 'flex';
-
+            
             if (panel.style.display === 'none' || !panel.style.display) {
                 panel.style.display = 'flex';
                 const input = document.getElementById('chatbot-input');
                 if (input) {
                     input.focus();
-                    input.onkeydown = function (e) {
-                        if (e.key === 'Enter') {
-                            e.preventDefault();
-                            sendChatbotMessage();
-                        }
+                    input.onkeydown = function(e) { 
+                        if (e.key === 'Enter') { 
+                            e.preventDefault(); 
+                            sendChatbotMessage(); 
+                        } 
                     };
                 }
                 // Show floating button
@@ -2594,18 +2480,18 @@
         function hideChatbot() {
             const modal = document.getElementById('chatbotModal');
             const panel = document.querySelector('.chatbot-modal');
-
+            
             if (panel) {
                 panel.style.transform = 'translateY(20px)';
                 panel.style.opacity = '0';
                 panel.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-
+                
                 setTimeout(() => {
                     panel.style.display = 'none';
                     modal.style.display = 'none';
                 }, 300);
             }
-
+            
             const input = document.getElementById('chatbot-input');
             if (input) input.onkeydown = null;
         }
@@ -2614,12 +2500,12 @@
             const container = document.getElementById('chatbot-messages');
             const messageEl = document.createElement('div');
             messageEl.className = 'chat-row ' + (who === 'bot' ? 'bot' : 'user');
-
+            
             if (who === 'bot') {
                 text = formatMaiReply(text);
             }
-
-            messageEl.innerHTML = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
+            messageEl.innerHTML = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
             container.appendChild(messageEl);
 
             // Add action buttons for bot messages
@@ -2635,15 +2521,15 @@
             try {
                 if (/—\s*Mai$|\-\s*Mai$|Mai\s*$/i.test(text.trim())) return text;
                 return text + ' — Mai';
-            } catch (e) {
-                return text;
+            } catch (e) { 
+                return text; 
             }
         }
 
         function attachActionButtons(containerEl, text) {
             const t = (text || '').toLowerCase();
             const actions = [];
-
+            
             if (t.includes('resolve') || t.includes('issues')) {
                 actions.push({ label: 'Open Issues', fn: () => navigateTo('issues') });
             }
@@ -2668,9 +2554,9 @@
             actions.forEach(action => {
                 const button = document.createElement('button');
                 button.textContent = action.label;
-                button.onclick = (e) => {
-                    e.stopPropagation();
-                    action.fn();
+                button.onclick = (e) => { 
+                    e.stopPropagation(); 
+                    action.fn(); 
                 };
                 wrapper.appendChild(button);
             });
@@ -2682,15 +2568,15 @@
             const input = document.getElementById('chatbot-input');
             const text = (input.value || '').trim();
             if (!text) return;
-
+            
             appendChatMessage('user', text);
             input.value = '';
-
+            
             // AI Assistant Demo Mode - works without authentication
             try {
                 let response = getAIResponse(text);
                 appendChatMessage('bot', response);
-
+                
             } catch (error) {
                 console.error('AI Assistant error:', error);
                 const fallbackResponse = getFallbackResponse(text.toLowerCase());
@@ -2700,7 +2586,7 @@
 
         function getAIResponse(userMessage) {
             const query = userMessage.toLowerCase();
-
+            
             // Comprehensive AI responses for any topic
             if (query.includes('hello') || query.includes('hi') || query.includes('hey')) {
                 return 'Hello! I\'m Mai, your intelligent assistant. I can help you with anything - from dashboard navigation to general questions about technology, science, business, or any topic you\'re curious about!';
@@ -2764,19 +2650,19 @@
                 const response = await fetch(`${API_BASE}/api/admin/health`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
-
+                
                 if (!response.ok) {
                     throw new Error('Health check failed');
                 }
-
+                
                 const health = await response.json();
-
+                
                 if (health.database === 'connected') {
                     appendChatMessage('bot', '✅ Database connectivity is healthy! MongoDB Atlas connection is active and all systems are operational.');
                 } else {
                     appendChatMessage('bot', '⚠️ Database connectivity issue detected. Please check system status or contact support.');
                 }
-
+                
             } catch (error) {
                 appendChatMessage('bot', '❌ Unable to check database connectivity at the moment. Please try again later.');
                 console.error('Database check error:', error);
@@ -2786,7 +2672,7 @@
         // ========================================
         // PROFILE & SETTINGS MANAGEMENT
         // ========================================
-
+        
         async function loadSettingsData() {
             try {
                 // Load current user profile data
@@ -2795,16 +2681,16 @@
                     document.getElementById('emailInput').value = currentUser.email || '';
                     document.getElementById('phoneInput').value = currentUser.phone || '';
                     document.getElementById('roleInput').value = currentUser.role || 'Administrator';
-
+                    
                     // Load profile picture if available
                     if (currentUser.profilePicture) {
                         document.getElementById('currentProfilePic').src = currentUser.profilePicture;
                     }
                 }
-
+                
                 // Check system status
                 refreshSystemStatus();
-
+                
             } catch (error) {
                 console.error('Error loading settings:', error);
             }
@@ -2827,40 +2713,40 @@
 
             // Read file and convert to base64
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = function(e) {
                 const imageUrl = e.target.result;
-
+                
                 // Update top-right avatar
                 const userAvatar = document.getElementById('userAvatar');
-
+                
                 if (userAvatar) {
                     userAvatar.style.backgroundImage = `url('${imageUrl}')`;
                     userAvatar.style.backgroundSize = 'cover';
                     userAvatar.style.backgroundPosition = 'center';
                     userAvatar.textContent = ''; // Remove initial letter
                 }
-
+                
                 // Save to localStorage with user-specific key
                 const userKey = `profilePic_${currentUser.username || currentUser.id}`;
                 localStorage.setItem(userKey, imageUrl);
-
+                
                 showToast('Profile picture updated successfully!', 'success');
-
+                
                 // Close dropdown
                 const dropdown = document.getElementById('profileDropdown');
                 if (dropdown) dropdown.style.display = 'none';
             };
-
-            reader.onerror = function () {
+            
+            reader.onerror = function() {
                 showToast('Failed to read image file. Please try again.', 'error');
             };
-
+            
             reader.readAsDataURL(file);
         }
 
         async function updateProfile() {
             const updateBtn = document.getElementById('updateProfileBtn');
-
+            
             const profileData = {
                 fullName: document.getElementById('fullNameInput').value.trim(),
                 email: document.getElementById('emailInput').value.trim(),
@@ -2897,12 +2783,12 @@
                 }
 
                 const result = await response.json();
-
+                
                 // Update stored user data
                 if (currentUser) {
                     Object.assign(currentUser, profileData);
                     localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
+                    
                     // Update header display
                     document.getElementById('userName').textContent = profileData.fullName || currentUser.username;
                 }
@@ -2997,7 +2883,7 @@
                 }
 
                 const health = await response.json();
-
+                
                 if (health.database === 'connected') {
                     indicator.style.background = 'var(--success)';
                     statusText.textContent = `Connected (${health.details.collections} collections, ${health.details.latency}ms)`;
@@ -3070,7 +2956,7 @@
         // ========================================
         // ANNOUNCEMENTS MANAGEMENT
         // ========================================
-
+        
         async function loadAnnouncementsData() {
             await loadAnnouncements();
             await refreshNewsPreview();
@@ -3078,7 +2964,7 @@
 
         async function loadAnnouncements() {
             const container = document.getElementById('announcementsList');
-
+            
             try {
                 const response = await fetch(`${API_BASE}/api/admin/announcements`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
@@ -3089,7 +2975,7 @@
                 }
 
                 const announcements = await response.json();
-
+                
                 if (announcements.length === 0) {
                     container.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -3246,38 +3132,38 @@
         // ========================================
         // MODAL AND BUTTON FUNCTIONALITY
         // ========================================
-
+        
         // Show Add Issue Modal
         function showAddIssueModal() {
             document.getElementById('addIssueModal').style.display = 'flex';
             document.getElementById('issueTitle').focus();
         }
-
+        
         // Show Process Bursary Modal
         function showProcessBursaryModal() {
             document.getElementById('processBursaryModal').style.display = 'flex';
             document.getElementById('applicantName').focus();
         }
-
+        
         // Show Announcement Modal
         function showAnnouncementModal() {
             document.getElementById('announcementModal').style.display = 'flex';
             document.getElementById('announcementTitle').focus();
         }
-
+        
         // Close Modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
-
+            
             // Reset forms
             const forms = document.getElementById(modalId).querySelectorAll('form');
             forms.forEach(form => form.reset());
         }
-
+        
         // Submit New Issue
         async function submitNewIssue(event) {
             event.preventDefault();
-
+            
             const formData = {
                 title: document.getElementById('issueTitle').value,
                 description: document.getElementById('issueDescription').value,
@@ -3287,25 +3173,25 @@
                 created_at: new Date().toISOString(),
                 created_by: currentUser?.username || 'admin'
             };
-
+            
             try {
                 // Simulate API call
                 await new Promise(resolve => setTimeout(resolve, 1000));
-
+                
                 showToast('Issue added successfully!', 'success');
                 closeModal('addIssueModal');
                 loadIssuesData();
-
+                
             } catch (error) {
                 console.error('Error adding issue:', error);
                 showToast('Failed to add issue. Please try again.', 'error');
             }
         }
-
+        
         // Submit Bursary Decision
         async function submitBursaryDecision(event) {
             event.preventDefault();
-
+            
             const formData = {
                 applicantName: document.getElementById('applicantName').value,
                 applicationId: document.getElementById('applicationId').value,
@@ -3315,32 +3201,32 @@
                 processed_at: new Date().toISOString(),
                 processed_by: currentUser?.username || 'admin'
             };
-
+            
             try {
                 // Simulate API call
                 await new Promise(resolve => setTimeout(resolve, 1000));
-
+                
                 showToast(`Bursary application ${formData.decision} successfully!`, 'success');
                 closeModal('processBursaryModal');
                 loadBursariesData();
-
+                
             } catch (error) {
                 console.error('Error processing bursary:', error);
                 showToast('Failed to process application. Please try again.', 'error');
             }
         }
-
+        
         // Submit Announcement
         async function submitAnnouncement(event) {
             event.preventDefault();
-
+            
             const formData = {
                 title: document.getElementById('announcementTitle').value,
                 body: document.getElementById('announcementMessage').value,
                 type: document.getElementById('announcementType').value,
                 sendSMS: document.getElementById('sendSMS').checked
             };
-
+            
             try {
                 const response = await fetch(`${API_BASE}/api/admin/announcements`, {
                     method: 'POST',
@@ -3350,31 +3236,31 @@
                     },
                     body: JSON.stringify(formData)
                 });
-
+                
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to send announcement');
                 }
-
+                
                 showToast('Announcement sent successfully!', 'success');
                 document.getElementById('announcementForm').reset();
                 closeModal('announcementModal');
                 if (typeof loadAnnouncementsData === 'function') loadAnnouncementsData();
-
+                
             } catch (error) {
                 console.error('Error sending announcement:', error);
                 showToast(error.message || 'Failed to send announcement. Please try again.', 'error');
             }
         }
-
+        
         // Update Issue Status
         async function submitIssueUpdate(event) {
             event.preventDefault();
-
+            
             const issueId = document.getElementById('updateIssueId').value;
             const status = document.getElementById('issueStatus').value;
             const action_note = document.getElementById('issueActionNote').value;
-
+            
             try {
                 const response = await fetch(`${API_BASE}/api/admin/issues/${issueId}`, {
                     method: 'PATCH',
@@ -3384,23 +3270,23 @@
                     },
                     body: JSON.stringify({ status, action_note })
                 });
-
+                
                 if (!response.ok) {
                     const error = await response.json();
                     throw new Error(error.error || 'Failed to update issue');
                 }
-
+                
                 showToast('Issue status updated successfully!', 'success');
                 document.getElementById('updateIssueForm').reset();
                 closeModal('updateIssueModal');
                 if (typeof loadIssuesData === 'function') loadIssuesData();
-
+                
             } catch (error) {
                 console.error('Error updating issue:', error);
                 showToast(error.message || 'Failed to update issue. Please try again.', 'error');
             }
         }
-
+        
         // Show Update Issue Modal
         function showUpdateIssueModal(issue) {
             document.getElementById('updateIssueId').value = issue.ticketNo || issue.ticket || issue.id;
@@ -3409,12 +3295,12 @@
             document.getElementById('issueActionNote').value = '';
             openModal('updateIssueModal');
         }
-
+        
         // Load Users Data - User Management removed, function disabled
         async function loadUsersData() {
             const usersList = document.getElementById('usersList');
             const usersCount = document.getElementById('usersCount');
-
+            
             // Check if user is authenticated
             if (!authToken) {
                 console.error('No auth token available for loading users');
@@ -3428,23 +3314,23 @@
                 }
                 return;
             }
-
+            
             try {
                 console.log('Fetching users with token:', authToken ? 'Present' : 'Missing');
                 // Try to fetch users from database
                 const response = await fetch(`${API_BASE}/api/auth/users`, {
-                    headers: {
+                    headers: { 
                         'Authorization': `Bearer ${authToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
-
+                
                 const loadingEl = document.getElementById('usersLoading');
                 if (loadingEl) loadingEl.style.display = 'none';
-
+                
                 if (response.ok) {
                     const users = await response.json(); // Backend returns array directly
-
+                    
                     // Load user-specific profile pictures for each user
                     users.forEach(user => {
                         const userKey = `profilePic_${user.username || user.name || user.id}`;
@@ -3460,10 +3346,10 @@
                             user.username = user.name.toLowerCase();
                         }
                     });
-
+                    
                     if (usersCount) usersCount.textContent = `${users.length}`;
                     displayUsers(users);
-
+                    
                     console.log(`Loaded ${users.length} users from database`);
                 } else if (response.status === 401) {
                     console.error('Unauthorized - token may be invalid or expired');
@@ -3477,7 +3363,7 @@
                 console.error('Error loading users:', error);
                 const loadingEl = document.getElementById('usersLoading');
                 if (loadingEl) loadingEl.style.display = 'none';
-
+                
                 // Show error message with retry
                 if (usersList) {
                     usersList.innerHTML = `
@@ -3494,11 +3380,11 @@
                 if (usersCount) usersCount.textContent = '0';
             }
         }
-
+        
         // Display Users - Disabled (User Management removed)
         function displayUsers(users) {
             const usersList = document.getElementById('usersList');
-
+            
             if (!users || users.length === 0) {
                 usersList.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
@@ -3511,16 +3397,16 @@
                 `;
                 return;
             }
-
+            
             // Check if current user is MCA (can be 'MCA', 'mca', or 'super_admin')
             const currentUserRole = (currentUser?.role || '').toLowerCase();
             const isMCA = currentUserRole === 'mca' || currentUserRole === 'super_admin';
-
+            
             const usersHtml = users.map(user => {
                 const userRole = (user.role || '').toLowerCase();
                 const isTargetUserMCA = userRole === 'mca' || userRole === 'super_admin';
                 const canDeleteThisUser = isMCA && !isTargetUserMCA;
-
+                
                 // Normalize role display
                 let roleDisplay = user.role;
                 let roleBadgeColor = '#7C3AED';
@@ -3534,7 +3420,7 @@
                     roleDisplay = 'Clerk';
                     roleBadgeColor = '#7C3AED';
                 }
-
+                
                 return `
                 <div class="user-card" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--border);">
                     <div style="display: flex; align-items: center; gap: 16px;">
@@ -3567,7 +3453,7 @@
                     </div>
                 </div>
             `}).join('');
-
+            
             usersList.innerHTML = `
                 <div style="margin-bottom: 20px; padding: 16px; background: rgba(255,255,255,0.05); border-radius: 12px; border: 1px solid var(--border);">
                     <h4 style="margin: 0 0 8px 0; color: var(--text);">System Users (${users.length}/3)</h4>
@@ -3578,13 +3464,13 @@
                 ${usersHtml}
             `;
         }
-
+        
         // Load Issues Data
         async function loadIssuesData() {
             console.log('Loading constituent issues data...');
             const issuesList = document.getElementById('issuesList');
             const issuesCount = document.getElementById('issuesCount');
-
+            
             try {
                 // Show loading state
                 issuesList.innerHTML = `
@@ -3594,7 +3480,7 @@
                         <div style="margin-top: 8px; font-size: 12px; opacity: 0.7;">Fetching reported issues from database</div>
                     </div>
                 `;
-
+                
                 // Fetch real issues from API
                 const response = await fetch(`${API_BASE}/api/admin/issues`, {
                     headers: {
@@ -3602,23 +3488,23 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-
+                
                 const issues = await response.json();
-
+                
                 displayIssues(issues);
                 updateIssueStats(issues);
-
+                
                 if (issuesCount) {
                     issuesCount.textContent = `${issues.length} issue${issues.length !== 1 ? 's' : ''} reported`;
                 }
-
+                
                 // Show success message
                 showToast(`Loaded ${issues.length} issues from database`, 'success');
-
+                
             } catch (error) {
                 console.error('Error loading issues:', error);
                 issuesList.innerHTML = `
@@ -3631,14 +3517,14 @@
                         </button>
                     </div>
                 `;
-
+                
                 showToast('Failed to load issues data', 'error');
             }
         }
-
+        
         function displayIssues(issues) {
             const issuesList = document.getElementById('issuesList');
-
+            
             if (!issues || issues.length === 0) {
                 issuesList.innerHTML = `
                     <div style="text-align: center; padding: 40px; color: #ccc;">
@@ -3652,17 +3538,17 @@
                 `;
                 return;
             }
-
+            
             const getStatusColor = (status) => {
                 const colors = {
                     'pending': '#f59e0b',
-                    'in-progress': '#3b82f6',
+                    'in-progress': '#3b82f6', 
                     'resolved': '#059669',
                     'closed': '#6b7280'
                 };
                 return colors[status] || '#6b7280';
             };
-
+            
             const getPriorityColor = (priority) => {
                 const colors = {
                     'Critical': '#dc2626',
@@ -3672,7 +3558,7 @@
                 };
                 return colors[priority] || '#6b7280';
             };
-
+            
             const issuesHtml = issues.map(issue => `
                 <div class="issue-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 16px; transition: all 0.3s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
@@ -3706,7 +3592,7 @@
                         <div>
                             <div style="color: #aaa; margin-bottom: 4px;">Date Reported</div>
                             <div style="color: #fff;">${new Date(issue.dateReported).toLocaleDateString()}</div>
-                            <div style="color: #ccc;">${new Date(issue.dateReported).toLocaleDateString('en-US', { weekday: 'long' })}</div>
+                            <div style="color: #ccc;">${new Date(issue.dateReported).toLocaleDateString('en-US', {weekday: 'long'})}</div>
                         </div>
                         <div>
                             <div style="color: #aaa; margin-bottom: 4px;">${issue.status === 'resolved' ? 'Resolution Time' : 'Estimated Resolution'}</div>
@@ -3716,41 +3602,41 @@
                     </div>
                 </div>
             `).join('');
-
+            
             issuesList.innerHTML = issuesHtml;
         }
-
+        
         function updateIssueStats(issues) {
             const pending = issues.filter(i => i.status === 'pending').length;
             const inProgress = issues.filter(i => i.status === 'in-progress').length;
             const resolved = issues.filter(i => i.status === 'resolved').length;
-
+            
             document.getElementById('pendingCount').textContent = pending;
             document.getElementById('inProgressCount').textContent = inProgress;
             document.getElementById('resolvedCount').textContent = resolved;
         }
-
+        
         function filterIssues(status) {
             // Update filter button states
             document.querySelectorAll('.status-filter').forEach(btn => {
                 btn.classList.remove('active');
                 btn.style.background = `rgba(${btn.dataset.status === 'all' ? '99, 102, 241' : btn.dataset.status === 'pending' ? '245, 158, 11' : btn.dataset.status === 'in-progress' ? '59, 130, 246' : btn.dataset.status === 'resolved' ? '5, 150, 105' : '107, 114, 128'}, 0.2)`;
             });
-
+            
             const activeBtn = document.querySelector(`[data-status="${status}"]`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
                 activeBtn.style.background = `rgba(${status === 'all' ? '99, 102, 241' : status === 'pending' ? '245, 158, 11' : status === 'in-progress' ? '59, 130, 246' : status === 'resolved' ? '5, 150, 105' : '107, 114, 128'}, 0.4)`;
             }
-
+            
             // Filter logic would go here - for demo, just show message
             showToast(`Filtering by ${status} status`, 'info');
         }
-
+        
         function showIssueActions(issueId) {
             showToast('Issue actions menu - Update status, Assign, View details', 'info');
         }
-
+        
         // Load Bursaries Data
         function loadBursariesData() {
             const bursariesList = document.getElementById('bursariesList');
@@ -3766,7 +3652,7 @@
                 `;
             }
         }
-
+        
         // Load Announcements Data
         function loadAnnouncementsData() {
             const announcementsList = document.getElementById('announcementsList');
@@ -3782,12 +3668,12 @@
                 `;
             }
         }
-
+        
         // Export Constituents
         function exportConstituents() {
             showToast('Export feature will be implemented soon!', 'info');
         }
-
+        
         // Refresh USSD Data
         function refreshUssdData() {
             const ussdList = document.getElementById('ussdList');
@@ -3802,7 +3688,7 @@
             }
             showToast('USSD data refreshed!', 'success');
         }
-
+        
         // Load Constituents Data
         function loadConstituentsData() {
             const constituentsList = document.getElementById('constituentsList');
@@ -3820,11 +3706,11 @@
         }
 
         addPageTransition();
-
+        
         // ========================================
         // PROFILE DROPDOWN FUNCTIONALITY
         // ========================================
-
+        
         function toggleProfileDropdown() {
             // Remove existing dropdown if any
             const existing = document.getElementById('profileDropdown');
@@ -3832,7 +3718,7 @@
                 existing.remove();
                 return;
             }
-
+            
             // Create compact dropdown
             const dropdown = document.createElement('div');
             dropdown.id = 'profileDropdown';
@@ -3852,11 +3738,11 @@
                 display: block !important;
                 animation: dropdownFadeIn 0.15s ease-out !important;
             `;
-
+            
             const userName = currentUser?.fullName || currentUser?.full_name || currentUser?.username || 'Admin';
             const userRole = currentUser?.role || 'User';
             const userPhone = localStorage.getItem('userPhone') || '0706757140';
-
+            
             dropdown.innerHTML = `
                 <div style="padding: 12px; border-bottom: 1px solid rgba(99, 102, 241, 0.2);">
                     <div style="color: #fff; font-weight: 600; font-size: 14px; margin-bottom: 2px;">${userName}</div>
@@ -3883,9 +3769,9 @@
                     </a>
                 </div>
             `;
-
+            
             document.body.appendChild(dropdown);
-
+            
             // Close when clicking outside
             setTimeout(() => {
                 const closeHandler = (e) => {
@@ -3897,17 +3783,17 @@
                 document.addEventListener('click', closeHandler);
             }, 100);
         }
-
+        
         function closeDropdownOutside(event) {
             const dropdown = document.getElementById('profileDropdown');
             const profile = document.querySelector('.user-profile');
-
+            
             if (!dropdown.contains(event.target) && !profile.contains(event.target)) {
                 dropdown.style.display = 'none';
                 document.removeEventListener('click', closeDropdownOutside);
             }
         }
-
+        
         function showProfileModal() {
             const modal = document.createElement('div');
             modal.style.cssText = `
@@ -3915,10 +3801,10 @@
                 background: rgba(0,0,0,0.8); display: flex; align-items: center;
                 justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
             `;
-
+            
             const userPhone = currentUser?.phone || '+254700000000';
             const userEmail = currentUser?.email || 'No email provided';
-
+            
             modal.innerHTML = `
                 <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
                     <div style="text-align: center; margin-bottom: 24px;">
@@ -3956,14 +3842,14 @@
                     </div>
                 </div>
             `;
-
+            
             modal.className = 'modal';
             document.body.appendChild(modal);
-
+            
             // Close dropdown
             document.getElementById('profileDropdown').style.display = 'none';
         }
-
+        
         function showProfilePictureModal() {
             const modal = document.createElement('div');
             modal.style.cssText = `
@@ -3971,7 +3857,7 @@
                 background: rgba(0,0,0,0.8); display: flex; align-items: center;
                 justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
             `;
-
+            
             modal.innerHTML = `
                 <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 500px; width: 90%; backdrop-filter: blur(20px);">
                     <h2 style="color: #fff; margin: 0 0 20px 0; text-align: center;">
@@ -4001,38 +3887,38 @@
                     </div>
                 </div>
             `;
-
+            
             modal.className = 'modal';
             document.body.appendChild(modal);
-
+            
             // Close dropdown
             document.getElementById('profileDropdown').style.display = 'none';
         }
-
+        
         function handleProfilePicUpload(event) {
             const file = event.target.files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = function(e) {
                     // Update all profile pictures
                     const imgSrc = e.target.result;
-
+                    
                     // Update main profile avatar
                     const userAvatar = document.getElementById('userAvatar');
                     userAvatar.innerHTML = `<img src="${imgSrc}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-
+                    
                     // Update dropdown avatar
                     const profileAvatarLarge = document.getElementById('profileAvatarLarge');
                     profileAvatarLarge.innerHTML = `<img src="${imgSrc}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-
+                    
                     // Update preview in modal
                     const currentProfilePic = document.getElementById('currentProfilePic');
                     if (currentProfilePic) {
                         currentProfilePic.innerHTML = `<img src="${imgSrc}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
                     }
-
+                    
                     showToast('Profile picture updated successfully!', 'success');
-
+                    
                     // Close modal after a delay
                     setTimeout(() => {
                         const modal = document.querySelector('.modal');
@@ -4042,18 +3928,18 @@
                 reader.readAsDataURL(file);
             }
         }
-
+        
         function showSettingsModal() {
             // Navigate to settings page instead
             setActivePage('settings');
             showPageContent('settings');
-
+            
             // Close dropdown
             document.getElementById('profileDropdown').style.display = 'none';
-
+            
             showToast('Navigated to Settings page', 'info');
         }
-
+        
         function showChangePhoneModal() {
             const modal = document.createElement('div');
             modal.style.cssText = `
@@ -4061,9 +3947,9 @@
                 background: rgba(0,0,0,0.8); display: flex; align-items: center;
                 justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
             `;
-
+            
             const currentPhone = '0706757140';
-
+            
             modal.innerHTML = `
                 <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
                     <h2 style="color: #fff; margin: 0 0 20px 0; text-align: center;">
@@ -4091,15 +3977,15 @@
                     </div>
                 </div>
             `;
-
+            
             modal.className = 'modal';
             document.body.appendChild(modal);
-
+            
             // Close dropdown
             const dropdown = document.getElementById('profileDropdown');
             if (dropdown) dropdown.style.display = 'none';
         }
-
+        
         function showChangePasswordModal() {
             const modal = document.createElement('div');
             modal.style.cssText = `
@@ -4107,7 +3993,7 @@
                 background: rgba(0,0,0,0.8); display: flex; align-items: center;
                 justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
             `;
-
+            
             modal.innerHTML = `
                 <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
                     <h2 style="color: #fff; margin: 0 0 20px 0; text-align: center;">
@@ -4140,98 +4026,98 @@
                     </div>
                 </div>
             `;
-
+            
             modal.className = 'modal';
             document.body.appendChild(modal);
-
+            
             // Close dropdown
             const dropdown = document.getElementById('profileDropdown');
             if (dropdown) dropdown.style.display = 'none';
         }
-
+        
         function updatePhone() {
             const newPhone = document.getElementById('newPhoneInput').value.trim();
-
+            
             if (!newPhone) {
                 showToast('Please enter a phone number', 'error');
                 return;
             }
-
+            
             if (!/^07\d{8}$/.test(newPhone)) {
                 showToast('Please enter a valid Kenyan phone number (07XXXXXXXX)', 'error');
                 return;
             }
-
+            
             // Update phone in UI
             const phoneDisplay = document.getElementById('profileDropdownPhone');
             if (phoneDisplay) {
                 phoneDisplay.innerHTML = `<i class="fas fa-phone" style="margin-right: 6px;"></i>${newPhone}`;
             }
-
+            
             // Save to localStorage
             localStorage.setItem('userPhone', newPhone);
-
+            
             showToast('Phone number updated successfully!', 'success');
-
+            
             // Close modal
             setTimeout(() => {
                 const modal = document.querySelector('.modal');
                 if (modal) modal.remove();
             }, 1000);
         }
-
+        
         function updatePassword() {
             const currentPassword = document.getElementById('currentPasswordInput').value;
             const newPassword = document.getElementById('newPasswordInput').value;
             const confirmPassword = document.getElementById('confirmPasswordInput').value;
-
+            
             if (!currentPassword || !newPassword || !confirmPassword) {
                 showToast('Please fill in all fields', 'error');
                 return;
             }
-
+            
             if (newPassword !== confirmPassword) {
                 showToast('New passwords do not match', 'error');
                 return;
             }
-
+            
             if (newPassword.length < 6) {
                 showToast('Password must be at least 6 characters long', 'error');
                 return;
             }
-
+            
             // In a real app, you would send this to the server
             showToast('Password changed successfully!', 'success');
-
+            
             // Close modal
             setTimeout(() => {
                 const modal = document.querySelector('.modal');
                 if (modal) modal.remove();
             }, 1000);
         }
-
+        
         // ========================================
         // USER MANAGEMENT FUNCTIONS
         // ========================================
-
+        
         function confirmDeleteUser(userId, username, role) {
             if (currentUser?.role !== 'MCA') {
                 showToast('Only MCA (Main Admin) can delete users', 'error');
                 return;
             }
-
+            
             if (role === 'MCA') {
                 showToast('MCA (Main Admin) cannot be deleted', 'error');
                 return;
             }
-
+            
             const modal = document.createElement('div');
             modal.style.cssText = `
                 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
                 background: rgba(0,0,0,0.8); display: flex; align-items: center;
                 justify-content: center; z-index: 10000; backdrop-filter: blur(5px);
             `;
-
+            
             modal.innerHTML = `
                 <div style="background: rgba(30,30,30,0.95); border: 1px solid rgba(220, 38, 38, 0.3); border-radius: 20px; padding: 32px; max-width: 450px; width: 90%; backdrop-filter: blur(20px);">
                     <div style="text-align: center; margin-bottom: 24px;">
@@ -4262,25 +4148,25 @@
                     </div>
                 </div>
             `;
-
+            
             modal.className = 'modal';
             document.body.appendChild(modal);
         }
-
+        
         async function deleteUser(userId) {
             if (currentUser?.role !== 'MCA') {
                 showToast('Only MCA can delete users', 'error');
                 return;
             }
-
+            
             // Close the confirmation modal immediately
             const modals = document.querySelectorAll('.modal');
             modals.forEach(m => m.remove());
-
+            
             try {
                 console.log('Deleting user with ID:', userId);
                 showToast('Deleting user...', 'info');
-
+                
                 const response = await fetch(`${API_BASE}/api/auth/users/${userId}`, {
                     method: 'DELETE',
                     headers: {
@@ -4288,43 +4174,34 @@
                         'Content-Type': 'application/json'
                     }
                 });
-
+                
                 console.log('Delete response status:', response.status);
-
+                
                 if (!response.ok) {
                     const data = await response.json();
                     console.error('Delete failed:', data);
                     throw new Error(data.error || 'Failed to delete user');
                 }
-
+                
                 const result = await response.json();
                 console.log('Delete successful:', result);
-
+                
                 showToast('✅ User deleted successfully', 'success');
-
+                
                 // Immediately reload users data (no delay)
                 console.log('Reloading users list...');
                 await loadUsersData();
                 console.log('Users list reloaded');
-
+                
             } catch (error) {
                 console.error('Error deleting user:', error);
                 showToast('❌ Failed to delete user: ' + error.message, 'error');
             }
         }
-
+        
         async function editUser(userId) {
             showToast('Edit user functionality coming soon', 'info');
         }
-
-        // Initialize application when DOM is ready
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('🚀 Initializing VOO Ward Admin Dashboard...');
-            setupEventListeners();
-            checkAuth();
-            console.log('✅ Dashboard initialized');
-        });
     </script>
 </body>
-
 </html>
