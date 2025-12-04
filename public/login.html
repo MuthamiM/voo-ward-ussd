@@ -730,12 +730,12 @@
         });
 
         // Social Login Logic
-        function handleSocialLogin(provider) { window.location.href = '/api/auth/' + provider; }
+        function handleSocialLogin(provider) { window.location.href = API_BASE + '/api/auth/' + provider; }
         // Check if already logged in
         const authToken = localStorage.getItem('authToken');
         if (authToken) {
-            fetch(`${ API_BASE } /api/auth / me`, {
-                headers: { 'Authorization': `Bearer ${ authToken }` }
+            fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
             }).then(response => {
                 if (response.ok) window.location.href = '/admin-dashboard.html';
                 else {
