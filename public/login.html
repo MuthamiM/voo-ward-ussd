@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script>
+        if (!window.location.search.includes('v=') && window.performance) {
+            const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+            if (navEntry && navEntry.type === 'back_forward') {
+                window.location.href = window.location.pathname + '?v=' + Date.now();
+            }
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Login - VOO Ward</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Background with overlay */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') no-repeat center center;
+            background-size: cover;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.4) 0%, rgba(118, 75, 162, 0.4) 100%);
+            z-index: 1;
+        }
+
+        /* Animated gradient orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            z-index: 2;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .orb1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(255, 107, 139, 0.4);
+            top: -100px;
+            left: -100px;
+            animation-delay: 0s;
+        }
+
+        .orb2 {
+            width: 350px;
+            height: 350px;
+            background: rgba(120, 119, 198, 0.4);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: 5s;
+        }
+
+        .orb3 {
+            width: 300px;
+            height: 300px;
+            background: rgba(255, 175, 189, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(50px, -50px) scale(1.1);
+            }
+
+            66% {
+                transform: translate(-50px, 50px) scale(0.9);
+            }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-title {
+            color: white;
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.5px;
+        }
+
+        .login-subtitle {
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 16px;
+            font-weight: 400;
+            margin-bottom: 32px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .login-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+            width: 420px;
+            max-width: 92vw;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            pointer-events: none;
+        }
+
+        .message {
+            padding: 14px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            position: relative;
+            z-index: 2;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .error {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #fff;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 16px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: 'Inter', sans-serif;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: white;
+            position: relative;
+            z-index: 2;
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.65);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1),
+                0 8px 24px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            font-size: 14px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .remember-label {
+            display: flex;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.9);
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.3s ease;
+        }
+
+        .remember-label:hover {
+            color: white;
+        }
+
+        .remember-label input {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .forgot-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .forgot-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .forgot-link:hover {
+            color: white;
+        }
+
+        .forgot-link:hover::after {
+            width: 100%;
+        }
+
+        .sign-in-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
+            border: none;
+            border-radius: 12px;
+            color: #667eea;
+            font-size: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-bottom: 24px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .sign-in-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .sign-in-btn:hover::before {
+            opacity: 1;
+        }
+
+        .sign-in-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+        }
+
+        .sign-in-btn:active {
+            transform: translateY(0);
+        }
+
+        .sign-in-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sign-in-btn span {
+            position: relative;
+            z-index: 1;
+        }
+
+        .or-text {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin: 24px 0;
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .or-text::before,
+        .or-text::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .social-buttons {
+            display: flex;
+            gap: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .social-btn {
+            flex: 1;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .social-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .social-btn i {
+            font-size: 16px;
+        }
+
+        .facebook-btn:hover {
+            background: rgba(59, 89, 152, 0.3);
+            border-color: rgba(59, 89, 152, 0.5);
+        }
+
+        .twitter-btn:hover {
+            background: rgba(29, 161, 242, 0.3);
+            border-color: rgba(29, 161, 242, 0.5);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-radius: 50%;
+            border-top-color: #667eea;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 32px 24px;
+            }
+
+            .login-title {
+                font-size: 24px;
+            }
+
+            .social-buttons {
+                flex-direction: column;
+            }
+
+            .or-text {
+                margin: 20px 0;
+            }
+        }
+
+        /* Enhanced focus states for accessibility */
+        input:focus-visible,
+        button:focus-visible,
+        a:focus-visible {
+            outline: 2px solid rgba(255, 255, 255, 0.8);
+            outline-offset: 2px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            color: white;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: white;
+        }
+
+        .modal h2 {
+            font-family: 'Space Grotesk', sans-serif;
+            margin-bottom: 10px;
+        }
+
+        .modal p {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Animated background orbs -->
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+
+    <div class="login-wrapper">
+        <h1 class="login-title">Login #10</h1>
+        <p class="login-subtitle">Have an account?</p>
+
+        <div class="login-box">
+            <div id="errorMsg" class="message error"></div>
+            <div id="successMsg" class="message success"></div>
+
+            <form id="loginForm">
+                <input type="text" id="username" class="input-field" placeholder="Username" required
+                    autocomplete="username">
+
+                <input type="password" id="password" class="input-field" placeholder="PIN (6 digits)" required
+                    autocomplete="current-password" maxlength="6" pattern="\d{6}" inputmode="numeric">
+
+                <div class="remember-forgot">
+                    <label class="remember-label">
+                        <input type="checkbox" id="rememberMe">
+                        <span>Remember Me</span>
+                    </label>
+                    <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="sign-in-btn" id="loginBtn">
+                    <span>SIGN IN</span>
+                </button>
+            </form>
+
+            <div class="or-text">Or Sign in With</div>
+
+            <div class="social-buttons">
+                <button class="social-btn facebook-btn" type="button" onclick="handleSocialLogin('facebook')">
+                    <i class="fab fa-facebook-f"></i>
+                    Facebook
+                </button>
+                <button class="social-btn twitter-btn" type="button" onclick="handleSocialLogin('twitter')">
+                    <i class="fab fa-twitter"></i>
+                    Twitter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Reset Password</h2>
+            <p>Enter your username or phone number to receive a reset code.</p>
+            <form id="forgotForm">
+                <input type="text" id="forgotIdentifier" class="input-field" placeholder="Username or Phone" required>
+                <button type="submit" class="sign-in-btn" id="forgotBtn">
+                    <span>SEND RESET CODE</span>
+                </button>
+            </form>
+            <div id="forgotMsg" class="message"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:4000/admin';
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+            successMsg.classList.remove('show');
+            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(message) {
+            successMsg.textContent = message;
+            successMsg.classList.add('show');
+            errorMsg.classList.remove('show');
+        }
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const pin = document.getElementById('password').value;
+
+            if (!username || !pin) {
+                showError('Please enter both username and PIN');
+                return;
+            }
+
+            // Validate PIN is 6 digits
+            if (pin.length !== 6 || !/^\d+$/.test(pin)) {
+                showError('PIN must be exactly 6 digits');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="spinner"></span><span>SIGNING IN...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, pin })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+
+                    if (document.getElementById('rememberMe').checked) {
+                        localStorage.setItem('rememberMe', 'true');
+                    }
+
+                    showSuccess('✓ Login successful! Redirecting...');
+                    setTimeout(() => window.location.href = '/admin-dashboard.html', 1000);
+                } else {
+                    showError(data.error || 'Invalid username or PIN');
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<span>SIGN IN</span>';
+                }
+            } catch (error) {
+                showError('Network error. Please try again.');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span>SIGN IN</span>';
+            }
+        });
+
+        // Forgot Password Logic
+        const modal = document.getElementById("forgotModal");
+        const forgotLink = document.getElementById("forgotPasswordLink");
+        const closeModal = document.querySelector(".close-modal");
+        const forgotForm = document.getElementById("forgotForm");
+        const forgotMsg = document.getElementById("forgotMsg");
+        const forgotBtn = document.getElementById("forgotBtn");
+
+        forgotLink.onclick = (e) => {
+            e.preventDefault();
+            modal.style.display = "flex";
+        }
+
+        closeModal.onclick = () => {
+            modal.style.display = "none";
+            forgotMsg.style.display = "none";
+            forgotForm.reset();
+        }
+
+        window.onclick = (e) => {
+            if (e.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const identifier = document.getElementById("forgotIdentifier").value.trim();
+
+            forgotBtn.disabled = true;
+            forgotBtn.innerHTML = '<span class="spinner"></span><span>SENDING...</span>';
+            forgotMsg.style.display = "none";
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier })
+                });
+                const data = await response.json();
+
+                forgotMsg.textContent = data.message || (data.success ? 'Reset code sent!' : 'Error occurred');
+                forgotMsg.className = `message ${data.success ? 'success' : 'error'} show`;
+                forgotMsg.style.display = "block";
+
+                if (data.success) {
+                    setTimeout(() => {
+                        modal.style.display = "none";
+                        forgotForm.reset();
+                        forgotMsg.style.display = "none";
+                    }, 3000);
+                }
+            } catch (error) {
+                forgotMsg.textContent = "Network error. Try again.";
+                forgotMsg.className = "message error show";
+                forgotMsg.style.display = "block";
+            } finally {
+                forgotBtn.disabled = false;
+                forgotBtn.innerHTML = '<span>SEND RESET CODE</span>';
+            }
+        });
+
+        // Social Login Logic
+        async function handleSocialLogin(provider) {
+            // In a real app, this would trigger OAuth popup
+            // For this demo, we'll simulate a successful social login
+
+            const mockProfile = {
+                provider: provider,
+                profile_id: `mock-${provider}-${Date.now()}`,
+                name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+                email: `demo@${provider}.com`
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/social-login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(mockProfile)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.token) {
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('currentUser', JSON.stringify(data.user));
+                    showSuccess(`✓ ${provider} login successful! Redirecting...`);
+                    setTimeout(() => window.location.href = '/admin-dashboard.html', 1000);
+                } else {
+                    showError(data.error || 'Social login failed');
+                }
+            } catch (error) {
+                showError('Network error during social login');
+            }
+        }
+
+        // Check if already logged in
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            }).then(response => {
+                if (response.ok) window.location.href = '/admin-dashboard.html';
+                else {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

@@ -6,8 +6,19 @@ const crypto = require("crypto");
 const bcrypt = require('bcryptjs');
 
 // Load environment variables
-require("dotenv").config();
+require(\"dotenv\").config();
+const session = require('express-session');
 const chatbotSvc = require('./chatbot');
+
+// OAuth Configuration
+let oauth;
+try {
+  oauth = require('./config/oauth');
+  console.log('✅ OAuth configuration loaded');
+} catch (err) {
+  console.warn('⚠️  OAuth configuration not found, social login disabled');
+  oauth = { passport: null, isFacebookConfigured: () => false, isTwitterConfigured: () => false };
+}
 
 // Input validation and sanitization
 function sanitizeString(str, maxLength = 1000) {
@@ -73,19 +84,19 @@ app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 // CORS - secure origin handling
 const ALLOWED_ORIGINS = [
   'http://localhost:4000',
-  'http://localhost:3000', 
+  'http://localhost:3000',
+  'null', // Allow file:// access
   process.env.FRONTEND_URL || ''
 ].filter(Boolean);
 
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (ALLOWED_ORIGINS.includes(origin) || !origin) {
-    res.header("Access-Control-Allow-Origin", origin || "*");
-  }
+  // Allow all origins for development/demo purposes
+  res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
-  
+  // Credentials not needed for Bearer token auth, and conflict with '*' origin
+  // res.header("Access-Control-Allow-Credentials", "true");
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -112,6 +123,25 @@ try {
   }
 } catch (e) {
   // @aws-sdk/client-s3 not installed or not configured
+}
+
+// Session middleware for OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production', // HTTPS in production
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport for OAuth
+if (oauth.passport) {
+  app.use(oauth.passport.initialize());
+  app.use(oauth.passport.session());
+  console.log('✅ Passport.js initialized');
 }
 
 
@@ -161,22 +191,22 @@ function generateSessionToken() {
 // Middleware: Verify authentication
 function requireAuth(req, res, next) {
   const token = req.headers.authorization?.replace("Bearer ", "");
-  
+
   // Log authentication attempts for debugging
   console.log('Auth check - Token present:', !!token, 'Value:', token ? token.substring(0, 10) + '...' : 'none');
-  
+
   // treat explicit 'null' or 'undefined' string values as missing token
   if (!token || token === 'null' || token === 'undefined') {
     console.log('Auth failed: No valid token provided');
     return res.status(401).json({ error: "Authentication required" });
   }
-  
+
   const session = sessions.get(token);
   if (!session) {
     console.log('Auth failed: Session not found for token');
     return res.status(401).json({ error: "Invalid or expired session" });
   }
-  
+
   console.log('Auth success: User', session.user.username, 'Role:', session.user.role);
   req.user = session.user;
   next();
@@ -256,12 +286,12 @@ const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 async function connectDB(retries = 3) {
   if (db) return db;
-  
+
   if (!MONGO_URI) {
     console.error("❌ MONGO_URI not set in .env file");
     return null;
   }
-  
+
   let lastError;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -276,24 +306,24 @@ async function connectDB(retries = 3) {
           minPoolSize: 2,
         });
       }
-      
+
       if (!db) {
         await client.connect();
         // Extract database name from URI
         const url = new URL(MONGO_URI);
         const pathDb = (url.pathname || "").replace(/^\//, "") || "voo_ward";
         db = client.db(pathDb);
-        
+
         // Create indexes for performance
         await createIndexes(db);
       }
-      
+
       console.log("✅ Connected to MongoDB Atlas");
       return db;
     } catch (err) {
       lastError = err;
       console.error(`❌ MongoDB connection attempt ${attempt}/${retries} failed:`, err.message);
-      
+
       if (attempt < retries) {
         const delay = Math.min(1000 * Math.pow(2, attempt), 10000); // Exponential backoff, max 10s
         console.log(`⏳ Retrying in ${delay}ms...`);
@@ -301,7 +331,7 @@ async function connectDB(retries = 3) {
       }
     }
   }
-  
+
   console.error("❌ MongoDB connection failed after", retries, "attempts:", lastError?.message);
   console.log("💡 Tip: Check if MONGO_URI is correct in .env file");
   return null;
@@ -311,7 +341,7 @@ async function connectDB(retries = 3) {
 async function createIndexes(database) {
   try {
     console.log("🚀 Creating comprehensive database indexes for production optimization...");
-    
+
     // ===============================
     // ADMIN USERS COLLECTION - Enhanced for query patterns
     // ===============================
@@ -319,13 +349,13 @@ async function createIndexes(database) {
     await database.collection('admin_users').createIndex({ role: 1, status: 1 }, { name: "role_status_compound" });
     await database.collection('admin_users').createIndex({ last_login: -1 }, { name: "last_login_desc" });
     await database.collection('admin_users').createIndex({ created_at: -1 }, { name: "admin_created_desc" });
-    
+
     // Text search for admin management
     await database.collection('admin_users').createIndex(
       { username: "text", full_name: "text", email: "text" },
       { name: "admin_text_search", weights: { username: 10, full_name: 5, email: 1 } }
     );
-    
+
     // ===============================
     // ISSUES COLLECTION - Optimized for dashboard queries
     // ===============================
@@ -334,16 +364,16 @@ async function createIndexes(database) {
     await database.collection('issues').createIndex({ assigned_to: 1, status: 1 }, { name: "assigned_status_compound" });
     await database.collection('issues').createIndex({ priority: -1, created_at: -1 }, { name: "priority_date_compound" });
     await database.collection('issues').createIndex({ area_id: 1, status: 1, created_at: -1 }, { name: "area_status_date_compound" });
-    
+
     // Text search for issue management
     await database.collection('issues').createIndex(
       { title: "text", description: "text", phone_number: "text" },
       { name: "issues_text_search", weights: { title: 10, description: 5, phone_number: 3 } }
     );
-    
+
     // Geospatial index for location-based queries
     await database.collection('issues').createIndex({ location: "2dsphere" }, { name: "issues_geospatial" });
-    
+
     // ===============================
     // BURSARIES COLLECTION - Enhanced for application management
     // ===============================
@@ -353,13 +383,13 @@ async function createIndexes(database) {
     await database.collection('bursaries').createIndex({ application_date: -1 }, { name: "bursary_application_date" });
     await database.collection('bursaries').createIndex({ review_date: -1 }, { sparse: true, name: "bursary_review_date" });
     await database.collection('bursaries').createIndex({ amount: -1, status: 1 }, { name: "bursary_amount_status" });
-    
+
     // Text search for bursary applications
     await database.collection('bursaries').createIndex(
       { full_name: "text", school_name: "text", phone_number: "text" },
       { name: "bursary_text_search", weights: { full_name: 10, school_name: 5, phone_number: 3 } }
     );
-    
+
     // ===============================
     // CONSTITUENTS COLLECTION - Optimized for member management
     // ===============================
@@ -368,16 +398,16 @@ async function createIndexes(database) {
     await database.collection('constituents').createIndex({ area_id: 1, status: 1 }, { name: "area_status_compound" });
     await database.collection('constituents').createIndex({ registration_date: -1 }, { name: "registration_date_desc" });
     await database.collection('constituents').createIndex({ last_interaction: -1 }, { name: "last_interaction_desc" });
-    
+
     // Text search for constituent management
     await database.collection('constituents').createIndex(
       { full_name: "text", phone_number: "text", national_id: "text" },
       { name: "constituents_text_search", weights: { full_name: 10, phone_number: 5, national_id: 3 } }
     );
-    
+
     // Geospatial index for location-based services
     await database.collection('constituents').createIndex({ location: "2dsphere" }, { name: "constituents_geospatial" });
-    
+
     // ===============================
     // USSD INTERACTIONS - Performance optimized for analytics
     // ===============================
@@ -385,7 +415,7 @@ async function createIndexes(database) {
     await database.collection('ussd_interactions').createIndex({ session_id: 1 }, { name: "session_id_index" });
     await database.collection('ussd_interactions').createIndex({ menu_option: 1, created_at: -1 }, { name: "menu_date_compound" });
     await database.collection('ussd_interactions').createIndex({ created_at: -1 }, { name: "ussd_date_desc", expireAfterSeconds: 31536000 }); // Auto-expire after 1 year
-    
+
     // ===============================
     // AUDIT LOGS - For security and compliance
     // ===============================
@@ -393,39 +423,39 @@ async function createIndexes(database) {
     await database.collection('audit_logs').createIndex({ action: 1, timestamp: -1 }, { name: "audit_action_time" });
     await database.collection('audit_logs').createIndex({ ip_address: 1, timestamp: -1 }, { name: "audit_ip_time" });
     await database.collection('audit_logs').createIndex({ timestamp: -1 }, { name: "audit_timestamp", expireAfterSeconds: 7776000 }); // Auto-expire after 90 days
-    
+
     // ===============================
     // AREAS COLLECTION - For geographic management
     // ===============================
     await database.collection('areas').createIndex({ area_code: 1 }, { unique: true, name: "unique_area_code" });
     await database.collection('areas').createIndex({ parent_area: 1 }, { name: "parent_area_index" });
     await database.collection('areas').createIndex({ area_type: 1, status: 1 }, { name: "area_type_status" });
-    
+
     // Text search for area management
     await database.collection('areas').createIndex(
       { area_name: "text", description: "text" },
       { name: "areas_text_search", weights: { area_name: 10, description: 3 } }
     );
-    
+
     // ===============================
     // SESSIONS COLLECTION - For session management
     // ===============================
     await database.collection('sessions').createIndex({ expires_at: 1 }, { expireAfterSeconds: 0, name: "session_ttl" });
     await database.collection('sessions').createIndex({ user_id: 1 }, { name: "session_user_id" });
-    
+
     // ===============================
     // NOTIFICATIONS COLLECTION - For real-time features
     // ===============================
     await database.collection('notifications').createIndex({ user_id: 1, created_at: -1 }, { name: "notif_user_date" });
     await database.collection('notifications').createIndex({ read: 1, created_at: -1 }, { name: "notif_read_date" });
     await database.collection('notifications').createIndex({ type: 1, created_at: -1 }, { name: "notif_type_date" });
-    
+
     console.log("✅ Production-grade database indexes created successfully!");
     console.log("🎯 Indexes optimized for query patterns and performance targets");
     console.log("📊 Text search enabled for all major collections");
     console.log("🌍 Geospatial indexes ready for location-based queries");
     console.log("⏰ TTL indexes configured for automatic data cleanup");
-    
+
   } catch (err) {
     console.error("❌ Index creation error:", err.message);
     console.warn("⚠️  Some indexes may not have been created - check MongoDB logs");
@@ -469,9 +499,9 @@ async function sendNotificationToPhone(/* db, phone, message */) {
 
 // Health check
 app.get("/health", (req, res) => {
-  res.json({ 
-    ok: true, 
-    service: "voo-admin-dashboard", 
+  res.json({
+    ok: true,
+    service: "voo-admin-dashboard",
     ts: new Date().toISOString(),
     db: db ? "connected" : "disconnected"
   });
@@ -487,9 +517,9 @@ app.get("/favicon.ico", (req, res) => {
 
 // Admin health check (simple)
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    ok: true, 
-    service: "admin-api", 
+  res.json({
+    ok: true,
+    service: "admin-api",
     timestamp: new Date().toISOString()
   });
 });
@@ -498,14 +528,14 @@ app.get("/api/health", (req, res) => {
 app.get("/api/admin/health", requireAuth, async (req, res) => {
   try {
     const database = await connectDB();
-    
+
     // Test database connectivity
     let dbStatus = {
       connected: false,
       collections: 0,
       latency: 0
     };
-    
+
     if (database) {
       const startTime = Date.now();
       try {
@@ -521,7 +551,7 @@ app.get("/api/admin/health", requireAuth, async (req, res) => {
         dbStatus.error = error.message;
       }
     }
-    
+
     // System status
     const systemStatus = {
       service: "VOO Ward Admin Dashboard",
@@ -532,13 +562,13 @@ app.get("/api/admin/health", requireAuth, async (req, res) => {
       database: dbStatus.connected ? "connected" : "disconnected",
       details: dbStatus
     };
-    
+
     res.json(systemStatus);
-    
+
   } catch (error) {
     console.error('Health check failed:', error);
-    res.status(500).json({ 
-      error: "Health check failed", 
+    res.status(500).json({
+      error: "Health check failed",
       database: "disconnected",
       timestamp: new Date().toISOString()
     });
@@ -554,37 +584,42 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
   console.log('🔐 Login attempt received:', req.body ? 'with body' : 'no body');
   console.log('🔐 Request headers:', req.headers);
   console.log('🔐 Request IP:', req.ip);
-  
+
   try {
-    const { username, password } = req.body;
-    
+    let { username, password, pin } = req.body;
+
+    // Allow 'pin' to be used as 'password' since frontend sends 'pin'
+    if (!password && pin) {
+      password = pin;
+    }
+
     if (!username || !password) {
       console.log('❌ Missing credentials in login request');
       return res.status(400).json({ error: "Username and password required" });
     }
-    
+
     // Validate input format
     if (!validateUsername(username)) {
       console.log('❌ Invalid username format:', username);
       return res.status(400).json({ error: "Invalid username format" });
     }
-    
+
     if (!validatePassword(password)) {
       console.log('❌ Invalid password format');
       return res.status(400).json({ error: "Invalid password format" });
     }
-    
+
     console.log('🔄 Connecting to database for authentication...');
     const database = await connectDB();
-    
+
     // When database is not connected, require DB for authentication.
     if (!database) {
       console.error('❌ Database not connected - authentication requires a configured database');
       return res.status(503).json({ error: 'Database not connected' });
     }
-    
+
     console.log(`🔍 Login attempt for user: ${sanitizeString(username, 50)}`);
-    
+
     // PRODUCTION: Use database authentication
     // Find user
     const user = await database.collection("admin_users").findOne({
@@ -657,6 +692,368 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
   }
 });
 
+// Forgot Password
+app.post("/api/auth/forgot-password", loginLimiter, async (req, res) => {
+  try {
+    const { identifier } = req.body; // username or phone
+
+    if (!identifier) {
+      return res.status(400).json({ error: "Username or phone number is required" });
+    }
+
+    console.log(`🔑 Forgot password request for: ${identifier}`);
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    const user = await database.collection("admin_users").findOne({
+      $or: [
+        { username: identifier.toLowerCase() },
+        { phone: identifier }
+      ]
+    });
+
+    if (!user) {
+      // Security: don't reveal user existence
+      return res.json({
+        success: true,
+        message: "If an account exists, a reset code has been sent."
+      });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 chars
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+    // Store token in DB
+    await database.collection("password_resets").insertOne({
+      user_id: user._id,
+      token: resetToken,
+      expires_at: expiresAt,
+      created_at: new Date()
+    });
+
+    // Log token for dev/demo purposes (since no email service)
+    console.log(`🔓 [RESET TOKEN] For ${user.username}: ${resetToken}`);
+
+    res.json({
+      success: true,
+      message: "Reset code has been generated. Please contact the system administrator.",
+      dev_token: resetToken // For demo convenience
+    });
+
+  } catch (err) {
+    console.error("Forgot password error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reset Password
+app.post("/api/auth/reset-password", loginLimiter, async (req, res) => {
+  try {
+    const { token, new_pin } = req.body;
+
+    if (!token || !new_pin) {
+      return res.status(400).json({ error: "Token and new PIN are required" });
+    }
+
+    if (new_pin.length !== 6 || !/^\d+$/.test(new_pin)) {
+      return res.status(400).json({ error: "PIN must be exactly 6 digits" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Find valid token
+    const resetRecord = await database.collection("password_resets").findOne({
+      token: token,
+      expires_at: { $gt: new Date() }
+    });
+
+    if (!resetRecord) {
+      return res.status(400).json({ error: "Invalid or expired reset token" });
+    }
+
+    // Update user password (PIN)
+    // We'll hash the PIN as the password
+    const hashedPassword = await bcrypt.hash(new_pin, 10);
+
+    await database.collection("admin_users").updateOne(
+      { _id: resetRecord.user_id },
+      {
+        $set: { password: hashedPassword, updated_at: new Date() }
+      }
+    );
+
+    // Delete used token
+    await database.collection("password_resets").deleteOne({ _id: resetRecord._id });
+
+    console.log(`✅ Password reset successful for user ID: ${resetRecord.user_id}`);
+
+    res.json({ success: true, message: "Password reset successfully. Please login with your new PIN." });
+
+  } catch (err) {
+    console.error("Reset password error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Social Login
+app.post("/api/auth/social-login", loginLimiter, async (req, res) => {
+  try {
+    const { provider, profile_id, name, email } = req.body;
+
+    if (!provider || !profile_id || !name) {
+      return res.status(400).json({ error: "Missing social profile information" });
+    }
+
+    console.log(`🌐 Social login attempt: ${provider} - ${name}`);
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check if user exists by social_id
+    let user = await database.collection("admin_users").findOne({
+      social_id: profile_id,
+      social_provider: provider
+    });
+
+    if (!user) {
+      // Check if user exists by username (fallback/linking)
+      // Generate username from name
+      const username = name.replace(/\s+/g, '').toLowerCase();
+      user = await database.collection("admin_users").findOne({ username: username });
+
+      if (user) {
+        // Link account
+        await database.collection("admin_users").updateOne(
+          { _id: user._id },
+          {
+            $set: {
+              social_id: profile_id,
+              social_provider: provider,
+              updated_at: new Date()
+            }
+          }
+        );
+        console.log(`🔗 Linked social account for ${username}`);
+      } else {
+        // Create new user
+        // Check user limit first
+        const totalUsers = await database.collection('admin_users').countDocuments({});
+        if (totalUsers >= 3) {
+          // For demo, we might want to allow it or return error. 
+          // Let's return error to be consistent with registration policy, 
+          // but maybe we can allow a "guest" role if we had one.
+          // For now, strict limit.
+          return res.status(400).json({ error: "User limit reached. Cannot create new account via social login." });
+        }
+
+        const newUser = {
+          username: username,
+          password: await bcrypt.hash(crypto.randomBytes(8).toString('hex'), 10), // Random password
+          full_name: name,
+          phone: "000000", // Placeholder
+          role: "PA", // Default role
+          social_id: profile_id,
+          social_provider: provider,
+          created_at: new Date(),
+          self_registered: true
+        };
+
+        const result = await database.collection("admin_users").insertOne(newUser);
+        user = { ...newUser, _id: result.insertedId };
+        console.log(`✨ Created new user from social login: ${username}`);
+      }
+    }
+
+    // Create session
+    const token = generateSessionToken();
+    const sessionUser = {
+      id: user._id.toString(),
+      username: user.username,
+      fullName: user.full_name,
+      role: user.role,
+      photo_url: user.photo_url || null,
+      settings: user.settings || {}
+    };
+
+    sessions.set(token, { user: sessionUser, createdAt: new Date() });
+
+    res.json({
+      success: true,
+      token,
+      user: sessionUser
+    });
+
+  } catch (err) {
+    console.error("Social login error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// PRODUCTION OAUTH ROUTES
+// ============================================
+
+// Facebook OAuth - Initiate
+app.get("/api/auth/facebook", (req, res, next) => {
+  if (!oauth.isFacebookConfigured()) {
+    return res.status(503).json({
+      error: "Facebook OAuth not configured. Set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET in environment variables."
+    });
+  }
+  oauth.passport.authenticate('facebook', { scope: ['email'] })(req, res, next);
+});
+
+// Facebook OAuth - Callback
+app.get("/api/auth/facebook/callback",
+  (req, res, next) => {
+    if (!oauth.isFacebookConfigured()) {
+      return res.redirect('/login.html?error=facebook_not_configured');
+    }
+    next();
+  },
+  oauth.passport && oauth.passport.authenticate ? oauth.passport.authenticate('facebook', { failureRedirect: '/login.html?error=facebook_auth_failed' }) : (req, res) => res.redirect('/login.html?error=oauth_disabled'),
+  async (req, res) => {
+    try {
+      const socialProfile = req.user;
+      const database = await connectDB();
+
+      if (!database) {
+        return res.redirect('/login.html?error=database_error');
+      }
+
+      // Find or create user
+      let user = await database.collection("admin_users").findOne({
+        social_id: socialProfile.profile_id,
+        social_provider: 'facebook'
+      });
+
+      if (!user) {
+        const username = socialProfile.name.replace(/\s+/g, '').toLowerCase();
+        const newUser = {
+          username,
+          password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+          full_name: socialProfile.name,
+          email: socialProfile.email,
+          role: 'viewer', // Limited role for social login users
+          social_id: socialProfile.profile_id,
+          social_provider: 'facebook',
+          photo_url: socialProfile.photo,
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+
+        const result = await database.collection("admin_users").insertOne(newUser);
+        user = { ...newUser, _id: result.insertedId };
+        console.log(`✨ Created new Facebook user: ${username}`);
+      }
+
+      // Create session
+      const token = generateSessionToken();
+      const sessionUser = {
+        id: user._id.toString(),
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role,
+        photo_url: user.photo_url,
+        settings: user.settings || {}
+      };
+
+      sessions.set(token, { user: sessionUser, createdAt: new Date() });
+
+      // Redirect with token
+      res.redirect(`/admin-dashboard.html?token=${token}`);
+    } catch (err) {
+      console.error("Facebook OAuth callback error:", err);
+      res.redirect('/login.html?error=auth_error');
+    }
+  }
+);
+
+// Twitter OAuth - Initiate
+app.get("/api/auth/twitter", (req, res, next) => {
+  if (!oauth.isTwitterConfigured()) {
+    return res.status(503).json({
+      error: "Twitter OAuth not configured. Set TWITTER_CONSUMER_KEY and TWITTER_CONSUMER_SECRET in environment variables."
+    });
+  }
+  oauth.passport.authenticate('twitter')(req, res, next);
+});
+
+// Twitter OAuth - Callback
+app.get("/api/auth/twitter/callback",
+  (req, res, next) => {
+    if (!oauth.isTwitterConfigured()) {
+      return res.redirect('/login.html?error=twitter_not_configured');
+    }
+    next();
+  },
+  oauth.passport && oauth.passport.authenticate ? oauth.passport.authenticate('twitter', { failureRedirect: '/login.html?error=twitter_auth_failed' }) : (req, res) => res.redirect('/login.html?error=oauth_disabled'),
+  async (req, res) => {
+    try {
+      const socialProfile = req.user;
+      const database = await connectDB();
+
+      if (!database) {
+        return res.redirect('/login.html?error=database_error');
+      }
+
+      // Find or create user
+      let user = await database.collection("admin_users").findOne({
+        social_id: socialProfile.profile_id,
+        social_provider: 'twitter'
+      });
+
+      if (!user) {
+        const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
+        const newUser = {
+          username,
+          password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+          full_name: socialProfile.name,
+          email: socialProfile.email,
+          role: 'viewer', // Limited role for social login users
+          social_id: socialProfile.profile_id,
+          social_provider: 'twitter',
+          photo_url: socialProfile.photo,
+          created_at: new Date(),
+          updated_at: new Date()
+        };
+
+        const result = await database.collection("admin_users").insertOne(newUser);
+        user = { ...newUser, _id: result.insertedId };
+        console.log(`✨ Created new Twitter user: ${username}`);
+      }
+
+      // Create session
+      const token = generateSessionToken();
+      const sessionUser = {
+        id: user._id.toString(),
+        username: user.username,
+        fullName: user.full_name,
+        role: user.role,
+        photo_url: user.photo_url,
+        settings: user.settings || {}
+      };
+
+      sessions.set(token, { user: sessionUser, createdAt: new Date() });
+
+      // Redirect with token
+      res.redirect(`/admin-dashboard.html?token=${token}`);
+    } catch (err) {
+      console.error("Twitter OAuth callback error:", err);
+      res.redirect('/login.html?error=auth_error');
+    }
+  }
+);
+
 // Logout
 app.post("/api/auth/logout", requireAuth, (req, res) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
@@ -668,37 +1065,37 @@ app.post("/api/auth/logout", requireAuth, (req, res) => {
 app.post("/api/auth/register", loginLimiter, async (req, res) => {
   try {
     const { username, password, fullName, phone, role } = req.body;
-    
+
     if (!username || !password || !fullName || !phone || !role) {
       return res.status(400).json({ error: "All fields required" });
     }
-    
+
     // Validate username format
     if (!validateUsername(username)) {
       return res.status(400).json({ error: "Username must be 3-30 characters, alphanumeric with - or _" });
     }
-    
+
     // Validate password strength
     if (!validatePassword(password)) {
       return res.status(400).json({ error: "Password must be 6-128 characters" });
     }
-    
+
     // Validate phone format
     if (!validatePhone(phone)) {
       return res.status(400).json({ error: "Invalid phone number format" });
     }
-    
+
     // Sanitize fullName
     const sanitizedFullName = sanitizeString(fullName, 100);
     if (!sanitizedFullName || sanitizedFullName.length < 2) {
       return res.status(400).json({ error: "Full name must be at least 2 characters" });
     }
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Check total user count (max 3 users total)
     const totalUsers = await database.collection('admin_users').countDocuments({});
     if (totalUsers >= 3) {
@@ -722,14 +1119,14 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
     }
 
     // Check if username exists
-    const existing = await database.collection("admin_users").findOne({ 
-      username: username.toLowerCase() 
+    const existing = await database.collection("admin_users").findOne({
+      username: username.toLowerCase()
     });
-    
+
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
-    
+
     // Create user with bcrypt hash
     const newUser = {
       username: username.toLowerCase(),
@@ -740,9 +1137,9 @@ app.post("/api/auth/register", loginLimiter, async (req, res) => {
       created_at: new Date(),
       self_registered: true
     };
-    
+
     const result = await database.collection("admin_users").insertOne(newUser);
-    
+
     res.status(201).json({
       success: true,
       message: "Account created successfully",
@@ -811,22 +1208,22 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
 app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
   try {
     const { username, password, fullName, role } = req.body;
-    
+
     if (!username || !password || !fullName || !role) {
       return res.status(400).json({ error: "All fields required" });
     }
-    
+
     // Allowed roles: MCA (main admin), PA (personal assistant), CLERK
     const allowedRoles = ['PA', 'MCA', 'CLERK'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: `Role must be one of: ${allowedRoles.join(', ')}` });
     }
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Check total user count (max 3 users total)
     const totalUsers = await database.collection('admin_users').countDocuments({});
     if (totalUsers >= 3) {
@@ -834,10 +1231,10 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
     }
 
     // Check if username exists
-    const existing = await database.collection("admin_users").findOne({ 
-      username: username.toLowerCase() 
+    const existing = await database.collection("admin_users").findOne({
+      username: username.toLowerCase()
     });
-    
+
     if (existing) {
       return res.status(409).json({ error: "Username already exists" });
     }
@@ -849,7 +1246,7 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
         return res.status(400).json({ error: 'There is already an MCA user. Only one MCA allowed.' });
       }
     }
-    
+
     // Create user (store bcrypt hash)
     const newUser = {
       username: username.toLowerCase(),
@@ -859,9 +1256,9 @@ app.post("/api/auth/users", requireAuth, requireMCA, async (req, res) => {
       created_at: new Date(),
       created_by: req.user.id
     };
-    
+
     const result = await database.collection("admin_users").insertOne(newUser);
-    
+
     res.status(201).json({
       success: true,
       user: {
@@ -884,12 +1281,12 @@ app.get("/api/auth/users", requireAuth, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const users = await database.collection("admin_users")
       .find({}, { projection: { password: 0 } })
       .sort({ created_at: -1 })
       .toArray();
-    
+
     res.json(users);
   } catch (err) {
     console.error("Get users error:", err);
@@ -901,17 +1298,17 @@ app.get("/api/auth/users", requireAuth, async (req, res) => {
 app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Prevent deleting yourself
     if (id === req.user.id) {
       return res.status(400).json({ error: "Cannot delete your own account" });
     }
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Prevent deleting the immutable default admin account
     const target = await database.collection('admin_users').findOne({ _id: new ObjectId(id) });
     if (!target) {
@@ -929,7 +1326,7 @@ app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
     if (result.deletedCount === 0) {
       return res.status(500).json({ error: "Failed to delete user" });
     }
-    
+
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
@@ -948,12 +1345,12 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const issues = await database.collection("issues")
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
+
     res.json(issues);
   } catch (err) {
     console.error("Error fetching issues:", err);
@@ -968,12 +1365,12 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const bursaries = await database.collection("bursary_applications")
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
+
     res.json(bursaries);
   } catch (err) {
     console.error("Error fetching bursaries:", err);
@@ -988,12 +1385,12 @@ app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => 
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const constituents = await database.collection("constituents")
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
+
     res.json(constituents);
   } catch (err) {
     console.error("Error fetching constituents:", err);
@@ -1008,12 +1405,12 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const announcements = await database.collection("announcements")
       .find({})
       .sort({ created_at: -1 })
       .toArray();
-    
+
     res.json(announcements);
   } catch (err) {
     console.error("Error fetching announcements:", err);
@@ -1028,16 +1425,16 @@ app.get("/api/admin/activity", requireAuth, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const limit = parseInt(req.query.limit) || 10;
-    
+
     // Get recent audit events from MongoDB
     const activities = await database.collection("admin_audit")
       .find({})
       .sort({ timestamp: -1 })
       .limit(limit)
       .toArray();
-    
+
     // Transform to standardized format
     const formattedActivities = activities.map(activity => ({
       id: activity._id,
@@ -1048,7 +1445,7 @@ app.get("/api/admin/activity", requireAuth, async (req, res) => {
       ip: activity.ip_address,
       severity: activity.severity || 'info'
     }));
-    
+
     res.json(formattedActivities);
   } catch (err) {
     console.error("Error fetching activity logs:", err);
@@ -1063,19 +1460,19 @@ app.get("/api/ussd/news", async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const newsItems = [];
-    
+
     // Get recent announcements (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     const announcements = await database.collection("announcements")
       .find({ created_at: { $gte: sevenDaysAgo } })
       .sort({ created_at: -1 })
       .limit(5)
       .toArray();
-    
+
     // Add announcements to news feed
     announcements.forEach(announcement => {
       newsItems.push({
@@ -1086,22 +1483,22 @@ app.get("/api/ussd/news", async (req, res) => {
         priority: 'high'
       });
     });
-    
+
     // Get recent issue resolutions (last 7 days)
     const resolvedIssues = await database.collection("issues")
-      .find({ 
+      .find({
         status: 'Resolved',
         action_at: { $gte: sevenDaysAgo }
       })
       .sort({ action_at: -1 })
       .limit(5)
       .toArray();
-    
+
     // Add resolved issues to news feed
     resolvedIssues.forEach(issue => {
       const categoryName = issue.category || 'General Issue';
       const location = issue.location || 'Ward Area';
-      
+
       newsItems.push({
         type: 'issue_resolved',
         title: `${categoryName} Issue Resolved`,
@@ -1111,10 +1508,10 @@ app.get("/api/ussd/news", async (req, res) => {
         category: issue.category
       });
     });
-    
+
     // Get recently published projects or updates
     const recentProjects = await database.collection("projects")
-      .find({ 
+      .find({
         status: { $in: ['Active', 'Completed'] },
         updated_at: { $gte: sevenDaysAgo }
       })
@@ -1122,7 +1519,7 @@ app.get("/api/ussd/news", async (req, res) => {
       .limit(3)
       .toArray()
       .catch(() => []); // Projects collection might not exist
-    
+
     recentProjects.forEach(project => {
       newsItems.push({
         type: 'project_update',
@@ -1132,20 +1529,20 @@ app.get("/api/ussd/news", async (req, res) => {
         priority: 'low'
       });
     });
-    
+
     // Sort all news items by date (newest first)
     newsItems.sort((a, b) => new Date(b.date) - new Date(a.date));
-    
+
     // Limit to top 10 items
     const limitedNews = newsItems.slice(0, 10);
-    
+
     res.json({
       success: true,
       news: limitedNews,
       total: limitedNews.length,
       lastUpdated: new Date().toISOString()
     });
-    
+
   } catch (err) {
     console.error("Error fetching USSD news:", err);
     res.status(500).json({ error: "Failed to fetch news" });
@@ -1157,19 +1554,19 @@ app.get("/api/ussd/news/:page", async (req, res) => {
   try {
     const page = parseInt(req.params.page) || 1;
     const limit = 3; // Show 3 items per USSD page
-    
+
     const newsResponse = await fetch(`${req.protocol}://${req.get('host')}/api/ussd/news`);
     const newsData = await newsResponse.json();
-    
+
     if (!newsData.success) {
       throw new Error('Failed to fetch news');
     }
-    
+
     const allNews = newsData.news;
     const totalPages = Math.ceil(allNews.length / limit);
     const startIndex = (page - 1) * limit;
     const pageNews = allNews.slice(startIndex, startIndex + limit);
-    
+
     if (pageNews.length === 0) {
       return res.json({
         message: "No news available",
@@ -1178,32 +1575,32 @@ app.get("/api/ussd/news/:page", async (req, res) => {
         totalPages: 0
       });
     }
-    
+
     // Format for USSD display
     let ussdText = `=== WARD NEWS (${page}/${totalPages}) ===\n\n`;
-    
+
     pageNews.forEach((item, index) => {
       const itemNumber = startIndex + index + 1;
       const date = new Date(item.date).toLocaleDateString();
-      
+
       ussdText += `${itemNumber}. ${item.title}\n`;
-      
+
       // Truncate content for USSD
       let content = item.content || '';
       if (content.length > 100) {
         content = content.substring(0, 97) + '...';
       }
-      
+
       ussdText += `${content}\n`;
       ussdText += `Date: ${date}\n\n`;
     });
-    
+
     if (page < totalPages) {
       ussdText += `Reply with ${page + 1} for more news`;
     } else {
       ussdText += "No more news items";
     }
-    
+
     res.json({
       message: ussdText,
       hasMore: page < totalPages,
@@ -1211,7 +1608,7 @@ app.get("/api/ussd/news/:page", async (req, res) => {
       totalPages,
       items: pageNews.length
     });
-    
+
   } catch (err) {
     console.error("Error fetching USSD news page:", err);
     res.json({
@@ -1365,7 +1762,7 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
         // Send or queue one notification per phone summarizing the tickets
         const notifyMsg = tickets.length === 1
           ? `Your report (${tickets[0]}) has been marked as ${targetStatus}. Thank you.`
-          : `Your ${tickets.length} reports (${tickets.slice(0,5).join(',')}${tickets.length>5? ',...':''}) have been marked as ${targetStatus}. Thank you.`;
+          : `Your ${tickets.length} reports (${tickets.slice(0, 5).join(',')}${tickets.length > 5 ? ',...' : ''}) have been marked as ${targetStatus}. Thank you.`;
 
         // Notifications suppressed by configuration - log intent
         console.log('Notification suppressed for phone', phone, 'tickets', tickets.join(','));
@@ -1407,31 +1804,31 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
-    const updateData = { 
-      status, 
+
+    const updateData = {
+      status,
       updated_at: new Date(),
       reviewed_at: new Date()
     };
-    
+
     if (admin_notes) {
       updateData.admin_notes = admin_notes;
     }
-    
+
     const result = await database.collection("bursary_applications").updateOne(
       { ref_code: id },
       { $set: updateData }
     );
-    
+
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: "Bursary application not found" });
     }
-    
+
     res.json({ success: true, message: `Bursary ${id} updated to ${status}` });
   } catch (err) {
     console.error("Error updating bursary:", err);
@@ -1443,24 +1840,24 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
 app.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const announcement = {
       title,
       body,
       created_at: new Date()
     };
-    
+
     const result = await database.collection("announcements").insertOne(announcement);
-    
-    res.status(201).json({ 
-      success: true, 
+
+    res.status(201).json({
+      success: true,
       id: result.insertedId,
-      announcement 
+      announcement
     });
   } catch (err) {
     console.error("Error creating announcement:", err);
@@ -1472,21 +1869,21 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
 app.delete("/api/admin/announcements/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const { ObjectId } = require("mongodb");
     const result = await database.collection("announcements").deleteOne({
       _id: new ObjectId(id)
     });
-    
+
     if (result.deletedCount === 0) {
       return res.status(404).json({ error: "Announcement not found" });
     }
-    
+
     res.json({ success: true, message: "Announcement deleted" });
   } catch (err) {
     console.error("Error deleting announcement:", err);
@@ -1501,7 +1898,7 @@ app.get("/api/admin/stats", async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     const [
       totalConstituents,
       totalIssues,
@@ -1517,7 +1914,7 @@ app.get("/api/admin/stats", async (req, res) => {
       database.collection("bursary_applications").countDocuments({ status: "Pending" }),
       database.collection("announcements").countDocuments()
     ]);
-    
+
     res.json({
       constituents: {
         total: totalConstituents
@@ -1753,7 +2150,7 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
 
     // Collect local filenames to delete if they exist and are local paths
     const toDeleteLocal = [];
-    const photoFields = ['photo_url','photo_thumb','photo_webp','photo_thumb_webp'];
+    const photoFields = ['photo_url', 'photo_thumb', 'photo_webp', 'photo_thumb_webp'];
     for (const f of photoFields) {
       if (user[f] && typeof user[f] === 'string' && user[f].startsWith('/uploads/avatars')) {
         const name = path.basename(user[f]);
@@ -1818,9 +2215,9 @@ app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture
     }
 
     const userId = new ObjectId(req.user.id);
-    
+
     let finalPath = `/uploads/avatars/${req.file.filename}`;
-    
+
     // Process image if sharp is available
     if (sharp) {
       try {
@@ -1828,28 +2225,28 @@ app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture
         const base = path.basename(req.file.filename, path.extname(req.file.filename));
         const processedName = `${base}-profile.jpg`;
         const processedPath = path.join(UPLOADS_DIR, processedName);
-        
+
         // Resize and optimize
         await sharp(originalPath)
           .resize(256, 256, { fit: 'cover' })
           .jpeg({ quality: 80 })
           .toFile(processedPath);
-        
+
         // Remove original
         fs.unlinkSync(originalPath);
-        
+
         finalPath = `/uploads/avatars/${processedName}`;
       } catch (imgErr) {
         console.warn('Image processing failed:', imgErr.message);
       }
     }
-    
+
     // Update user's profile picture in database
     await database.collection('admin_users').updateOne(
       { _id: userId },
       { $set: { profilePicture: finalPath, updatedAt: new Date() } }
     );
-    
+
     // Update session
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.id === req.user.id) {
@@ -1857,13 +2254,13 @@ app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture
         sessions.set(token, sess);
       }
     }
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       profilePicture: finalPath,
       message: 'Profile picture updated successfully'
     });
-    
+
   } catch (error) {
     console.error('Profile picture upload error:', error);
     res.status(500).json({ error: 'Failed to upload profile picture' });
@@ -1874,42 +2271,42 @@ app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture
 app.put('/api/admin/profile', requireAuth, async (req, res) => {
   try {
     const { fullName, email, phone } = req.body;
-    
+
     // Validate inputs
     if (fullName && (typeof fullName !== 'string' || fullName.trim().length === 0)) {
       return res.status(400).json({ error: 'Invalid full name' });
     }
-    
+
     if (email && !validateEmail(email)) {
       return res.status(400).json({ error: 'Invalid email address' });
     }
-    
+
     if (phone && !validatePhone(phone)) {
       return res.status(400).json({ error: 'Invalid phone number' });
     }
-    
+
     const database = await connectDB();
     if (!database) {
       return res.status(503).json({ error: 'Database not connected' });
     }
-    
+
     const userId = new ObjectId(req.user.id);
     const updateData = { updatedAt: new Date() };
-    
+
     if (fullName) updateData.fullName = sanitizeString(fullName.trim());
     if (email) updateData.email = sanitizeString(email.trim().toLowerCase());
     if (phone) updateData.phone = sanitizeString(phone.trim());
-    
+
     // Update user in database
     const result = await database.collection('admin_users').updateOne(
       { _id: userId },
       { $set: updateData }
     );
-    
+
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
-    
+
     // Update session
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.id === req.user.id) {
@@ -1917,13 +2314,13 @@ app.put('/api/admin/profile', requireAuth, async (req, res) => {
         sessions.set(token, sess);
       }
     }
-    
-    res.json({ 
+
+    res.json({
       success: true,
       message: 'Profile updated successfully',
       user: { ...req.user, ...updateData }
     });
-    
+
   } catch (error) {
     console.error('Profile update error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
@@ -1937,22 +2334,22 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Set proper headers first
     res.header("Content-Type", "text/csv; charset=utf-8");
     res.header("Content-Disposition", `attachment; filename="kyamatu-issues-${new Date().toISOString().split('T')[0]}.csv"`);
     res.header("Cache-Control", "no-cache");
-    
+
     // Start with UTF-8 BOM for Excel compatibility
     const utf8Bom = '\uFEFF';
     const headers = "Ticket,Category,Message,Phone,Status,Action By,Action At,Action Note,Created At\n";
     res.write(utf8Bom + headers);
-    
+
     // Stream data in chunks to handle large datasets
     const cursor = database.collection("issues")
       .find({})
       .sort({ created_at: -1 });
-    
+
     let count = 0;
     await cursor.forEach(issue => {
       const ticket = (issue.ticket || '').toString().replace(/"/g, '""');
@@ -1969,7 +2366,7 @@ app.get("/api/admin/export/issues", requireAuth, async (req, res) => {
       res.write(line);
       count++;
     });
-    
+
     console.log(`✅ Exported ${count} issues to CSV`);
     res.end();
   } catch (err) {
@@ -2035,12 +2432,12 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
     res.header('Content-Type', 'text/csv; charset=utf-8');
     res.header('Content-Disposition', `attachment; filename="kyamatu-ussd-${new Date().toISOString().split('T')[0]}.csv"`);
     res.header('Cache-Control', 'no-cache');
-    
+
     // Start with UTF-8 BOM and headers
     const utf8Bom = '\uFEFF';
     const headers = 'Phone,Text,Parsed Text,Response,Ref Code,IP,Created At\n';
     res.write(utf8Bom + headers);
-    
+
     // Stream data
     const cursor = database.collection('ussd_interactions')
       .find({})
@@ -2055,7 +2452,7 @@ app.get('/api/admin/export/ussd', requireAuth, async (req, res) => {
       const ref = (i.ref_code || '').toString().replace(/"/g, '""');
       const ip = (i.ip || '').toString();
       const created = i.created_at ? new Date(i.created_at).toISOString() : '';
-      
+
       const line = `"${phone}","${text}","${parsed}","${response}","${ref}","${ip}","${created}"\n`;
       res.write(line);
       count++;
@@ -2080,22 +2477,22 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Set proper headers
     res.header("Content-Type", "text/csv; charset=utf-8");
     res.header("Content-Disposition", `attachment; filename="kyamatu-bursaries-${new Date().toISOString().split('T')[0]}.csv"`);
     res.header("Cache-Control", "no-cache");
-    
+
     // Start with UTF-8 BOM and headers
     const utf8Bom = '\uFEFF';
     const headers = "Ref Code,Student Name,School,Amount,Status,Phone,Created At\n";
     res.write(utf8Bom + headers);
-    
+
     // Stream data
     const cursor = database.collection("bursary_applications")
       .find({})
       .sort({ created_at: -1 });
-    
+
     let count = 0;
     await cursor.forEach(b => {
       const refCode = (b.ref_code || '').toString().replace(/"/g, '""');
@@ -2105,12 +2502,12 @@ app.get("/api/admin/export/bursaries", requireAuth, requireMCA, async (req, res)
       const status = (b.status || '').toString().replace(/"/g, '""');
       const phone = (b.phone_number || '').toString().replace(/"/g, '""');
       const created = b.created_at ? new Date(b.created_at).toISOString() : '';
-      
+
       const line = `"${refCode}","${studentName}","${school}","${amount}","${status}","${phone}","${created}"\n`;
       res.write(line);
       count++;
     });
-    
+
     console.log(`✅ Exported ${count} bursary applications to CSV`);
     res.end();
   } catch (err) {
@@ -2130,22 +2527,22 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
     if (!database) {
       return res.status(503).json({ error: "Database not connected" });
     }
-    
+
     // Set proper headers
     res.header("Content-Type", "text/csv; charset=utf-8");
     res.header("Content-Disposition", `attachment; filename="kyamatu-constituents-${new Date().toISOString().split('T')[0]}.csv"`);
     res.header("Cache-Control", "no-cache");
-    
+
     // Start with UTF-8 BOM and headers
     const utf8Bom = '\uFEFF';
     const headers = "Phone,National ID,Full Name,Location,Village,Created At\n";
     res.write(utf8Bom + headers);
-    
+
     // Stream data
     const cursor = database.collection("constituents")
       .find({})
       .sort({ created_at: -1 });
-    
+
     let count = 0;
     await cursor.forEach(c => {
       const phone = (c.phone_number || '').toString().replace(/"/g, '""');
@@ -2154,12 +2551,12 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
       const location = (c.location || '').toString().replace(/"/g, '""');
       const village = (c.village || '').toString().replace(/"/g, '""');
       const created = c.created_at ? new Date(c.created_at).toISOString() : '';
-      
+
       const line = `"${phone}","${nationalId}","${fullName}","${location}","${village}","${created}"\n`;
       res.write(line);
       count++;
     });
-    
+
     console.log(`✅ Exported ${count} constituents to CSV`);
     res.end();
   } catch (err) {
@@ -2175,8 +2572,9 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
 // Serve admin dashboard HTML
 app.use(express.static(path.join(__dirname, "../public")));
 
+// Redirect root to login page
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/admin-dashboard.html"));
+  res.redirect('/login.html');
 });
 
 // Initialize default MCA admin user on startup
@@ -2187,23 +2585,23 @@ async function initializeAdmin() {
       console.log("⚠️  Cannot initialize admin user - database not connected");
       return;
     }
-    
+
     const existingAdmin = await database.collection("admin_users").findOne({ role: "MCA" });
-    
+
     if (!existingAdmin) {
       console.log("🔧 Creating default MCA admin user...");
-      
+
       const defaultAdmin = {
         username: "admin",
         // store default admin with bcrypt hash
         password: bcryptHash("admin123"),
-    full_name: "Zak",
+        full_name: "Zak",
         role: "MCA",
         created_at: new Date()
       };
-      
+
       await database.collection("admin_users").insertOne(defaultAdmin);
-      
+
       console.log("✅ Default MCA admin created:");
       console.log("   Username: admin");
       console.log("   Password: admin123");
@@ -2228,6 +2626,7 @@ async function initializeAdmin() {
         await database.collection('admin_users').deleteOne({ _id: martin._id });
         console.log('Removed legacy PA user: martin');
       }
+
     } catch (e) {
       console.warn(' Failed to remove martin user (if existed):', e && e.message);
     }
@@ -2236,62 +2635,56 @@ async function initializeAdmin() {
   }
 }
 
-// OLD HTML: served from static file in ../public/admin-dashboard.html
-app.get('/old', (req, res) => {
-  // Redirect legacy /old route to the static admin-dashboard.html
-  res.redirect('/admin-dashboard.html');
-});
-
 // MISSING API ENDPOINTS
 // ============================================
 
 // Chatbot endpoints that frontend expects
 app.get('/api/admin/chatbot', requireAuth, (req, res) => {
-    res.json({ message: 'AI Assistant endpoint ready' });
+  res.json({ message: 'AI Assistant endpoint ready' });
 });
 
 app.post('/api/admin/chatbot', requireAuth, (req, res) => {
-    const { message } = req.body;
-    console.log('Chatbot message received:', message);
-    
-    // Simple AI response logic
-    let reply = 'I can help you with dashboard navigation, system management, and general questions. What would you like to know?';
-    
-    if (message && message.toLowerCase().includes('hello') || message && message.toLowerCase().includes('hi')) {
-        reply = 'Hello! I\'m Mai, your AI assistant. How can I help you today?';
-    } else if (message && message.toLowerCase().includes('issue')) {
-        reply = 'For issue management, go to the Issues section where you can view, update status, and resolve constituent problems.';
-    } else if (message && message.toLowerCase().includes('export')) {
-        reply = 'You can export data from any section using the export buttons. Navigate to Issues, Bursaries, or other sections and look for export options.';
-    } else if (message && message.toLowerCase().includes('dashboard')) {
-        reply = 'Use the sidebar to navigate between different sections like Dashboard, Issues, Bursaries, Analytics, and Settings.';
-    }
-    
-    res.json({ reply });
+  const { message } = req.body;
+  console.log('Chatbot message received:', message);
+
+  // Simple AI response logic
+  let reply = 'I can help you with dashboard navigation, system management, and general questions. What would you like to know?';
+
+  if (message && message.toLowerCase().includes('hello') || message && message.toLowerCase().includes('hi')) {
+    reply = 'Hello! I\'m Mai, your AI assistant. How can I help you today?';
+  } else if (message && message.toLowerCase().includes('issue')) {
+    reply = 'For issue management, go to the Issues section where you can view, update status, and resolve constituent problems.';
+  } else if (message && message.toLowerCase().includes('export')) {
+    reply = 'You can export data from any section using the export buttons. Navigate to Issues, Bursaries, or other sections and look for export options.';
+  } else if (message && message.toLowerCase().includes('dashboard')) {
+    reply = 'Use the sidebar to navigate between different sections like Dashboard, Issues, Bursaries, Analytics, and Settings.';
+  }
+
+  res.json({ reply });
 });
 
 // Default avatar endpoint
 app.get('/api/admin/default-avatar.png', (req, res) => {
-    const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
         <circle cx="40" cy="40" r="40" fill="#6366f1"/>
         <circle cx="40" cy="32" r="12" fill="white"/>
         <path d="M16 64c0-16 10.746-24 24-24s24 8 24 24" fill="white"/>
     </svg>`;
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(svgAvatar);
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svgAvatar);
 });
 
 // Handle the exact 404 path from the logs - this is what the frontend is requesting
 app.get('/uploads/avatars/default-avatar.png', (req, res) => {
-    const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  const svgAvatar = `<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
         <circle cx="40" cy="40" r="40" fill="#6366f1"/>
         <circle cx="40" cy="32" r="12" fill="white"/>
         <path d="M16 64c0-16 10.746-24 24-24s24 8 24 24" fill="white"/>
     </svg>`;
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    res.send(svgAvatar);
+  res.setHeader('Content-Type', 'image/svg+xml');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.send(svgAvatar);
 });
 
 // Start server when run directly. When required as a module, export the app so
@@ -2302,18 +2695,18 @@ async function startServer() {
   console.log(` Dashboard: http://localhost:${PORT}`);
   console.log(`  Health: http://localhost:${PORT}/health`);
   console.log(` Max Users: 3 (1 MCA + 2 PA/CLERK)`);
-  
+
   // Test MongoDB connection
   const database = await connectDB();
   if (database) {
     console.log(` MongoDB Connected: Ready to view data`);
-    
+
     // Initialize admin user
     await initializeAdmin();
   } else {
     console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
-  
+
   console.log(`\n Ready to view issues, bursaries & constituents!\n`);
   console.log(` Login with: admin / admin123 (Change after first login!)\n`);
 
