@@ -538,8 +538,8 @@
     <div class="orb orb3"></div>
 
     <div class="login-wrapper">
-        <h1 class="login-title">Login #10</h1>
-        <p class="login-subtitle">Have an account?</p>
+        <h1 class="login-title">Welcome Back</h1>
+        <p class="login-subtitle">Sign in to continue</p>
 
         <div class="login-box">
             <div id="errorMsg" class="message error"></div>
@@ -730,38 +730,12 @@
         });
 
         // Social Login Logic
-        function handleSocialLogin(provider) { window.location.href = '/api/auth/' + provider; }-${Date.now()}`,
-                name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-                email: `demo@${provider}.com`
-            };
-
-            try {
-                const response = await fetch(`${API_BASE}/api/auth/social-login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(mockProfile)
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.token) {
-                    localStorage.setItem('authToken', data.token);
-                    localStorage.setItem('currentUser', JSON.stringify(data.user));
-                    showSuccess(`✓ ${provider} login successful! Redirecting...`);
-                    setTimeout(() => window.location.href = '/admin-dashboard.html', 1000);
-                } else {
-                    showError(data.error || 'Social login failed');
-                }
-            } catch (error) {
-                showError('Network error during social login');
-            }
-        }
-
+        function handleSocialLogin(provider) { window.location.href = '/api/auth/' + provider; }
         // Check if already logged in
         const authToken = localStorage.getItem('authToken');
         if (authToken) {
-            fetch(`${API_BASE}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
+            fetch(`${ API_BASE } /api/auth / me`, {
+                headers: { 'Authorization': `Bearer ${ authToken }` }
             }).then(response => {
                 if (response.ok) window.location.href = '/admin-dashboard.html';
                 else {

@@ -492,9 +492,49 @@ const upload = multer({
 
 // Notifications have been disabled per operator request.
 // keep a no-op helper to avoid removing all call sites; it will log the intent and return a neutral result.
-async function sendNotificationToPhone(/* db, phone, message */) {
-  console.log('Notifications disabled: sendNotificationToPhone called - notifications removed from this deployment.');
-  return { ok: false, queued: false };
+async function sendNotificationToPhone(db, phone, message) {
+  if (!process.env.INFOBIP_API_KEY || !process.env.INFOBIP_BASE_URL) {
+    console.warn('⚠️ Infobip not configured, skipping SMS');
+    return { ok: false, error: 'Infobip not configured' };
+  }
+
+  try {
+    // Ensure phone number is in E.164 format (simple check)
+    let formattedPhone = phone.replace(/\s+/g, '');
+    if (formattedPhone.startsWith('0')) {
+      formattedPhone = '+254' + formattedPhone.substring(1);
+    }
+
+    const response = await fetch(`${process.env.INFOBIP_BASE_URL}/sms/2/text/advanced`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `App ${process.env.INFOBIP_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        messages: [
+          {
+            destinations: [{ to: formattedPhone }],
+            from: process.env.INFOBIP_SENDER || 'ServiceSMS',
+            text: message
+          }
+        ]
+      })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+      console.log(`✅ SMS sent to ${formattedPhone}`);
+      return { ok: true, data };
+    } else {
+      console.error('❌ Infobip SMS failed:', JSON.stringify(data));
+      return { ok: false, error: data };
+    }
+  } catch (error) {
+    console.error('❌ SMS network error:', error);
+    return { ok: false, error: error.message };
+  }
 }
 
 // Health check
@@ -723,8 +763,8 @@ app.post("/api/auth/forgot-password", loginLimiter, async (req, res) => {
       });
     }
 
-    // Generate reset token
-    const resetToken = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 chars
+    // Generate reset PIN (6 digits)
+    const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 3600000); // 1 hour
 
     // Store token in DB
@@ -735,13 +775,19 @@ app.post("/api/auth/forgot-password", loginLimiter, async (req, res) => {
       created_at: new Date()
     });
 
-    // Log token for dev/demo purposes (since no email service)
-    console.log(`🔓 [RESET TOKEN] For ${user.username}: ${resetToken}`);
+    // Send SMS if phone number exists
+    if (user.phone) {
+      sendNotificationToPhone(database, user.phone, `Your VOO Ward reset code is: ${resetToken}`)
+        .catch(err => console.error('Background SMS error:', err));
+    }
+
+    // Log token for dev/demo purposes
+    console.log(`🔓 [RESET PIN] For ${user.username}: ${resetToken}`);
 
     res.json({
       success: true,
-      message: "Reset code has been generated. Please contact the system administrator.",
-      dev_token: resetToken // For demo convenience
+      message: "Reset code has been sent to your phone.",
+      dev_token: resetToken // Keep for demo convenience
     });
 
   } catch (err) {
