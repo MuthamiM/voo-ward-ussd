@@ -40,6 +40,13 @@ services:
         sync: false
       - key: OAUTH_CALLBACK_URL
         sync: false
+      # Infobip SMS
+      - key: INFOBIP_BASE_URL
+        sync: false
+      - key: INFOBIP_API_KEY
+        sync: false
+      - key: INFOBIP_SENDER
+        value: ServiceSMS
       - key: SESSION_SECRET
         generateValue: true
 
