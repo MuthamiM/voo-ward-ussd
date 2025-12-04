@@ -8,6 +8,7 @@ services:
     buildCommand: npm install --production
     startCommand: npm start
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -19,9 +20,26 @@ services:
         sync: false
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-3.5-turbo
       - key: SESSION_TIMEOUT_MS
         value: 1800000
       - key: RATE_LIMIT_WINDOW_MS
         value: 900000
       - key: RATE_LIMIT_MAX_REQUESTS
         value: 100
+      # OAuth - Facebook
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      # OAuth - Twitter
+      - key: TWITTER_CONSUMER_KEY
+        sync: false
+      - key: TWITTER_CONSUMER_SECRET
+        sync: false
+      - key: OAUTH_CALLBACK_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+

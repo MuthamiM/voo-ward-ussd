@@ -1049,40 +1049,19 @@
     </style>
 </head>
 <body>
-    <!-- Login Form -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-card" style="background: var(--surface); padding: 48px 40px; border-radius: 24px; box-shadow: var(--shadow-elevated); border: 1px solid var(--border); max-width: 420px; width: 100%; margin: 0 24px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-            <div class="login-header" style="text-align: center; margin-bottom: 32px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">
-                <h1 class="login-title" style="font-family: 'Space Grotesk', sans-serif; font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 8px; text-align: center; letter-spacing: -0.5px; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">Welcome Back</h1>
-                <p class="login-subtitle" style="color: var(--text-secondary); font-size: 16px; margin: 0; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none;">Login to VOO Ward Admin Dashboard</p>
-            </div>
-            
-            <form id="loginForm">
-                <div id="loginError"></div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="username">Username</label>
-                    <input type="text" id="username" class="form-input" placeholder="Enter your username" required>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label" for="password">Password</label>
-                    <input type="password" id="password" class="form-input" placeholder="Enter your password" required>
-                </div>
-                
-                <button type="button" class="btn btn-full" id="loginBtn" onclick="handleLogin(event); return false;">
-                    <span>Login</span>
-                </button>
-                
-                <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
-                    <p style="color: var(--text-secondary); margin-bottom: 10px;">Don't have an account?</p>
-                    <a href="signup.html" style="color: var(--primary); text-decoration: none; font-weight: 500; padding: 8px 16px; border: 1px solid var(--primary); border-radius: 6px; display: inline-block; transition: all 0.3s ease;">
-                        Create New Account
-                    </a>
-                </div>
-            </form>
-        </div>
+    <!-- Login Redirect - Uses login.html with Facebook/Twitter buttons -->
+    <div id="loginContainer" class="login-container" style="display: none;">
+        <!-- Redirecting to login.html -->
     </div>
+    <script>
+        // Immediately redirect to login.html if not authenticated
+        (function() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/login.html';
+            }
+        })();
+    </script>
 
     <!-- Main App -->
     <div id="appContainer" class="app-container" style="display: none;">
