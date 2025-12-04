@@ -23,6 +23,18 @@ const app = express();
 // Configure trust proxy for rate limiting and proper IP detection
 app.set('trust proxy', 1);
 
+// Enable CORS for local development (file:// access)
+// CORS is handled by individual routers (admin-dashboard.js) to avoid conflicts
+// app.use((req, res, next) => {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//   if (req.method === 'OPTIONS') {
+//     return res.status(200).end();
+//   }
+//   next();
+// });
+
 const path = require('path');
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
@@ -97,12 +109,12 @@ app.post("/ussd", async (req, res) => {
     }
 
     // Use ussdCore handler with database support
-    const response = await handleUssdCore({ 
-      text, 
-      sessionId, 
+    const response = await handleUssdCore({
+      text,
+      sessionId,
       phoneNumber: phone,
       serviceCode,
-      db 
+      db
     });
 
     // Send response

@@ -1,0 +1,75 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:4000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:4000...
+* Established connection to localhost (::1 port 4000) from ::1 port 59041 
+* using HTTP/1.x
+> POST /admin/api/auth/login HTTP/1.1
+
+> Host: localhost:4000
+
+> User-Agent: curl/8.16.0
+
+> Accept: */*
+
+> Content-Type: application/json
+
+> Content-Length: 48
+
+> 
+
+} [48 bytes data]
+* upload completely sent off: 48 bytes
+< HTTP/1.1 401 Unauthorized
+
+< X-Powered-By: Express
+
+< X-Frame-Options: DENY
+
+< X-Content-Type-Options: nosniff
+
+< X-XSS-Protection: 1; mode=block
+
+< Referrer-Policy: strict-origin-when-cross-origin
+
+< Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https:; frame-ancestors 'none';
+
+< Access-Control-Allow-Origin: *
+
+< Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+
+< Access-Control-Allow-Headers: Content-Type, Authorization
+
+< RateLimit-Policy: 10;w=60
+
+< RateLimit-Limit: 10
+
+< RateLimit-Remaining: 8
+
+< RateLimit-Reset: 21
+
+< Content-Type: application/json; charset=utf-8
+
+< Content-Length: 40
+
+< ETag: W/"28-iHGTIv7noT3UMayYgBivAszwTgE"
+
+< Vary: Accept-Encoding
+
+< Date: Thu, 04 Dec 2025 06:04:16 GMT
+
+< Connection: keep-alive
+
+< Keep-Alive: timeout=5
+
+< 
+
+{ [40 bytes data]
+
+100    88  100    40  100    48    307    369 --:--:-- --:--:-- --:--:--   682
+* Connection #0 to host localhost:4000 left intact
+{"error":"Invalid username or password"}

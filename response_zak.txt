@@ -1,0 +1,76 @@
+Note: Unnecessary use of -X or --request, POST is already inferred.
+* Host localhost:4000 was resolved.
+* IPv6: ::1
+* IPv4: 127.0.0.1
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying [::1]:4000...
+* Established connection to localhost (::1 port 4000) from ::1 port 60261 
+* using HTTP/1.x
+> POST /admin/api/auth/login HTTP/1.1
+
+> Host: localhost:4000
+
+> User-Agent: curl/8.16.0
+
+> Accept: */*
+
+> Content-Type: application/json
+
+> Content-Length: 43
+
+> 
+
+} [43 bytes data]
+* upload completely sent off: 43 bytes
+
+100    43    0     0  100    43      0    191 --:--:-- --:--:-- --:--:--   191< HTTP/1.1 200 OK
+
+< X-Powered-By: Express
+
+< X-Frame-Options: DENY
+
+< X-Content-Type-Options: nosniff
+
+< X-XSS-Protection: 1; mode=block
+
+< Referrer-Policy: strict-origin-when-cross-origin
+
+< Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: https: blob:; connect-src 'self' https:; frame-ancestors 'none';
+
+< Access-Control-Allow-Origin: *
+
+< Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+
+< Access-Control-Allow-Headers: Content-Type, Authorization
+
+< RateLimit-Policy: 10;w=60
+
+< RateLimit-Limit: 10
+
+< RateLimit-Remaining: 9
+
+< RateLimit-Reset: 56
+
+< Content-Type: application/json; charset=utf-8
+
+< Content-Length: 271
+
+< ETag: W/"10f-JBKefl08U5PHEiTTUWq6FFYFiUQ"
+
+< Vary: Accept-Encoding
+
+< Date: Thu, 04 Dec 2025 06:11:32 GMT
+
+< Connection: keep-alive
+
+< Keep-Alive: timeout=5
+
+< 
+
+{ [271 bytes data]
+
+100   314  100   271  100    43    658    104 --:--:-- --:--:-- --:--:--   762
+* Connection #0 to host localhost:4000 left intact
+{"success":true,"token":"57d0472040e1595d9fc53e44906e67a5a57d735cbf10dd2976e8ade8328d9556","user":{"id":"693125f00d274383bc62a6a2","username":"zak","fullName":"ZAK","role":"MCA","photo_url":null,"photo_thumb":null,"photo_webp":null,"photo_thumb_webp":null,"settings":{}}}
