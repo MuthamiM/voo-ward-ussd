@@ -730,13 +730,7 @@
         });
 
         // Social Login Logic
-        async function handleSocialLogin(provider) {
-            // In a real app, this would trigger OAuth popup
-            // For this demo, we'll simulate a successful social login
-
-            const mockProfile = {
-                provider: provider,
-                profile_id: `mock-${provider}-${Date.now()}`,
+        function handleSocialLogin(provider) { window.location.href = '/api/auth/' + provider; }-${Date.now()}`,
                 name: `Demo ${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
                 email: `demo@${provider}.com`
             };
