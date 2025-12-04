@@ -6,7 +6,7 @@ const crypto = require("crypto");
 const bcrypt = require('bcryptjs');
 
 // Load environment variables
-require(\"dotenv\").config();
+require("dotenv").config();
 const session = require('express-session');
 const chatbotSvc = require('./chatbot');
 
