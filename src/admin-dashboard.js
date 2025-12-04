@@ -131,7 +131,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production', // HTTPS in production
+    secure: false, // Temporarily disabled for OAuth debugging
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
@@ -1042,8 +1042,22 @@ app.get("/api/auth/twitter/callback",
     }
     next();
   },
-  oauth.passport && oauth.passport.authenticate ? oauth.passport.authenticate('twitter', { failureRedirect: '/login.html?error=twitter_auth_failed' }) : (req, res) => res.redirect('/login.html?error=oauth_disabled'),
+  (req, res, next) => {
+    if (!oauth.passport) return res.redirect('/login.html?error=oauth_disabled');
+    oauth.passport.authenticate('twitter', (err, user, info) => {
+      if (err) {
+        console.error("Passport Twitter Error:", err);
+        return res.status(500).send("Passport Twitter Error: " + (err.message || err));
+      }
+      if (!user) {
+        return res.redirect('/login.html?error=twitter_auth_failed');
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   async (req, res) => {
+    console.log('✅ Twitter callback success, user:', req.user ? req.user.username : 'unknown');
     try {
       const socialProfile = req.user;
       const database = await connectDB();
