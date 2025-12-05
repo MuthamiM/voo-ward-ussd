@@ -1083,153 +1083,264 @@ app.get("/api/auth/facebook/callback",
   }
 );
 
-// Twitter OAuth - Initiate
-app.get("/api/auth/twitter", (req, res, next) => {
-  if (!oauth.isTwitterConfigured()) {
-    return res.status(503).json({
-      error: "Twitter OAuth not configured. Set TWITTER_CONSUMER_KEY and TWITTER_CONSUMER_SECRET in environment variables."
+// ============================================
+// MANUAL USER REGISTRATION SYSTEM
+// ============================================
+
+// Check if registration is open (max 3 users)
+app.get("/api/auth/can-register", async (req, res) => {
+  try {
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    const userCount = await database.collection("admin_users").countDocuments({});
+    const pendingCount = await database.collection("pending_registrations").countDocuments({ status: 'pending' });
+
+    res.json({
+      canRegister: userCount < 3,
+      currentUsers: userCount,
+      maxUsers: 3,
+      pendingApplications: pendingCount
     });
+  } catch (error) {
+    console.error("Error checking registration status:", error);
+    res.status(500).json({ error: "Server error" });
   }
-  oauth.passport.authenticate('twitter')(req, res, next);
 });
 
-// Twitter OAuth - Callback
-app.get("/api/auth/twitter/callback",
-  (req, res, next) => {
-    if (!oauth.isTwitterConfigured()) {
-      return res.redirect('/login.html?error=twitter_not_configured');
+// Submit registration request
+app.post("/api/auth/register-request", async (req, res) => {
+  try {
+    const { fullName, idNumber, phone, role } = req.body;
+
+    // Validate required fields
+    if (!fullName || !idNumber || !phone || !role) {
+      return res.status(400).json({ error: "All fields are required: fullName, idNumber, phone, role" });
     }
-    next();
-  },
-  (req, res, next) => {
-    if (!oauth.passport) return res.redirect('/login.html?error=oauth_disabled');
-    oauth.passport.authenticate('twitter', (err, user, info) => {
-      if (err) {
-        console.error("Passport Twitter Error:", err);
-        return res.status(500).send("Passport Twitter Error: " + (err.message || err));
-      }
-      if (!user) {
-        return res.redirect('/login.html?error=twitter_auth_failed');
-      }
-      req.user = user;
-      next();
-    })(req, res, next);
-  },
-  async (req, res) => {
-    console.log('✅ Twitter callback success, user:', req.user ? req.user.username : 'unknown');
-    try {
-      const socialProfile = req.user;
-      const database = await connectDB();
 
-      if (!database) {
-        return res.redirect('/login.html?error=database_error');
-      }
-
-      // Find or create user
-      let user = await database.collection("admin_users").findOne({
-        social_id: socialProfile.profile_id,
-        social_provider: 'twitter'
-      });
-
-      if (!user) {
-        // Check if user exists by email (for account linking)
-        if (socialProfile.email) {
-          user = await database.collection("admin_users").findOne({
-            email: socialProfile.email.toLowerCase()
-          });
-
-          if (user) {
-            // Link social account to existing email-based account
-            await database.collection("admin_users").updateOne(
-              { _id: user._id },
-              {
-                $set: {
-                  social_id: socialProfile.profile_id,
-                  social_provider: 'twitter',
-                  photo_url: user.photo_url || socialProfile.photo,
-                  updated_at: new Date()
-                }
-              }
-            );
-            console.log(`🔗 Linked Twitter to existing account: ${user.username} (${user.email})`);
-            user = await database.collection("admin_users").findOne({ _id: user._id });
-          }
-        }
-
-        // Still no user? Check by username as fallback
-        if (!user) {
-          const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
-          user = await database.collection("admin_users").findOne({ username: username });
-
-          if (user) {
-            // Link social account to username match
-            await database.collection("admin_users").updateOne(
-              { _id: user._id },
-              {
-                $set: {
-                  social_id: socialProfile.profile_id,
-                  social_provider: 'twitter',
-                  email: user.email || socialProfile.email,
-                  photo_url: user.photo_url || socialProfile.photo,
-                  updated_at: new Date()
-                }
-              }
-            );
-            console.log(`🔗 Linked Twitter to username match: ${username}`);
-            user = await database.collection("admin_users").findOne({ _id: user._id });
-          }
-        }
-
-        // No existing user found - create new one
-        if (!user) {
-          // Check user limit
-          const totalUsers = await database.collection('admin_users').countDocuments({});
-          if (totalUsers >= 3) {
-            return res.redirect('/login.html?error=user_limit_reached');
-          }
-
-          const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
-          const newUser = {
-            username,
-            password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
-            full_name: socialProfile.name,
-            email: socialProfile.email ? socialProfile.email.toLowerCase() : null,
-            role: 'viewer', // Limited role for social login users
-            social_id: socialProfile.profile_id,
-            social_provider: 'twitter',
-            photo_url: socialProfile.photo,
-            created_at: new Date(),
-            updated_at: new Date()
-          };
-
-          const result = await database.collection("admin_users").insertOne(newUser);
-          user = { ...newUser, _id: result.insertedId };
-          console.log(`✨ Created new Twitter user: ${username}`);
-        }
-      }
-
-      // Create session
-      const token = generateSessionToken();
-      const sessionUser = {
-        id: user._id.toString(),
-        username: user.username,
-        fullName: user.full_name,
-        role: user.role,
-        photo_url: user.photo_url,
-        settings: user.settings || {}
-      };
-
-      sessions.set(token, { user: sessionUser, createdAt: new Date() });
-
-      // Redirect with token AND user data for frontend to parse
-      const userDataEncoded = encodeURIComponent(JSON.stringify(sessionUser));
-      res.redirect(`/admin-dashboard.html?token=${token}&user=${userDataEncoded}`);
-    } catch (err) {
-      console.error("Twitter OAuth callback error:", err);
-      res.redirect('/login.html?error=auth_error');
+    // Validate role
+    const validRoles = ['clerk', 'pa', 'viewer'];
+    if (!validRoles.includes(role.toLowerCase())) {
+      return res.status(400).json({ error: "Invalid role. Must be: clerk, pa, or viewer" });
     }
+
+    // Validate phone
+    if (!validatePhone(phone)) {
+      return res.status(400).json({ error: "Invalid phone number format" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check user limit
+    const userCount = await database.collection("admin_users").countDocuments({});
+    if (userCount >= 3) {
+      return res.status(400).json({ error: "Maximum user limit (3) reached. Registration closed." });
+    }
+
+    // Check for duplicate applications
+    const existingApp = await database.collection("pending_registrations").findOne({
+      $or: [
+        { idNumber: idNumber },
+        { phone: phone.replace(/\s+/g, '') }
+      ],
+      status: 'pending'
+    });
+
+    if (existingApp) {
+      return res.status(400).json({ error: "An application with this ID or phone already exists" });
+    }
+
+    // Check if user already exists
+    const existingUser = await database.collection("admin_users").findOne({
+      $or: [
+        { id_number: idNumber },
+        { phone: phone.replace(/\s+/g, '') }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "A user with this ID or phone already exists" });
+    }
+
+    // Create application
+    const application = {
+      fullName: sanitizeString(fullName, 100),
+      idNumber: sanitizeString(idNumber, 20),
+      phone: phone.replace(/\s+/g, ''),
+      role: role.toLowerCase(),
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    await database.collection("pending_registrations").insertOne(application);
+
+    console.log(`📋 New registration application: ${fullName} (${role})`);
+    res.json({ success: true, message: "Application submitted successfully. Awaiting admin approval." });
+
+  } catch (error) {
+    console.error("Registration request error:", error);
+    res.status(500).json({ error: "Server error" });
   }
-);
+});
+
+// Get pending registrations (admin only)
+app.get("/api/admin/pending-registrations", requireAuth, async (req, res) => {
+  try {
+    if (!['admin', 'pa'].includes(req.user.role)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    const applications = await database.collection("pending_registrations")
+      .find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const userCount = await database.collection("admin_users").countDocuments({});
+
+    res.json({
+      applications,
+      currentUsers: userCount,
+      maxUsers: 3,
+      canApprove: userCount < 3
+    });
+  } catch (error) {
+    console.error("Error fetching pending registrations:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Approve registration (admin only)
+app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) => {
+  try {
+    if (!['admin', 'pa'].includes(req.user.role)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check user limit
+    const userCount = await database.collection("admin_users").countDocuments({});
+    if (userCount >= 3) {
+      return res.status(400).json({ error: "Maximum user limit (3) reached" });
+    }
+
+    // Find application
+    const application = await database.collection("pending_registrations").findOne({
+      _id: new ObjectId(req.params.id),
+      status: 'pending'
+    });
+
+    if (!application) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    // Generate password (8 chars: letters + numbers)
+    const password = crypto.randomBytes(4).toString('hex').toUpperCase();
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create username from name
+    const username = application.fullName
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 20);
+
+    // Create user
+    const newUser = {
+      username: username,
+      password: hashedPassword,
+      full_name: application.fullName,
+      id_number: application.idNumber,
+      phone: application.phone,
+      role: application.role,
+      created_at: new Date(),
+      updated_at: new Date(),
+      approved_by: req.user.username,
+      approved_at: new Date()
+    };
+
+    await database.collection("admin_users").insertOne(newUser);
+
+    // Update application status
+    await database.collection("pending_registrations").updateOne(
+      { _id: new ObjectId(req.params.id) },
+      {
+        $set: {
+          status: 'approved',
+          approvedBy: req.user.username,
+          approvedAt: new Date()
+        }
+      }
+    );
+
+    // Send password via Infobip SMS
+    const smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
+    const smsResult = await sendNotificationToPhone(database, application.phone, smsMessage);
+
+    console.log(`✅ Approved registration: ${application.fullName} (${application.role})`);
+    console.log(`📱 SMS sent: ${smsResult.ok ? 'Success' : 'Failed'}`);
+
+    res.json({
+      success: true,
+      message: `User ${username} created. Password sent via SMS.`,
+      smsSent: smsResult.ok
+    });
+
+  } catch (error) {
+    console.error("Approval error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Reject registration (admin only)
+app.post("/api/admin/reject-registration/:id", requireAuth, async (req, res) => {
+  try {
+    if (!['admin', 'pa'].includes(req.user.role)) {
+      return res.status(403).json({ error: "Admin access required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    const result = await database.collection("pending_registrations").updateOne(
+      { _id: new ObjectId(req.params.id), status: 'pending' },
+      {
+        $set: {
+          status: 'rejected',
+          rejectedBy: req.user.username,
+          rejectedAt: new Date()
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    console.log(`❌ Rejected registration: ${req.params.id}`);
+    res.json({ success: true, message: "Application rejected" });
+
+  } catch (error) {
+    console.error("Rejection error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 
 // Logout
 app.post("/api/auth/logout", requireAuth, (req, res) => {
