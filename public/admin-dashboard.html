@@ -2083,6 +2083,7 @@
 
             // Load saved profile picture
             loadProfilePicture();
+            loadPendingRegistrations(); // Load pending user registrations
 
             // Fix avatar path - set correct src after DOM loads
             setTimeout(() => {
@@ -2106,6 +2107,87 @@
             setupEventListeners();
         });
 
+                // Pending Registrations Management
+        async function loadPendingRegistrations() {
+            if (!authToken) return;
+            try {
+                const response = await fetch(API_BASE + '/api/admin/pending-registrations', {
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                // Create or update pending registrations panel
+                let panel = document.getElementById('pendingRegPanel');
+                if (!panel) {
+                    panel = document.createElement('div');
+                    panel.id = 'pendingRegPanel';
+                    panel.style.cssText = 'background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1)); border: 1px solid rgba(16,185,129,0.3); border-radius: 16px; padding: 20px; margin: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);';
+                    const mainContainer = document.querySelector('.main-content') || document.body;
+                    mainContainer.insertBefore(panel, mainContainer.firstChild);
+                }
+                
+                if (data.applications.length === 0) {
+                    panel.innerHTML = '<div style="color: rgba(255,255,255,0.6); text-align: center;"><i class="fas fa-check-circle" style="font-size: 24px; color: #10b981;"></i><p style="margin-top: 10px;">No pending registrations</p></div>';
+                    return;
+                }
+                
+                let html = '<h3 style="color: #10b981; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;"><i class="fas fa-user-clock"></i> Pending Registrations (' + data.applications.length + ')</h3>';
+                html += '<p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 15px;">Users: ' + data.currentUsers + '/' + data.maxUsers + '</p>';
+                
+                data.applications.forEach(app => {
+                    html += '<div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1);">';
+                    html += '<div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">';
+                    html += '<div><strong style="color: white; font-size: 16px;">' + app.fullName + '</strong>';
+                    html += '<p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 4px;"><i class="fas fa-id-card"></i> ' + app.idNumber + ' | <i class="fas fa-phone"></i> ' + app.phone + '</p>';
+                    html += '<span style="background: rgba(16,185,129,0.2); color: #10b981; padding: 2px 8px; border-radius: 4px; font-size: 12px; text-transform: uppercase;">' + app.role + '</span></div>';
+                    html += '<div style="display: flex; gap: 8px;">';
+                    if (data.canApprove) {
+                        html += '<button onclick="approveRegistration(\'' + app._id + '\')" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;"><i class="fas fa-check"></i> Approve</button>';
+                    }
+                    html += '<button onclick="rejectRegistration(\'' + app._id + '\')" style="background: rgba(239,68,68,0.2); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;"><i class="fas fa-times"></i> Reject</button>';
+                    html += '</div></div></div>';
+                });
+                
+                panel.innerHTML = html;
+            } catch (err) { console.error('Error loading pending registrations:', err); }
+        }
+
+        async function approveRegistration(id) {
+            if (!confirm('Approve this registration? Password will be sent via SMS.')) return;
+            try {
+                const response = await fetch(API_BASE + '/api/admin/approve-registration/' + id, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('User approved! Password sent via SMS.', 'success');
+                    loadPendingRegistrations();
+                } else {
+                    showToast(data.error || 'Failed to approve', 'error');
+                }
+            } catch (err) { showToast('Network error', 'error'); }
+        }
+
+        async function rejectRegistration(id) {
+            if (!confirm('Reject this registration?')) return;
+            try {
+                const response = await fetch(API_BASE + '/api/admin/reject-registration/' + id, {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + authToken }
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showToast('Registration rejected', 'info');
+                    loadPendingRegistrations();
+                } else {
+                    showToast(data.error || 'Failed to reject', 'error');
+                }
+            } catch (err) { showToast('Network error', 'error'); }
+        }
+
+        // Load pending registrations after auth check
         function loadProfilePicture() {
             if (!currentUser) return;
 
@@ -2370,6 +2452,7 @@
 
                 // Load user-specific profile picture
                 loadProfilePicture();
+            loadPendingRegistrations(); // Load pending user registrations
             }
 
             // Set default page to dashboard
