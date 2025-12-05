@@ -560,34 +560,14 @@
                     <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
                 </div>
 
-                <button type="submit" class="sign-in-btn" id="loginBtn">
-                    <span>SIGN IN</span>
-                </button>
-            </form>
-
-            <div class="or-text">Other</div>
-
-            <div class="social-buttons">
-                <button class="social-btn facebook-btn" type="button" onclick="handleSocialLogin('facebook')">
-                    <i class="fab fa-facebook-f"></i>
-                    Facebook
-                </button>
-                <button class="social-btn" id="registerBtn" type="button" onclick="showRegistrationModal()"
-                    style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <i class="fas fa-user-plus"></i>
-                    Register as User
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Registration Modal -->
-    <div id="registrationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
-            <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin
-                will approve your application.</p>
+                <div id="registrationModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
+                        <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as
+                            User</h2>
+                        <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your
+                            details. Admin
+                            will approve your application.</p>
             </form>
             <div id="regMsg" class="message"></div>
         </div>
@@ -774,7 +754,7 @@
                     regBtn.style.opacity = '0.5';
                     regBtn.style.cursor = 'not-allowed';
                 } else {
-                    regBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register (' + data.currentUsers + '/3 Users)';
+                    regBtn.innerHTML = '<i class="fas fa-user-plus"></i> Other (' + data.currentUsers + '/3 Users)';
                 }
             } catch (err) { console.error('Error checking registration status:', err); }
         }
