@@ -983,23 +983,81 @@ app.get("/api/auth/facebook/callback",
       });
 
       if (!user) {
-        const username = socialProfile.name.replace(/\s+/g, '').toLowerCase();
-        const newUser = {
-          username,
-          password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
-          full_name: socialProfile.name,
-          email: socialProfile.email,
-          role: 'viewer', // Limited role for social login users
-          social_id: socialProfile.profile_id,
-          social_provider: 'facebook',
-          photo_url: socialProfile.photo,
-          created_at: new Date(),
-          updated_at: new Date()
-        };
+        // Check if user exists by email (for account linking)
+        if (socialProfile.email) {
+          user = await database.collection("admin_users").findOne({
+            email: socialProfile.email.toLowerCase()
+          });
 
-        const result = await database.collection("admin_users").insertOne(newUser);
-        user = { ...newUser, _id: result.insertedId };
-        console.log(`✨ Created new Facebook user: ${username}`);
+          if (user) {
+            // Link social account to existing email-based account
+            await database.collection("admin_users").updateOne(
+              { _id: user._id },
+              {
+                $set: {
+                  social_id: socialProfile.profile_id,
+                  social_provider: 'facebook',
+                  photo_url: user.photo_url || socialProfile.photo, // Keep existing or use social
+                  updated_at: new Date()
+                }
+              }
+            );
+            console.log(`🔗 Linked Facebook to existing account: ${user.username} (${user.email})`);
+            // Refresh user data after update
+            user = await database.collection("admin_users").findOne({ _id: user._id });
+          }
+        }
+
+        // Still no user? Check by username as fallback
+        if (!user) {
+          const username = socialProfile.name.replace(/\s+/g, '').toLowerCase();
+          user = await database.collection("admin_users").findOne({ username: username });
+
+          if (user) {
+            // Link social account to username match
+            await database.collection("admin_users").updateOne(
+              { _id: user._id },
+              {
+                $set: {
+                  social_id: socialProfile.profile_id,
+                  social_provider: 'facebook',
+                  email: user.email || socialProfile.email,
+                  photo_url: user.photo_url || socialProfile.photo,
+                  updated_at: new Date()
+                }
+              }
+            );
+            console.log(`🔗 Linked Facebook to username match: ${username}`);
+            user = await database.collection("admin_users").findOne({ _id: user._id });
+          }
+        }
+
+        // No existing user found - create new one
+        if (!user) {
+          // Check user limit
+          const totalUsers = await database.collection('admin_users').countDocuments({});
+          if (totalUsers >= 3) {
+            return res.redirect('/login.html?error=user_limit_reached');
+          }
+
+          const username = socialProfile.name.replace(/\s+/g, '').toLowerCase();
+          const newUser = {
+            username,
+            password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+            full_name: socialProfile.name,
+            email: socialProfile.email ? socialProfile.email.toLowerCase() : null,
+            role: 'viewer', // Limited role for social login users
+            social_id: socialProfile.profile_id,
+            social_provider: 'facebook',
+            photo_url: socialProfile.photo,
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+          const result = await database.collection("admin_users").insertOne(newUser);
+          user = { ...newUser, _id: result.insertedId };
+          console.log(`✨ Created new Facebook user: ${username}`);
+        }
       }
 
       // Create session
@@ -1073,23 +1131,80 @@ app.get("/api/auth/twitter/callback",
       });
 
       if (!user) {
-        const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
-        const newUser = {
-          username,
-          password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
-          full_name: socialProfile.name,
-          email: socialProfile.email,
-          role: 'viewer', // Limited role for social login users
-          social_id: socialProfile.profile_id,
-          social_provider: 'twitter',
-          photo_url: socialProfile.photo,
-          created_at: new Date(),
-          updated_at: new Date()
-        };
+        // Check if user exists by email (for account linking)
+        if (socialProfile.email) {
+          user = await database.collection("admin_users").findOne({
+            email: socialProfile.email.toLowerCase()
+          });
 
-        const result = await database.collection("admin_users").insertOne(newUser);
-        user = { ...newUser, _id: result.insertedId };
-        console.log(`✨ Created new Twitter user: ${username}`);
+          if (user) {
+            // Link social account to existing email-based account
+            await database.collection("admin_users").updateOne(
+              { _id: user._id },
+              {
+                $set: {
+                  social_id: socialProfile.profile_id,
+                  social_provider: 'twitter',
+                  photo_url: user.photo_url || socialProfile.photo,
+                  updated_at: new Date()
+                }
+              }
+            );
+            console.log(`🔗 Linked Twitter to existing account: ${user.username} (${user.email})`);
+            user = await database.collection("admin_users").findOne({ _id: user._id });
+          }
+        }
+
+        // Still no user? Check by username as fallback
+        if (!user) {
+          const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
+          user = await database.collection("admin_users").findOne({ username: username });
+
+          if (user) {
+            // Link social account to username match
+            await database.collection("admin_users").updateOne(
+              { _id: user._id },
+              {
+                $set: {
+                  social_id: socialProfile.profile_id,
+                  social_provider: 'twitter',
+                  email: user.email || socialProfile.email,
+                  photo_url: user.photo_url || socialProfile.photo,
+                  updated_at: new Date()
+                }
+              }
+            );
+            console.log(`🔗 Linked Twitter to username match: ${username}`);
+            user = await database.collection("admin_users").findOne({ _id: user._id });
+          }
+        }
+
+        // No existing user found - create new one
+        if (!user) {
+          // Check user limit
+          const totalUsers = await database.collection('admin_users').countDocuments({});
+          if (totalUsers >= 3) {
+            return res.redirect('/login.html?error=user_limit_reached');
+          }
+
+          const username = socialProfile.username || socialProfile.name.replace(/\s+/g, '').toLowerCase();
+          const newUser = {
+            username,
+            password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
+            full_name: socialProfile.name,
+            email: socialProfile.email ? socialProfile.email.toLowerCase() : null,
+            role: 'viewer', // Limited role for social login users
+            social_id: socialProfile.profile_id,
+            social_provider: 'twitter',
+            photo_url: socialProfile.photo,
+            created_at: new Date(),
+            updated_at: new Date()
+          };
+
+          const result = await database.collection("admin_users").insertOne(newUser);
+          user = { ...newUser, _id: result.insertedId };
+          console.log(`✨ Created new Twitter user: ${username}`);
+        }
       }
 
       // Create session
