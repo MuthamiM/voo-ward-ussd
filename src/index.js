@@ -39,11 +39,10 @@ const path = require('path');
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Redirect root to admin dashboard  
-// Redirect root to admin dashboard handled by admin-dashboard.js
-// app.get('/', (req, res) => {
-//   res.redirect('/admin');
-// });
+// Redirect root to login page
+app.get('/', (req, res) => {
+  res.redirect('/login.html');
+});
 
 // Enable compression for all responses
 app.use(compression());
