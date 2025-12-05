@@ -3,6 +3,54 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 require('dotenv').config();
 
+// Helper to send SMS via Infobip
+async function sendSMS(phone, message) {
+    if (!process.env.INFOBIP_API_KEY || !process.env.INFOBIP_BASE_URL) {
+        console.warn('⚠️  Infobip credentials missing. SMS will NOT be sent.');
+        return false;
+    }
+
+    try {
+        // Ensure phone number is in E.164 format
+        let formattedPhone = phone.replace(/\s+/g, '');
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '+254' + formattedPhone.substring(1);
+        } else if (formattedPhone.startsWith('254')) {
+            formattedPhone = '+' + formattedPhone;
+        }
+
+        const response = await fetch(`${process.env.INFOBIP_BASE_URL}/sms/2/text/advanced`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `App ${process.env.INFOBIP_API_KEY}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                messages: [
+                    {
+                        destinations: [{ to: formattedPhone }],
+                        from: process.env.INFOBIP_SENDER || 'ServiceSMS',
+                        text: message
+                    }
+                ]
+            })
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+            console.log(`✅ SMS sent successfully to ${formattedPhone}`);
+            return true;
+        } else {
+            console.error('❌ Infobip SMS failed:', JSON.stringify(data));
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ SMS network error:', error.message);
+        return false;
+    }
+}
+
 function showUsage() {
     console.log(`
 Usage: node scripts/create-user-manual.js --name "Full Name" --id "ID_NUMBER" --phone "PHONE" --role "ROLE"
@@ -105,7 +153,17 @@ async function main() {
         console.log(`Phone:    ${phone}`);
         console.log(`Role:     ${args.role}`);
         console.log('------------------------------------------------');
-        console.log('⚠️  Share these credentials with the user securely.');
+
+        // Send SMS
+        console.log('📨 Sending SMS notification...');
+        const smsMessage = `VOO Ward Access Created!\nUsername: ${username}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
+        const smsSent = await sendSMS(phone, smsMessage);
+
+        if (smsSent) {
+            console.log('✅ Password sent to user via SMS.');
+        } else {
+            console.log('⚠️  Failed to send SMS. Please share the password manually.');
+        }
 
     } catch (err) {
         console.error('Error:', err);
