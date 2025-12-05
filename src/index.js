@@ -180,7 +180,7 @@ if (!chosenPath) {
   try {
     adminDashboard = require(chosenPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
-      app.use('/', adminDashboard);
+      app.use('/admin', adminDashboard);
       console.log('[DEBUG] admin-dashboard mounted successfully at /admin from', chosenPath);
     } else {
       console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
