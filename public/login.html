@@ -565,7 +565,7 @@
                 </button>
             </form>
 
-            <div class="or-text">Or Sign in With</div>
+            <div class="or-text">Not Registered?</div>
 
             <div class="social-buttons">
                 <button class="social-btn facebook-btn" type="button" onclick="handleSocialLogin('facebook')">
@@ -588,22 +588,6 @@
             <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
             <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin
                 will approve your application.</p>
-            <form id="registrationForm">
-                <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
-                <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required maxlength="20">
-                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (0712345678)" required
-                    pattern="0[0-9]{9}">
-                <select id="regRole" class="input-field" required
-                    style="background: rgba(255,255,255,0.1); color: white;">
-                    <option value="" disabled selected>Select Role</option>
-                    <option value="clerk">Clerk</option>
-                    <option value="pa">PA (Personal Assistant)</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-                <button type="submit" class="sign-in-btn" id="regSubmitBtn"
-                    style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <span>SUBMIT APPLICATION</span>
-                </button>
             </form>
             <div id="regMsg" class="message"></div>
         </div>
