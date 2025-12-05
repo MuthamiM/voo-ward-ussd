@@ -2,30 +2,6 @@
 <html lang="en">
 
 <head>
-    <!-- Registration Modal -->
-    <div id="registrationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
-            <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin will approve your application.</p>
-            <form id="registrationForm">
-                <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
-                <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required maxlength="20">
-                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (0712345678)" required pattern="0[0-9]{9}">
-                <select id="regRole" class="input-field" required style="background: rgba(255,255,255,0.1); color: white;">
-                    <option value="" disabled selected>Select Role</option>
-                    <option value="clerk">Clerk</option>
-                    <option value="pa">PA (Personal Assistant)</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-                <button type="submit" class="sign-in-btn" id="regSubmitBtn" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <span>SUBMIT APPLICATION</span>
-                </button>
-            </form>
-            <div id="regMsg" class="message"></div>
-        </div>
-    </div>
-
     <script>
         if (!window.location.search.includes('v=') && window.performance) {
             const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
@@ -33,87 +9,6 @@
                 window.location.href = window.location.pathname + '?v=' + Date.now();
             }
         }
-        // Registration Modal Functions
-        const regModal = document.getElementById('registrationModal');
-        const regForm = document.getElementById('registrationForm');
-        const regMsg = document.getElementById('regMsg');
-        const regBtn = document.getElementById('registerBtn');
-        const regSubmitBtn = document.getElementById('regSubmitBtn');
-
-        // Check if registration is open on page load
-        async function checkRegistrationStatus() {
-            try {
-                const response = await fetch(API_BASE + '/api/auth/can-register');
-                const data = await response.json();
-                if (!data.canRegister) {
-                    regBtn.disabled = true;
-                    regBtn.innerHTML = '<i class="fas fa-lock"></i> Registration Closed (3/3 Users)';
-                    regBtn.style.opacity = '0.5';
-                    regBtn.style.cursor = 'not-allowed';
-                } else {
-                    regBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register (' + data.currentUsers + '/3 Users)';
-                }
-            } catch (err) { console.error('Error checking registration status:', err); }
-        }
-        checkRegistrationStatus();
-
-        function showRegistrationModal() {
-            const btn = document.getElementById('registerBtn');
-            if (btn.disabled) return;
-            regModal.style.display = 'flex';
-        }
-
-        function hideRegistrationModal() {
-            regModal.style.display = 'none';
-            regMsg.style.display = 'none';
-            regForm.reset();
-        }
-
-        regForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fullName = document.getElementById('regFullName').value.trim();
-            const idNumber = document.getElementById('regIdNumber').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const role = document.getElementById('regRole').value;
-
-            regSubmitBtn.disabled = true;
-            regSubmitBtn.innerHTML = '<span class="spinner"></span><span>SUBMITTING...</span>';
-            regMsg.style.display = 'none';
-
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, idNumber, phone, role })
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    regMsg.style.display = 'block';
-                    regMsg.style.color = '#10b981';
-                    regMsg.textContent = 'Application submitted! Admin will review and send credentials via SMS.';
-                    regForm.reset();
-                    setTimeout(() => hideRegistrationModal(), 3000);
-                } else {
-                    regMsg.style.display = 'block';
-                    regMsg.style.color = '#ef4444';
-                    regMsg.textContent = data.error || 'Registration failed';
-                }
-            } catch (err) {
-                regMsg.style.display = 'block';
-                regMsg.style.color = '#ef4444';
-                regMsg.textContent = 'Network error. Please try again.';
-            } finally {
-                regSubmitBtn.disabled = false;
-                regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
-            }
-        });
-
-        window.onclick = (e) => {
-            if (e.target == modal) modal.style.display = 'none';
-            if (e.target == regModal) hideRegistrationModal();
-        }
-
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -677,11 +572,40 @@
                     <i class="fab fa-facebook-f"></i>
                     Facebook
                 </button>
-                <button class="social-btn twitter-btn" type="button" onclick="handleSocialLogin('twitter')">
-                    <i class="fab fa-twitter"></i>
-                    Twitter
+                <button class="social-btn" id="registerBtn" type="button" onclick="showRegistrationModal()"
+                    style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="fas fa-user-plus"></i>
+                    Register as User
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Registration Modal -->
+    <div id="registrationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
+            <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
+            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin
+                will approve your application.</p>
+            <form id="registrationForm">
+                <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
+                <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required maxlength="20">
+                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (0712345678)" required
+                    pattern="0[0-9]{9}">
+                <select id="regRole" class="input-field" required
+                    style="background: rgba(255,255,255,0.1); color: white;">
+                    <option value="" disabled selected>Select Role</option>
+                    <option value="clerk">Clerk</option>
+                    <option value="pa">PA (Personal Assistant)</option>
+                    <option value="viewer">Viewer</option>
+                </select>
+                <button type="submit" class="sign-in-btn" id="regSubmitBtn"
+                    style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <span>SUBMIT APPLICATION</span>
+                </button>
+            </form>
+            <div id="regMsg" class="message"></div>
         </div>
     </div>
 
@@ -698,30 +622,6 @@
                 </button>
             </form>
             <div id="forgotMsg" class="message"></div>
-        </div>
-    </div>
-
-    <!-- Registration Modal -->
-    <div id="registrationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
-            <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin will approve your application.</p>
-            <form id="registrationForm">
-                <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
-                <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required maxlength="20">
-                <input type="tel" id="regPhone" class="input-field" placeholder="Phone Number (0712345678)" required pattern="0[0-9]{9}">
-                <select id="regRole" class="input-field" required style="background: rgba(255,255,255,0.1); color: white;">
-                    <option value="" disabled selected>Select Role</option>
-                    <option value="clerk">Clerk</option>
-                    <option value="pa">PA (Personal Assistant)</option>
-                    <option value="viewer">Viewer</option>
-                </select>
-                <button type="submit" class="sign-in-btn" id="regSubmitBtn" style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <span>SUBMIT APPLICATION</span>
-                </button>
-            </form>
-            <div id="regMsg" class="message"></div>
         </div>
     </div>
 
@@ -809,16 +709,20 @@
             modal.style.display = "flex";
         }
 
-        closeModal.onclick = () => {
-            modal.style.display = "none";
-            forgotMsg.style.display = "none";
-            forgotForm.reset();
-        }
+        // Close modal logic - handles both modals
+        document.querySelectorAll('.close-modal').forEach(btn => {
+            btn.onclick = () => {
+                modal.style.display = "none";
+                document.getElementById('registrationModal').style.display = "none";
+                forgotMsg.style.display = "none";
+                forgotForm.reset();
+                document.getElementById('registrationForm').reset();
+            }
+        });
 
         window.onclick = (e) => {
-            if (e.target == modal) {
-                modal.style.display = "none";
-            }
+            if (e.target == modal) modal.style.display = "none";
+            if (e.target == document.getElementById('registrationModal')) hideRegistrationModal();
         }
 
         forgotForm.addEventListener('submit', async (e) => {
@@ -858,29 +762,24 @@
             }
         });
 
-        // Social Login Logic
-        function handleSocialLogin(provider) { window.location.href = API_BASE + '/api/auth/' + provider; }
-        // Check if already logged in
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-            fetch(`${API_BASE}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            }).then(response => {
-                if (response.ok) window.location.href = '/admin-dashboard.html';
-                else {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                }
-            });
-        }
-        // Registration Modal Functions
+        // Registration Logic
         const regModal = document.getElementById('registrationModal');
         const regForm = document.getElementById('registrationForm');
         const regMsg = document.getElementById('regMsg');
         const regBtn = document.getElementById('registerBtn');
         const regSubmitBtn = document.getElementById('regSubmitBtn');
 
-        // Check if registration is open on page load
+        function showRegistrationModal() {
+            if (regBtn.disabled) return;
+            regModal.style.display = 'flex';
+        }
+
+        function hideRegistrationModal() {
+            regModal.style.display = 'none';
+            regMsg.style.display = 'none';
+            regForm.reset();
+        }
+
         async function checkRegistrationStatus() {
             try {
                 const response = await fetch(API_BASE + '/api/auth/can-register');
@@ -895,19 +794,9 @@
                 }
             } catch (err) { console.error('Error checking registration status:', err); }
         }
+
+        // Check status on load
         checkRegistrationStatus();
-
-        function showRegistrationModal() {
-            const btn = document.getElementById('registerBtn');
-            if (btn.disabled) return;
-            regModal.style.display = 'flex';
-        }
-
-        function hideRegistrationModal() {
-            regModal.style.display = 'none';
-            regMsg.style.display = 'none';
-            regForm.reset();
-        }
 
         regForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -949,11 +838,21 @@
             }
         });
 
-        window.onclick = (e) => {
-            if (e.target == modal) modal.style.display = 'none';
-            if (e.target == regModal) hideRegistrationModal();
+        // Social Login Logic
+        function handleSocialLogin(provider) { window.location.href = API_BASE + '/api/auth/' + provider; }
+        // Check if already logged in
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            fetch(`${API_BASE}/api/auth/me`, {
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            }).then(response => {
+                if (response.ok) window.location.href = '/admin-dashboard.html';
+                else {
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                }
+            });
         }
-
     </script>
 </body>
 
