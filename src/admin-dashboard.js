@@ -1073,8 +1073,9 @@ app.get("/api/auth/facebook/callback",
 
       sessions.set(token, { user: sessionUser, createdAt: new Date() });
 
-      // Redirect with token
-      res.redirect(`/admin-dashboard.html?token=${token}`);
+      // Redirect with token AND user data for frontend to parse
+      const userDataEncoded = encodeURIComponent(JSON.stringify(sessionUser));
+      res.redirect(`/admin-dashboard.html?token=${token}&user=${userDataEncoded}`);
     } catch (err) {
       console.error("Facebook OAuth callback error:", err);
       res.redirect('/login.html?error=auth_error');
@@ -1220,8 +1221,9 @@ app.get("/api/auth/twitter/callback",
 
       sessions.set(token, { user: sessionUser, createdAt: new Date() });
 
-      // Redirect with token
-      res.redirect(`/admin-dashboard.html?token=${token}`);
+      // Redirect with token AND user data for frontend to parse
+      const userDataEncoded = encodeURIComponent(JSON.stringify(sessionUser));
+      res.redirect(`/admin-dashboard.html?token=${token}&user=${userDataEncoded}`);
     } catch (err) {
       console.error("Twitter OAuth callback error:", err);
       res.redirect('/login.html?error=auth_error');
