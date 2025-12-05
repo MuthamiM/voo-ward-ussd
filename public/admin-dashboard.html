@@ -1988,6 +1988,26 @@
     </style>
 
     <script>
+        // OAuth callback handler - parse token and user from URL
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var token = params.get('token');
+            var user = params.get('user');
+            if (token) {
+                console.log('OAuth callback detected, storing credentials...');
+                localStorage.setItem('authToken', token);
+                if (user) {
+                    try {
+                        var userData = JSON.parse(decodeURIComponent(user));
+                        localStorage.setItem('currentUser', JSON.stringify(userData));
+                        localStorage.setItem('authExpiry', (Date.now() + 86400000).toString());
+                        console.log('OAuth user stored:', userData.username);
+                    } catch(e) { console.error('OAuth parse error:', e); }
+                }
+                history.replaceState({}, document.title, '/admin-dashboard.html');
+            }
+        })();
+
         console.log('✅ Script loaded successfully');
 
         // DEBUG: Test function
