@@ -1,4 +1,5 @@
 const express = require("express");
+const https = require("https");
 const path = require("path");
 const { MongoClient, ObjectId } = require("mongodb");
 const crypto = require("crypto");
@@ -55,6 +56,60 @@ function validatePassword(password) {
   if (!password || typeof password !== 'string') return false;
   // At least 6 characters
   return password.length >= 6 && password.length <= 128;
+}
+
+// Helper: Send SMS via Infobip
+function sendSMS(to, text) {
+  return new Promise((resolve, reject) => {
+    if (!process.env.INFOBIP_API_KEY || !process.env.INFOBIP_BASE_URL) {
+      console.warn('⚠️ Infobip credentials missing, skipping SMS');
+      return resolve({ skipped: true });
+    }
+
+    const data = JSON.stringify({
+      messages: [
+        {
+          destinations: [{ to: to }],
+          from: process.env.INFOBIP_SENDER || 'ServiceSMS',
+          text: text
+        }
+      ]
+    });
+
+    const options = {
+      hostname: process.env.INFOBIP_BASE_URL.replace('https://', '').replace(/\/$/, ''),
+      path: '/sms/2/text/advanced',
+      method: 'POST',
+      headers: {
+        'Authorization': `App ${process.env.INFOBIP_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Content-Length': data.length
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let responseBody = '';
+      res.on('data', (chunk) => responseBody += chunk);
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          console.log('✅ SMS sent successfully to', to);
+          resolve(JSON.parse(responseBody));
+        } else {
+          console.error('❌ Infobip Error:', res.statusCode, responseBody);
+          reject(new Error(`Infobip API Error: ${responseBody}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      console.error('❌ SMS Network Error:', error);
+      reject(error);
+    });
+
+    req.write(data);
+    req.end();
+  });
 }
 
 const app = express();
@@ -840,6 +895,16 @@ app.post("/api/auth/reset-password", loginLimiter, async (req, res) => {
 
     console.log(`✅ Password reset successful for user ID: ${resetRecord.user_id}`);
 
+    // Send confirmation SMS
+    const user = await database.collection("admin_users").findOne({ _id: resetRecord.user_id });
+    if (user && user.phone) {
+      try {
+        await sendSMS(user.phone, `Your VOO Ward password has been reset successfully. New PIN: ${new_pin}`);
+      } catch (smsErr) {
+        console.error("Failed to send reset SMS:", smsErr);
+      }
+    }
+
     res.json({ success: true, message: "Password reset successfully. Please login with your new PIN." });
 
   } catch (err) {
@@ -1618,6 +1683,118 @@ app.delete("/api/auth/users/:id", requireAuth, requireMCA, async (req, res) => {
     res.json({ success: true, message: "User deleted successfully" });
   } catch (err) {
     console.error("Delete user error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================
+// REGISTRATION & APPROVAL ROUTES
+// ============================================
+
+// 1. Check if registration is allowed
+app.get('/api/auth/can-register', async (req, res) => {
+  try {
+    const database = await connectDB();
+    const count = await database.collection('admin_users').countDocuments({});
+    res.json({ canRegister: count < 3, count, max: 3 });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 2. Submit Registration Request
+app.post('/api/auth/register-request', async (req, res) => {
+  try {
+    const { fullName, idNumber, phone, role } = req.body;
+    if (!fullName || !idNumber || !phone || !role) return res.status(400).json({ error: 'All fields required' });
+
+    const database = await connectDB();
+
+    // Check existing request
+    const existing = await database.collection('pending_registrations').findOne({ $or: [{ idNumber }, { phone }] });
+    if (existing) return res.status(409).json({ error: 'Application already pending' });
+
+    await database.collection('pending_registrations').insertOne({
+      fullName, idNumber, phone, role,
+      submittedAt: new Date(),
+      status: 'pending'
+    });
+
+    res.json({ success: true, message: 'Application submitted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 3. List Pending Registrations (Admin)
+app.get('/api/admin/pending-registrations', requireAuth, async (req, res) => {
+  try {
+    const database = await connectDB();
+    const applications = await database.collection('pending_registrations').find({ status: 'pending' }).toArray();
+    const currentUsers = await database.collection('admin_users').countDocuments({});
+
+    res.json({
+      applications,
+      currentUsers,
+      maxUsers: 3,
+      canApprove: currentUsers < 3
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 4. Approve Registration
+app.post('/api/admin/approve-registration/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const database = await connectDB();
+    const app = await database.collection('pending_registrations').findOne({ _id: new ObjectId(id) });
+
+    if (!app) return res.status(404).json({ error: 'Application not found' });
+
+    // Check limit
+    const count = await database.collection('admin_users').countDocuments({});
+    if (count >= 3) return res.status(400).json({ error: 'User limit reached' });
+
+    // Generate credentials
+    const password = Math.random().toString(36).slice(-8); // Random 8 char password
+    const username = app.fullName.split(' ')[0].toLowerCase() + Math.floor(Math.random() * 100);
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create User
+    await database.collection('admin_users').insertOne({
+      username,
+      password: hashedPassword,
+      full_name: app.fullName,
+      phone: app.phone,
+      role: app.role,
+      created_at: new Date(),
+      created_by: req.user.id
+    });
+
+    // Delete application
+    await database.collection('pending_registrations').deleteOne({ _id: new ObjectId(id) });
+
+    // Send SMS
+    const message = `Welcome to VOO Ward! Your admin account is approved. Username: ${username}, Password: ${password}. Login at: ${process.env.FRONTEND_URL || 'voo-ward.com'}`;
+    await sendSMS(app.phone, message);
+
+    res.json({ success: true, message: 'User approved and SMS sent' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Reject Registration
+app.post('/api/admin/reject-registration/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const database = await connectDB();
+    await database.collection('pending_registrations').deleteOne({ _id: new ObjectId(id) });
+    res.json({ success: true, message: 'Application rejected' });
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
