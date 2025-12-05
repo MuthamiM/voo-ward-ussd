@@ -2070,9 +2070,8 @@
             console.log('API_BASE:', API_BASE);
             console.log('Current location:', window.location.href);
 
-            // Load saved profile picture
-            loadProfilePicture();
-            loadPendingRegistrations(); // Load pending user registrations
+            // Check auth immediately - don't load other things first
+            checkAuth();
 
             // Fix avatar path - set correct src after DOM loads
             setTimeout(() => {
@@ -2091,8 +2090,6 @@
                     };
                 }
             }, 100);
-
-            checkAuth();
             setupEventListeners();
         });
 
