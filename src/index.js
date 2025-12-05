@@ -40,9 +40,10 @@ const path = require('path');
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Redirect root to admin dashboard  
-app.get('/', (req, res) => {
-  res.redirect('/admin');
-});
+// Redirect root to admin dashboard handled by admin-dashboard.js
+// app.get('/', (req, res) => {
+//   res.redirect('/admin');
+// });
 
 // Enable compression for all responses
 app.use(compression());
@@ -179,7 +180,7 @@ if (!chosenPath) {
   try {
     adminDashboard = require(chosenPath);
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
-      app.use('/admin', adminDashboard);
+      app.use('/', adminDashboard);
       console.log('[DEBUG] admin-dashboard mounted successfully at /admin from', chosenPath);
     } else {
       console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
