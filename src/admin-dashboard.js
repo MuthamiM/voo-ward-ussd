@@ -1298,8 +1298,8 @@ app.post("/api/auth/register-request", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Registration request error:", error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Registration request error:", error.message, error.stack);
+    res.status(500).json({ error: "Server error: " + error.message });
   }
 });
 

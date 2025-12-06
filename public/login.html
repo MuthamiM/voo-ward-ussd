@@ -598,6 +598,17 @@
                         <option value="clerk" style="color: black;">Clerk</option>
                         <option value="pa" style="color: black;">PA</option>
                     </select>
+
+                    <div style="display: flex; align-items: flex-start; gap: 10px; margin: 15px 0;">
+                        <input type="checkbox" id="regTerms" required
+                            style="margin-top: 4px; width: 18px; height: 18px; cursor: pointer;">
+                        <label for="regTerms" style="color: rgba(255,255,255,0.8); font-size: 13px; cursor: pointer;">
+                            I accept the <a href="#" onclick="showTermsModal(); return false;"
+                                style="color: #10b981; text-decoration: underline;">Terms and Services</a> and agree to
+                            the privacy policy.
+                        </label>
+                    </div>
+
                     <button type="submit" class="sign-in-btn" id="regSubmitBtn">
                         <span>SUBMIT APPLICATION</span>
                     </button>
@@ -626,6 +637,45 @@
         </div>
     </div>
 
+    <!-- Terms and Services Modal -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content" style="max-width: 550px; max-height: 80vh; overflow-y: auto;">
+            <span class="close-modal" onclick="hideTermsModal()">&times;</span>
+            <h2 style="color: #10b981; margin-bottom: 15px;"><i class="fas fa-file-contract"></i> Terms and Services
+            </h2>
+
+            <div style="text-align: left; font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.6;">
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">1. Acceptance of Terms</h3>
+                <p>By registering for and using the VOO Ward platform, you agree to these terms and conditions.</p>
+
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">2. User Responsibilities</h3>
+                <p>You agree to provide accurate information during registration and to use the platform responsibly for
+                    ward administration purposes only.</p>
+
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">3. Data Privacy</h3>
+                <p>We collect and store your personal information (name, ID, phone) for authentication and communication
+                    purposes. Your data is encrypted and protected.</p>
+
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">4. Account Security</h3>
+                <p>You are responsible for keeping your login credentials (username and PIN) secure. Do not share your
+                    PIN with others.</p>
+
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">5. Acceptable Use</h3>
+                <p>The platform is for official ward administration only. Misuse of the system may result in account
+                    suspension.</p>
+
+                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">6. Service Availability</h3>
+                <p>We strive to maintain 99% uptime but do not guarantee uninterrupted service. Maintenance may occur
+                    periodically.</p>
+            </div>
+
+            <button type="button" onclick="hideTermsModal()"
+                style="width: 100%; margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                <i class="fas fa-check"></i> I Understand
+            </button>
+        </div>
+    </div>
+
     <script>
         const API_BASE = window.location.origin + '/admin';
         const loginForm = document.getElementById('loginForm');
@@ -644,6 +694,14 @@
             successMsg.textContent = message;
             successMsg.classList.add('show');
             errorMsg.classList.remove('show');
+        }
+
+        function showTermsModal() {
+            document.getElementById('termsModal').style.display = 'flex';
+        }
+
+        function hideTermsModal() {
+            document.getElementById('termsModal').style.display = 'none';
         }
 
         loginForm.addEventListener('submit', async (e) => {
