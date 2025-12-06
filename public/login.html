@@ -584,7 +584,7 @@
                 <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
                 <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
-                    Fill in your details. Your login PIN will be displayed on screen.
+                    Fill in your details. An admin will review your application and provide your login PIN.
                 </p>
 
                 <form id="registrationForm">
@@ -986,43 +986,37 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.credentials) {
-                    // Display credentials on screen with copy button - KEEP VISIBLE until user closes
+                if (response.ok && data.success) {
+                    // Show pending approval message
                     const regMsg = document.getElementById('regMsg');
-                    const pin = data.credentials.password;
-                    const username = data.credentials.username;
 
-                    // Hide the form, show only credentials
+                    // Hide the form, show pending message
                     document.getElementById('registrationForm').style.display = 'none';
 
                     regMsg.innerHTML = `
-                        <div style="text-align: center; padding: 20px; background: rgba(16,185,129,0.15); border-radius: 12px; border: 2px solid #10b981;">
-                            <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 18px;"><i class="fas fa-check-circle"></i> Account Created!</p>
+                        <div style="text-align: center; padding: 20px; background: rgba(59,130,246,0.15); border-radius: 12px; border: 2px solid #3b82f6;">
+                            <p style="color: #3b82f6; margin-bottom: 15px; font-weight: bold; font-size: 18px;"><i class="fas fa-clock"></i> Application Submitted!</p>
                             
                             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 15px 0;">
-                                <p style="color: white; margin: 10px 0; font-size: 14px;"><strong>Username:</strong></p>
-                                <p style="color: #10b981; font-family: monospace; font-size: 20px; margin-bottom: 15px;">${username}</p>
-                                
-                                <p style="color: white; margin: 10px 0; font-size: 14px;"><strong>Your PIN:</strong></p>
-                                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                                    <span style="font-family: monospace; background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; font-size: 24px; letter-spacing: 5px; font-weight: bold;">${pin}</span>
-                                    <button type="button" onclick="copyPin('${pin}')" style="background: #059669; border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                                        <i class="fas fa-copy"></i> Copy PIN
-                                    </button>
-                                </div>
+                                <p style="color: white; font-size: 14px; line-height: 1.6;">
+                                    Your registration is <strong style="color: #fbbf24;">pending admin approval</strong>.
+                                </p>
+                                <p style="color: rgba(255,255,255,0.7); font-size: 13px; margin-top: 10px;">
+                                    Once approved, you will receive your login PIN via SMS or the admin will provide it to you.
+                                </p>
                             </div>
                             
-                            <p style="color: #fbbf24; margin: 15px 0; font-size: 13px;"><i class="fas fa-exclamation-triangle"></i> <strong>SAVE YOUR PIN NOW!</strong> You won't see it again.</p>
+                            <p style="color: #10b981; margin: 15px 0; font-size: 13px;"><i class="fas fa-info-circle"></i> Check back later or contact the admin.</p>
                             
-                            <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
-                                <i class="fas fa-sign-in-alt"></i> Close & Login
+                            <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: none; color: white; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
+                                <i class="fas fa-check"></i> Got it
                             </button>
                         </div>
                     `;
                     regMsg.style.display = 'block';
                     regMsg.style.background = 'transparent';
                     regMsg.style.padding = '0';
-                } else {
+                } else if (!response.ok) {
                     showRegMsg(data.error || 'Registration failed', 'error');
                 }
             } catch (err) {
