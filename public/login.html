@@ -986,10 +986,10 @@
 
                 const data = await response.json();
 
-                if (response.ok && data.success && data.applicationId) {
-                    // Show WAITING screen with real-time polling
+                if (response.ok && data.success) {
+                    // Show WAITING screen
                     const regMsg = document.getElementById('regMsg');
-                    const appId = data.applicationId;
+                    const appId = data.applicationId || 'pending';
 
                     // Hide the form, show waiting screen
                     document.getElementById('registrationForm').style.display = 'none';
@@ -1009,22 +1009,24 @@
                     regMsg.style.background = 'transparent';
                     regMsg.style.padding = '0';
 
-                    // Start polling for approval
-                    let pollCount = 0;
-                    const maxPolls = 360; // 30 minutes max (5s * 360)
+                    // Only start polling if we have an applicationId
+                    if (data.applicationId) {
+                        // Start polling for approval
+                        let pollCount = 0;
+                        const maxPolls = 360; // 30 minutes max (5s * 360)
 
-                    const pollInterval = setInterval(async () => {
-                        pollCount++;
-                        document.getElementById('waitingStatus').textContent = 'Checking status... (' + pollCount + ')';
+                        const pollInterval = setInterval(async () => {
+                            pollCount++;
+                            document.getElementById('waitingStatus').textContent = 'Checking status... (' + pollCount + ')';
 
-                        try {
-                            const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
-                            const statusData = await statusRes.json();
+                            try {
+                                const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
+                                const statusData = await statusRes.json();
 
-                            if (statusData.status === 'approved' && statusData.credentials) {
-                                clearInterval(pollInterval);
-                                // Show credentials!
-                                document.getElementById('waitingScreen').innerHTML = \`
+                                if (statusData.status === 'approved' && statusData.credentials) {
+                                    clearInterval(pollInterval);
+                                    // Show credentials!
+                                    document.getElementById('waitingScreen').innerHTML = \`
                                     <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
                                     
                                     <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
@@ -1069,6 +1071,7 @@
                             document.getElementById('waitingStatus').textContent = 'Timeout. Please close and try again later.';
                         }
                     }, 5000); // Poll every 5 seconds
+                    } // End if (data.applicationId)
                     
                 } else if (!response.ok) {
                     showRegMsg(data.error || 'Registration failed', 'error');
