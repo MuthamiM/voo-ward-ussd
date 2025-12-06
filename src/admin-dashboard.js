@@ -1239,40 +1239,9 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "A user with this ID, phone, or username already exists" });
     }
 
-    // Generate password and send via SMS
-    let password;
-    let hashedPassword;
-
-    // Check if Firebase verified the phone
-    const firebaseVerified = req.body.firebaseVerified === true;
-
-    if (firebaseVerified) {
-      // Phone already verified by Firebase - generate random password
-      password = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random
-      hashedPassword = await bcrypt.hash(password, 10);
-
-      // Send password via Twilio SMS
-      try {
-        const { sendSMS } = require('./services/twilioSmsService');
-        await sendSMS(phone, `VOO Ward Login\nUsername: ${username.toLowerCase()}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`);
-        console.log(`📱 Password sent to ${phone}`);
-      } catch (smsErr) {
-        console.error('SMS send error (non-fatal):', smsErr.message);
-        // Continue anyway - password will be in logs for admin
-      }
-    } else {
-      // Legacy flow: Generate OTP as password
-      const { sendOTP } = require('./services/twilioSmsService');
-      const otpResult = await sendOTP(phone);
-
-      if (!otpResult.success) {
-        console.error('Failed to send OTP:', otpResult.error);
-        return res.status(500).json({ error: "Failed to send verification code. Please try again." });
-      }
-
-      password = otpResult.otp;
-      hashedPassword = await bcrypt.hash(password, 10);
-    }
+    // Generate random 6-digit password (no SMS - displayed on screen)
+    const password = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create application with password
     const application = {
@@ -1283,19 +1252,20 @@ app.post("/api/auth/register-request", async (req, res) => {
       username: username.toLowerCase(),
       passwordHash: hashedPassword,
       status: 'pending',
-      firebaseVerified: firebaseVerified,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
     await database.collection("pending_registrations").insertOne(application);
 
-    console.log(`📋 New registration: ${fullName} (${role}) - Password sent to ${phone}`);
+    console.log(`📋 New registration: ${fullName} (${role}) - Username: ${username.toLowerCase()}, Password: ${password}`);
     res.json({
       success: true,
-      message: firebaseVerified
-        ? "Registration complete! Your login password has been sent via SMS."
-        : "Application submitted! Your login password has been sent to your phone via SMS."
+      message: "Registration successful!",
+      credentials: {
+        username: username.toLowerCase(),
+        password: password
+      }
     });
 
   } catch (error) {
