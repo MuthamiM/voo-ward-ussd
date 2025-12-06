@@ -587,7 +587,7 @@
                     Fill in your details. An admin will review your application and provide your login PIN.
                 </p>
 
-                <form id="registrationForm" onsubmit="event.preventDefault();">
+                <form id="registrationForm">
                     <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
                     <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required>
                     <input type="tel" id="regPhone" class="input-field" placeholder="Phone (e.g. 0712345678)" required>
@@ -609,7 +609,7 @@
                         </label>
                     </div>
 
-                    <button type="submit" class="sign-in-btn" id="regSubmitBtn">
+                    <button type="button" class="sign-in-btn" id="regSubmitBtn" onclick="handleRegistrationSubmit()">
                         <span>SUBMIT APPLICATION</span>
                     </button>
                 </form>
@@ -911,9 +911,15 @@
             });
         }
 
-        // Simple registration form handler
-        document.getElementById('registrationForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Explicit registration handler to avoid form submit issues
+        async function handleRegistrationSubmit() {
+            const form = document.getElementById('registrationForm');
+
+            // Manual validation
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
 
             const fullName = document.getElementById('regFullName').value.trim();
             const idNumber = document.getElementById('regIdNumber').value.trim();
@@ -1041,7 +1047,7 @@
                 regSubmitBtn.disabled = false;
                 regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
             }
-        });
+        }
     </script>
 </body>
 
