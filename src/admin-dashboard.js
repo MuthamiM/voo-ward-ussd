@@ -3105,6 +3105,16 @@ app.get("/api/admin/export/constituents", requireAuth, requireMCA, async (req, r
 });
 
 // Serve admin dashboard HTML
+// Add no-cache headers for HTML files to prevent stale content on Render
+app.use((req, res, next) => {
+  if (req.path.endsWith('.html') || req.path === '/') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, "../public")));
 
 // Redirect root to login page
