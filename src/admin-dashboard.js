@@ -860,8 +860,8 @@ app.post("/api/auth/reset-password", loginLimiter, async (req, res) => {
       return res.status(400).json({ error: "Token and new PIN are required" });
     }
 
-    if (new_pin.length !== 6 || !/^\d+$/.test(new_pin)) {
-      return res.status(400).json({ error: "PIN must be exactly 6 digits" });
+    if (!/^\d+$/.test(new_pin)) {
+      return res.status(400).json({ error: "Password must contain only digits" });
     }
 
     const database = await connectDB();
@@ -1175,14 +1175,14 @@ app.get("/api/auth/can-register", async (req, res) => {
   }
 });
 
-// Submit registration request
+// Submit registration request - OTP sent immediately as password
 app.post("/api/auth/register-request", async (req, res) => {
   try {
-    const { fullName, idNumber, phone, role, username, password } = req.body;
+    const { fullName, idNumber, phone, role, username } = req.body;
 
-    // Validate required fields
-    if (!fullName || !idNumber || !phone || !role || !username || !password) {
-      return res.status(400).json({ error: "All fields are required: fullName, idNumber, phone, role, username, password" });
+    // Validate required fields (password NOT required - OTP will be the password)
+    if (!fullName || !idNumber || !phone || !role || !username) {
+      return res.status(400).json({ error: "All fields are required: fullName, idNumber, phone, role, username" });
     }
 
     // Validate role
@@ -1196,12 +1196,9 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "Invalid phone number format" });
     }
 
-    // Validate username and password
+    // Validate username
     if (!validateUsername(username)) {
       return res.status(400).json({ error: "Invalid username. Use 3-30 alphanumeric characters." });
-    }
-    if (!validatePassword(password)) {
-      return res.status(400).json({ error: "Password must be at least 6 characters." });
     }
 
     const database = await connectDB();
@@ -1242,10 +1239,42 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "A user with this ID, phone, or username already exists" });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate password and send via SMS
+    let password;
+    let hashedPassword;
 
-    // Create application
+    // Check if Firebase verified the phone
+    const firebaseVerified = req.body.firebaseVerified === true;
+
+    if (firebaseVerified) {
+      // Phone already verified by Firebase - generate random password
+      password = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit random
+      hashedPassword = await bcrypt.hash(password, 10);
+
+      // Send password via Twilio SMS
+      try {
+        const { sendSMS } = require('./services/twilioSmsService');
+        await sendSMS(phone, `VOO Ward Login\nUsername: ${username.toLowerCase()}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`);
+        console.log(`📱 Password sent to ${phone}`);
+      } catch (smsErr) {
+        console.error('SMS send error (non-fatal):', smsErr.message);
+        // Continue anyway - password will be in logs for admin
+      }
+    } else {
+      // Legacy flow: Generate OTP as password
+      const { sendOTP } = require('./services/twilioSmsService');
+      const otpResult = await sendOTP(phone);
+
+      if (!otpResult.success) {
+        console.error('Failed to send OTP:', otpResult.error);
+        return res.status(500).json({ error: "Failed to send verification code. Please try again." });
+      }
+
+      password = otpResult.otp;
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+
+    // Create application with password
     const application = {
       fullName: sanitizeString(fullName, 100),
       idNumber: sanitizeString(idNumber, 20),
@@ -1254,14 +1283,20 @@ app.post("/api/auth/register-request", async (req, res) => {
       username: username.toLowerCase(),
       passwordHash: hashedPassword,
       status: 'pending',
+      firebaseVerified: firebaseVerified,
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
     await database.collection("pending_registrations").insertOne(application);
 
-    console.log(`📋 New registration application: ${fullName} (${role})`);
-    res.json({ success: true, message: "Application submitted successfully. Awaiting admin approval." });
+    console.log(`📋 New registration: ${fullName} (${role}) - Password sent to ${phone}`);
+    res.json({
+      success: true,
+      message: firebaseVerified
+        ? "Registration complete! Your login password has been sent via SMS."
+        : "Application submitted! Your login password has been sent to your phone via SMS."
+    });
 
   } catch (error) {
     console.error("Registration request error:", error);
@@ -1383,7 +1418,7 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
     } else {
       smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
     }
-    
+
     const smsResult = await sendNotificationToPhone(database, application.phone, smsMessage);
 
     console.log(`✅ Approved registration: ${application.fullName} (${application.role})`);
