@@ -10,12 +10,14 @@ window.UserManagement = (function () {
     let users = [];
     let currentUser = null;
     let filteredUsers = [];
+    let pendingApps = [];
 
     /**
      * Initialize user management
      */
     function init() {
         loadUsers();
+        loadPendingRegistrations();
         attachEventListeners();
     }
 
@@ -63,6 +65,151 @@ window.UserManagement = (function () {
                     </div>
                 `;
             }
+        }
+    }
+
+    /**
+     * Load pending registrations
+     */
+    async function loadPendingRegistrations() {
+        try {
+            const response = await fetch('/admin/api/admin/pending-registrations', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            pendingApps = data.applications || [];
+            renderPendingRegistrations();
+        } catch (error) {
+            console.log('No pending registrations or error:', error);
+        }
+    }
+
+    /**
+     * Render pending registrations section
+     */
+    function renderPendingRegistrations() {
+        let container = document.getElementById('pendingRegistrationsSection');
+
+        // Create container if not exists
+        if (!container) {
+            const grid = document.getElementById('userManagementGrid');
+            if (grid && grid.parentElement) {
+                const section = document.createElement('div');
+                section.id = 'pendingRegistrationsSection';
+                section.style.marginBottom = '30px';
+                grid.parentElement.insertBefore(section, grid);
+                container = section;
+            }
+        }
+
+        if (!container) return;
+
+        if (pendingApps.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        container.innerHTML = `
+            <h3 style="color: #fbbf24; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-user-clock"></i> 
+                Pending Approvals (${pendingApps.length})
+            </h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+                ${pendingApps.map(app => `
+                    <div style="background: rgba(251, 191, 36, 0.1); border: 2px solid #fbbf24; border-radius: 12px; padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                            <div>
+                                <p style="font-weight: bold; font-size: 16px; margin: 0;">${escapeHtml(app.fullName)}</p>
+                                <p style="color: #6b7280; font-size: 12px; margin: 4px 0 0 0;">@${escapeHtml(app.username || 'pending')}</p>
+                            </div>
+                            <span style="background: #fbbf24; color: black; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">PENDING</span>
+                        </div>
+                        
+                        <div style="font-size: 13px; color: #9ca3af; margin-bottom: 12px;">
+                            <p style="margin: 4px 0;"><i class="fas fa-id-card"></i> ${escapeHtml(app.idNumber)}</p>
+                            <p style="margin: 4px 0;"><i class="fas fa-phone"></i> ${escapeHtml(app.phone)}</p>
+                            <p style="margin: 4px 0;"><i class="fas fa-user-tag"></i> Requested: ${escapeHtml(app.role?.toUpperCase() || 'N/A')}</p>
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 12px;">
+                            <select id="role-${app._id}" style="flex: 1; padding: 8px; border: 1px solid #374151; border-radius: 6px; background: #1f2937; color: white; font-size: 12px;">
+                                <option value="clerk" ${app.role === 'clerk' ? 'selected' : ''}>Clerk</option>
+                                <option value="pa" ${app.role === 'pa' ? 'selected' : ''}>PA</option>
+                            </select>
+                            <button onclick="UserManagement.approvePending('${app._id}')" style="background: #10b981; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-check"></i> Approve
+                            </button>
+                            <button onclick="UserManagement.rejectPending('${app._id}')" style="background: #ef4444; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-times"></i> Reject
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Approve pending registration
+     */
+    async function approvePending(appId) {
+        const roleSelect = document.getElementById(`role-${appId}`);
+        const role = roleSelect ? roleSelect.value : 'clerk';
+
+        try {
+            const response = await fetch(`/admin/api/admin/approve-registration/${appId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ role })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showSuccess(`Approved! Username: ${data.credentials?.username}, PIN: ${data.credentials?.pin}`);
+                loadPendingRegistrations();
+                loadUsers();
+            } else {
+                showError(data.error || 'Failed to approve');
+            }
+        } catch (error) {
+            console.error('Approve error:', error);
+            showError('Failed to approve registration');
+        }
+    }
+
+    /**
+     * Reject pending registration (delete)
+     */
+    async function rejectPending(appId) {
+        if (!confirm('Are you sure you want to reject and delete this application?')) return;
+
+        try {
+            const response = await fetch(`/admin/api/admin/reject-registration/${appId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (response.ok) {
+                showSuccess('Application rejected and deleted');
+                loadPendingRegistrations();
+            } else {
+                const data = await response.json();
+                showError(data.error || 'Failed to reject');
+            }
+        } catch (error) {
+            console.error('Reject error:', error);
+            showError('Failed to reject registration');
         }
     }
 
@@ -427,7 +574,10 @@ window.UserManagement = (function () {
         resetPassword,
         deleteUser,
         filterUsers,
-        closeModal
+        closeModal,
+        approvePending,
+        rejectPending,
+        loadPendingRegistrations
     };
 })();
 
