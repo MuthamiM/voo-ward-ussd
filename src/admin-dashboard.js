@@ -1268,33 +1268,25 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "A user with this ID or phone already exists" });
     }
 
-    // Generate random 6-digit PIN (displayed on screen)
-    const pin = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedPassword = await bcrypt.hash(pin, 10);
-
-    // Create user DIRECTLY in admin_users (no pending approval needed)
-    const newUser = {
-      username: username.toLowerCase(),
-      password: hashedPassword,
-      full_name: sanitizeString(fullName, 100),
-      id_number: sanitizeString(idNumber, 20),
+    // Create PENDING registration (admin must approve)
+    const pendingApp = {
+      fullName: sanitizeString(fullName, 100),
+      idNumber: sanitizeString(idNumber, 20),
       phone: phone.replace(/\s+/g, ''),
+      username: username.toLowerCase(),
       role: role.toLowerCase(),
-      created_at: new Date(),
-      updated_at: new Date(),
-      self_registered: true
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
-    await database.collection("admin_users").insertOne(newUser);
+    await database.collection("pending_registrations").insertOne(pendingApp);
 
-    console.log(`✅ New user created: ${username.toLowerCase()} (${role}) - PIN: ${pin}`);
+    console.log(`📋 New pending registration: ${fullName} (${role}) - awaiting admin approval`);
     res.json({
       success: true,
-      message: "Registration successful! You can now login.",
-      credentials: {
-        username: username.toLowerCase(),
-        password: pin
-      }
+      message: "Application submitted! An admin will review and approve your registration. You will receive your login PIN once approved.",
+      pending: true
     });
 
   } catch (error) {
