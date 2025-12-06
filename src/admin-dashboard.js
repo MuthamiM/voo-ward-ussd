@@ -1243,31 +1243,29 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "Maximum user limit (3) reached. Registration closed." });
     }
 
-    // Check for duplicate applications
+    // Check for duplicate ID or phone only (username can be same)
     const existingApp = await database.collection("pending_registrations").findOne({
       $or: [
         { idNumber: idNumber },
-        { phone: phone.replace(/\s+/g, '') },
-        { username: username.toLowerCase() }
+        { phone: phone.replace(/\s+/g, '') }
       ],
       status: 'pending'
     });
 
     if (existingApp) {
-      return res.status(400).json({ error: "An application with this ID, phone, or username already exists" });
+      return res.status(400).json({ error: "An application with this ID or phone already exists" });
     }
 
-    // Check if user already exists
+    // Check if user already exists (only ID and phone must be unique)
     const existingUser = await database.collection("admin_users").findOne({
       $or: [
         { id_number: idNumber },
-        { phone: phone.replace(/\s+/g, '') },
-        { username: username.toLowerCase() }
+        { phone: phone.replace(/\s+/g, '') }
       ]
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "A user with this ID, phone, or username already exists" });
+      return res.status(400).json({ error: "A user with this ID or phone already exists" });
     }
 
     // Generate random 6-digit PIN (displayed on screen)
