@@ -99,6 +99,31 @@ Scan QR code with Expo Go app
 
 ---
 
+## 👤 User Registration Flow
+
+### Manual Registration
+1. Click "Other" on login page
+2. Fill in registration form:
+   - Full Name
+   - ID Number (must be unique)
+   - Phone Number (must be unique)
+   - Desired Username (can be same as others)
+   - Role (Clerk/PA)
+3. Accept Terms and Services checkbox
+4. Submit application
+5. **PIN is displayed on screen** - copy it!
+6. Click "Close & Login"
+7. Login with your username and PIN
+
+### Important Notes
+- **Only ID and Phone must be unique** - usernames can repeat
+- Maximum 3 users allowed
+- PIN is 6 digits and displayed on screen after registration
+- Save your PIN immediately - you won't see it again!
+- Profile pictures are stored in database
+
+---
+
 ## 🗄️ API Endpoints
 
 ### Authentication
