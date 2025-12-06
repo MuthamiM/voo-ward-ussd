@@ -1239,32 +1239,32 @@ app.post("/api/auth/register-request", async (req, res) => {
       return res.status(400).json({ error: "A user with this ID, phone, or username already exists" });
     }
 
-    // Generate random 6-digit password (no SMS - displayed on screen)
-    const password = Math.floor(100000 + Math.random() * 900000).toString();
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Generate random 6-digit PIN (displayed on screen)
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPassword = await bcrypt.hash(pin, 10);
 
-    // Create application with password
-    const application = {
-      fullName: sanitizeString(fullName, 100),
-      idNumber: sanitizeString(idNumber, 20),
+    // Create user DIRECTLY in admin_users (no pending approval needed)
+    const newUser = {
+      username: username.toLowerCase(),
+      password: hashedPassword,
+      full_name: sanitizeString(fullName, 100),
+      id_number: sanitizeString(idNumber, 20),
       phone: phone.replace(/\s+/g, ''),
       role: role.toLowerCase(),
-      username: username.toLowerCase(),
-      passwordHash: hashedPassword,
-      status: 'pending',
-      createdAt: new Date(),
-      updatedAt: new Date()
+      created_at: new Date(),
+      updated_at: new Date(),
+      self_registered: true
     };
 
-    await database.collection("pending_registrations").insertOne(application);
+    await database.collection("admin_users").insertOne(newUser);
 
-    console.log(`📋 New registration: ${fullName} (${role}) - Username: ${username.toLowerCase()}, Password: ${password}`);
+    console.log(`✅ New user created: ${username.toLowerCase()} (${role}) - PIN: ${pin}`);
     res.json({
       success: true,
-      message: "Registration successful!",
+      message: "Registration successful! You can now login.",
       credentials: {
         username: username.toLowerCase(),
-        password: password
+        password: pin
       }
     });
 

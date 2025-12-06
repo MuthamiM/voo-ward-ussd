@@ -584,7 +584,7 @@
                 <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
                 <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
-                    Fill in your details. Your login password will be sent via SMS.
+                    Fill in your details. Your login PIN will be displayed on screen.
                 </p>
 
                 <form id="registrationForm">
@@ -929,28 +929,41 @@
                 const data = await response.json();
 
                 if (response.ok && data.credentials) {
-                    // Display credentials on screen with copy button
+                    // Display credentials on screen with copy button - KEEP VISIBLE until user closes
                     const regMsg = document.getElementById('regMsg');
                     const pin = data.credentials.password;
+                    const username = data.credentials.username;
+
+                    // Hide the form, show only credentials
+                    document.getElementById('registrationForm').style.display = 'none';
+
                     regMsg.innerHTML = `
-                        <div style="text-align: left; padding: 15px; background: rgba(16,185,129,0.2); border-radius: 10px; border: 1px solid #10b981;">
-                            <p style="color: #10b981; margin-bottom: 12px; font-weight: bold; font-size: 16px;"><i class="fas fa-check-circle"></i> Registration Successful!</p>
-                            <p style="color: white; margin: 8px 0;"><strong>Username:</strong> <span style="font-family: monospace;">${data.credentials.username}</span></p>
-                            <p style="color: white; margin: 8px 0; display: flex; align-items: center; gap: 10px;">
-                                <strong>PIN:</strong> 
-                                <span id="generatedPin" style="font-family: monospace; background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 6px; font-size: 18px; letter-spacing: 3px;">${pin}</span>
-                                <button type="button" onclick="copyPin('${pin}')" style="background: #10b981; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
-                                    <i class="fas fa-copy"></i> Copy
-                                </button>
-                            </p>
-                            <p style="color: #fbbf24; margin-top: 12px; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> Save your PIN! You can change it later in settings.</p>
+                        <div style="text-align: center; padding: 20px; background: rgba(16,185,129,0.15); border-radius: 12px; border: 2px solid #10b981;">
+                            <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 18px;"><i class="fas fa-check-circle"></i> Account Created!</p>
+                            
+                            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                                <p style="color: white; margin: 10px 0; font-size: 14px;"><strong>Username:</strong></p>
+                                <p style="color: #10b981; font-family: monospace; font-size: 20px; margin-bottom: 15px;">${username}</p>
+                                
+                                <p style="color: white; margin: 10px 0; font-size: 14px;"><strong>Your PIN:</strong></p>
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                                    <span style="font-family: monospace; background: #10b981; color: white; padding: 10px 20px; border-radius: 8px; font-size: 24px; letter-spacing: 5px; font-weight: bold;">${pin}</span>
+                                    <button type="button" onclick="copyPin('${pin}')" style="background: #059669; border: none; color: white; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                                        <i class="fas fa-copy"></i> Copy PIN
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <p style="color: #fbbf24; margin: 15px 0; font-size: 13px;"><i class="fas fa-exclamation-triangle"></i> <strong>SAVE YOUR PIN NOW!</strong> You won't see it again.</p>
+                            
+                            <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
+                                <i class="fas fa-sign-in-alt"></i> Close & Login
+                            </button>
                         </div>
                     `;
                     regMsg.style.display = 'block';
                     regMsg.style.background = 'transparent';
                     regMsg.style.padding = '0';
-                    document.getElementById('registrationForm').reset();
-                    // Don't auto-close - let user copy credentials
                 } else {
                     showRegMsg(data.error || 'Registration failed', 'error');
                 }
