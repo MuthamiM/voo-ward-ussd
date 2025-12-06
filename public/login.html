@@ -876,23 +876,10 @@
 
     <!-- Simple Registration Handler (no Firebase) -->
     <script>
-        // GLOBAL ERROR HANDLER FOR DEBUGGING
-        window.onerror = function (msg, url, line) {
-            console.error("Global JS Error:", msg);
-            try {
-                const el = document.getElementById('regMsg');
-                if (el) {
-                    el.innerHTML += "<div style='color:red; border:1px solid red; margin:5px; padding:5px;'>Global JS Error: " + msg + " at line " + line + "</div>";
-                    el.style.display = 'block';
-                } else {
-                    alert("Global JS Error: " + msg);
-                }
-            } catch (e) { console.error(e); }
-            return false; // Let it propagate to console
-        };
         // Show registration message
         function showRegMsg(msg, type) {
             const regMsg = document.getElementById('regMsg');
+            if (!regMsg) return;
             regMsg.textContent = msg;
             regMsg.style.display = 'block';
             regMsg.style.color = type === 'error' ? '#ef4444' : '#10b981';
@@ -906,50 +893,26 @@
         function copyPin(pin) {
             navigator.clipboard.writeText(pin).then(() => {
                 const btn = event.target.closest('button');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btn.style.background = '#059669';
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '#10b981';
-                }, 2000);
+                if (btn) {
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    btn.style.background = '#059669';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.style.background = '#10b981';
+                    }, 2000);
+                }
             }).catch(() => {
-                // Fallback for older browsers
-                const input = document.createElement('input');
-                input.value = pin;
-                document.body.appendChild(input);
-                input.select();
-                document.execCommand('copy');
-                document.body.removeChild(input);
                 alert('PIN copied: ' + pin);
             });
         }
 
         // Explicit registration handler to avoid form submit issues
         async function handleRegistrationSubmit() {
-            console.log("Submit clicked. API_BASE:", typeof API_BASE !== 'undefined' ? API_BASE : 'UNDEFINED');
-
-            // VISUAL DEBUGGING
-            try {
-                const rm = document.getElementById('regMsg');
-                if (rm) {
-                    rm.style.display = 'block';
-                    rm.innerHTML = "<div style='color:blue'>Processing... (Check 1)</div>";
-                    if (typeof API_BASE === 'undefined') rm.innerHTML += "<div style='color:red'>API_BASE is UNDEFINED</div>";
-                    else rm.innerHTML += "<div style='color:green'>API_BASE: " + API_BASE + "</div>";
-                }
-            } catch (e) { console.error(e); }
-
             const form = document.getElementById('registrationForm');
-
-            // Log validity
-            console.log("Form Validity:", form.checkValidity());
+            
+            // Manual validation
             if (!form.checkValidity()) {
-                console.warn("Form invalid");
-                try {
-                    const rm = document.getElementById('regMsg');
-                    if (rm) rm.innerHTML += "<div style='color:orange'>Form Invalid: Please check fields.</div>";
-                } catch (e) { }
                 form.reportValidity();
                 return;
             }
@@ -1015,7 +978,8 @@
 
                         const pollInterval = setInterval(async () => {
                             pollCount++;
-                            document.getElementById('waitingStatus').textContent = 'Checking status... (' + pollCount + ')';
+                            const statusEl = document.getElementById('waitingStatus');
+                            if(statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
 
                             try {
                                 const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
@@ -1024,7 +988,9 @@
                                 if (statusData.status === 'approved' && statusData.credentials) {
                                     clearInterval(pollInterval);
                                     // Show credentials!
-                                    document.getElementById('waitingScreen').innerHTML = \`
+                                    const ws = document.getElementById('waitingScreen');
+                                    if(ws) {
+                                        ws.innerHTML = \`
                                     <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
                                     
                                     <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
@@ -1048,27 +1014,32 @@
                                         <i class="fas fa-sign-in-alt"></i> Close & Login
                                     </button>
                                 \`;
-                                document.getElementById('waitingScreen').style.background = 'rgba(16,185,129,0.15)';
-                                document.getElementById('waitingScreen').style.borderColor = '#10b981';
-                            } else if (statusData.status === 'rejected') {
-                                clearInterval(pollInterval);
-                                document.getElementById('waitingScreen').innerHTML = \`
-                                    <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
-                                    <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">\${statusData.reason || 'Please contact admin for more information.'}</p>
-                                    <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
-                                \`;
-                                document.getElementById('waitingScreen').style.background = 'rgba(239,68,68,0.15)';
-                                document.getElementById('waitingScreen').style.borderColor = '#ef4444';
+                                        ws.style.background = 'rgba(16,185,129,0.15)';
+                                        ws.style.borderColor = '#10b981';
+                                    }
+                                } else if (statusData.status === 'rejected') {
+                                    clearInterval(pollInterval);
+                                    const ws = document.getElementById('waitingScreen');
+                                    if(ws) {
+                                        ws.innerHTML = \`
+                                        <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
+                                        <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">\${statusData.reason || 'Please contact admin for more information.'}</p>
+                                        <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
+                                    \`;
+                                        ws.style.background = 'rgba(239,68,68,0.15)';
+                                        ws.style.borderColor = '#ef4444';
+                                    }
+                                }
+                            } catch (err) {
+                                console.log('Poll error:', err);
                             }
-                        } catch (err) {
-                            console.log('Poll error:', err);
-                        }
-                        
-                        if (pollCount >= maxPolls) {
-                            clearInterval(pollInterval);
-                            document.getElementById('waitingStatus').textContent = 'Timeout. Please close and try again later.';
-                        }
-                    }, 5000); // Poll every 5 seconds
+                            
+                            if (pollCount >= maxPolls) {
+                                clearInterval(pollInterval);
+                                const statusEl = document.getElementById('waitingStatus');
+                                if(statusEl) statusEl.textContent = 'Timeout. Please close and try again later.';
+                            }
+                        }, 5000); // Poll every 5 seconds
                     } // End if (data.applicationId)
                     
                 } else if (!response.ok) {
@@ -1083,5 +1054,4 @@
         }
     </script>
 </body>
-
 </html>
