@@ -80,9 +80,9 @@ async function handleLogin(req, reply) {
     return reply.status(400).send({ error: 'Username can only contain letters and numbers' });
   }
 
-  // Validate PIN
-  if (!pin || pin.length !== 6) {
-    return reply.status(400).send({ error: 'PIN must be 6 digits' });
+  // Validate PIN (digits only, any length)
+  if (!pin || !/^\d+$/.test(pin)) {
+    return reply.status(400).send({ error: 'Password must contain only digits' });
   }
 
   logger.info(`Login attempt for username: ${username}`);
@@ -378,8 +378,8 @@ async function handleCreateUser(req, reply) {
     return reply.status(400).send({ error: 'Missing required fields' });
   }
 
-  if (pin.length !== 6 || !/^\d+$/.test(pin)) {
-    return reply.status(400).send({ error: 'PIN must be exactly 6 digits' });
+  if (!/^\d+$/.test(pin)) {
+    return reply.status(400).send({ error: 'Password must contain only digits' });
   }
 
   // Only allow super_admin (MCA) and admin (PA) roles
