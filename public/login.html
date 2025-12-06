@@ -876,6 +876,20 @@
 
     <!-- Simple Registration Handler (no Firebase) -->
     <script>
+        // GLOBAL ERROR HANDLER FOR DEBUGGING
+        window.onerror = function (msg, url, line) {
+            console.error("Global JS Error:", msg);
+            try {
+                const el = document.getElementById('regMsg');
+                if (el) {
+                    el.innerHTML += "<div style='color:red; border:1px solid red; margin:5px; padding:5px;'>Global JS Error: " + msg + " at line " + line + "</div>";
+                    el.style.display = 'block';
+                } else {
+                    alert("Global JS Error: " + msg);
+                }
+            } catch (e) { console.error(e); }
+            return false; // Let it propagate to console
+        };
         // Show registration message
         function showRegMsg(msg, type) {
             const regMsg = document.getElementById('regMsg');
@@ -913,10 +927,29 @@
 
         // Explicit registration handler to avoid form submit issues
         async function handleRegistrationSubmit() {
+            console.log("Submit clicked. API_BASE:", typeof API_BASE !== 'undefined' ? API_BASE : 'UNDEFINED');
+
+            // VISUAL DEBUGGING
+            try {
+                const rm = document.getElementById('regMsg');
+                if (rm) {
+                    rm.style.display = 'block';
+                    rm.innerHTML = "<div style='color:blue'>Processing... (Check 1)</div>";
+                    if (typeof API_BASE === 'undefined') rm.innerHTML += "<div style='color:red'>API_BASE is UNDEFINED</div>";
+                    else rm.innerHTML += "<div style='color:green'>API_BASE: " + API_BASE + "</div>";
+                }
+            } catch (e) { console.error(e); }
+
             const form = document.getElementById('registrationForm');
 
-            // Manual validation
+            // Log validity
+            console.log("Form Validity:", form.checkValidity());
             if (!form.checkValidity()) {
+                console.warn("Form invalid");
+                try {
+                    const rm = document.getElementById('regMsg');
+                    if (rm) rm.innerHTML += "<div style='color:orange'>Form Invalid: Please check fields.</div>";
+                } catch (e) { }
                 form.reportValidity();
                 return;
             }
