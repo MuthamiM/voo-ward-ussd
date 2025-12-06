@@ -871,6 +871,29 @@
             regMsg.style.marginTop = '15px';
         }
 
+        // Copy PIN to clipboard
+        function copyPin(pin) {
+            navigator.clipboard.writeText(pin).then(() => {
+                const btn = event.target.closest('button');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.style.background = '#059669';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#10b981';
+                }, 2000);
+            }).catch(() => {
+                // Fallback for older browsers
+                const input = document.createElement('input');
+                input.value = pin;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('PIN copied: ' + pin);
+            });
+        }
+
         // Simple registration form handler
         document.getElementById('registrationForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -906,14 +929,21 @@
                 const data = await response.json();
 
                 if (response.ok && data.credentials) {
-                    // Display credentials on screen
+                    // Display credentials on screen with copy button
                     const regMsg = document.getElementById('regMsg');
+                    const pin = data.credentials.password;
                     regMsg.innerHTML = `
                         <div style="text-align: left; padding: 15px; background: rgba(16,185,129,0.2); border-radius: 10px; border: 1px solid #10b981;">
-                            <p style="color: #10b981; margin-bottom: 10px; font-weight: bold;"><i class="fas fa-check-circle"></i> Registration Successful!</p>
-                            <p style="color: white; margin: 5px 0;"><strong>Username:</strong> ${data.credentials.username}</p>
-                            <p style="color: white; margin: 5px 0;"><strong>Password:</strong> <span style="font-family: monospace; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;">${data.credentials.password}</span></p>
-                            <p style="color: #fbbf24; margin-top: 10px; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> Save these credentials! You can change password later.</p>
+                            <p style="color: #10b981; margin-bottom: 12px; font-weight: bold; font-size: 16px;"><i class="fas fa-check-circle"></i> Registration Successful!</p>
+                            <p style="color: white; margin: 8px 0;"><strong>Username:</strong> <span style="font-family: monospace;">${data.credentials.username}</span></p>
+                            <p style="color: white; margin: 8px 0; display: flex; align-items: center; gap: 10px;">
+                                <strong>PIN:</strong> 
+                                <span id="generatedPin" style="font-family: monospace; background: rgba(0,0,0,0.4); padding: 5px 12px; border-radius: 6px; font-size: 18px; letter-spacing: 3px;">${pin}</span>
+                                <button type="button" onclick="copyPin('${pin}')" style="background: #10b981; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                                    <i class="fas fa-copy"></i> Copy
+                                </button>
+                            </p>
+                            <p style="color: #fbbf24; margin-top: 12px; font-size: 12px;"><i class="fas fa-exclamation-triangle"></i> Save your PIN! You can change it later in settings.</p>
                         </div>
                     `;
                     regMsg.style.display = 'block';
