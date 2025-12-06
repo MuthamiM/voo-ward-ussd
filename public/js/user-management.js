@@ -3,14 +3,14 @@
  * Comprehensive user administration interface
  */
 
-window.UserManagement = (function() {
+window.UserManagement = (function () {
     'use strict';
-    
+
     // State
     let users = [];
     let currentUser = null;
     let filteredUsers = [];
-    
+
     /**
      * Initialize user management
      */
@@ -18,36 +18,61 @@ window.UserManagement = (function() {
         loadUsers();
         attachEventListeners();
     }
-    
+
     /**
      * Load all users from API
      */
     async function loadUsers() {
+        const container = document.getElementById('userManagementGrid');
+
+        // Show loading spinner
+        if (container) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 60px;">
+                    <div style="width: 50px; height: 50px; border: 4px solid rgba(99, 102, 241, 0.2); border-top-color: #6366f1; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 16px;">Loading users...</p>
+                </div>
+                <style>
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
+            `;
+        }
+
         try {
             const response = await fetch('/api/admin/users', {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (!response.ok) throw new Error('Failed to load users');
-            
+
             users = await response.json();
             filteredUsers = [...users];
             renderUsers();
         } catch (error) {
             console.error('Error loading users:', error);
-            showError('Failed to load users. Please try again.');
+            if (container) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 48px;">
+                        <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #ef4444; margin-bottom: 16px;"></i>
+                        <p style="color: #ef4444; font-size: 16px;">Failed to load users</p>
+                        <button onclick="UserManagement.init()" style="margin-top: 16px; padding: 8px 16px; background: #6366f1; color: white; border: none; border-radius: 8px; cursor: pointer;">Retry</button>
+                    </div>
+                `;
+            }
         }
     }
-    
+
     /**
      * Render users grid
      */
     function renderUsers() {
         const container = document.getElementById('userManagementGrid');
         if (!container) return;
-        
+
         if (filteredUsers.length === 0) {
             container.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 48px;">
@@ -57,7 +82,7 @@ window.UserManagement = (function() {
             `;
             return;
         }
-        
+
         container.innerHTML = filteredUsers.map(user => `
             <div class="user-card" data-user-id="${user._id}">
                 <div class="user-card-header">
@@ -116,18 +141,18 @@ window.UserManagement = (function() {
             </div>
         `).join('');
     }
-    
+
     /**
      * Show add user modal
      */
     function showAddUserModal() {
         const modal = document.getElementById('addUserModal');
         if (!modal) createAddUserModal();
-        
+
         document.getElementById('addUserForm').reset();
         document.getElementById('addUserModal').style.display = 'flex';
     }
-    
+
     /**
      * Create add user modal
      */
@@ -194,16 +219,16 @@ window.UserManagement = (function() {
         `;
         document.body.appendChild(modal);
     }
-    
+
     /**
      * Save new user
      */
     async function saveNewUser(event) {
         event.preventDefault();
-        
+
         const formData = new FormData(event.target);
         const userData = Object.fromEntries(formData.entries());
-        
+
         try {
             const response = await fetch('/api/admin/users', {
                 method: 'POST',
@@ -213,12 +238,12 @@ window.UserManagement = (function() {
                 },
                 body: JSON.stringify(userData)
             });
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.message || 'Failed to create user');
             }
-            
+
             const newUser = await response.json();
             users.push(newUser);
             filteredUsers = [...users];
@@ -230,7 +255,7 @@ window.UserManagement = (function() {
             showError(error.message);
         }
     }
-    
+
     /**
      * Edit user
      */
@@ -239,13 +264,13 @@ window.UserManagement = (function() {
         console.log('Edit user:', userId);
         showInfo('Edit user feature coming soon');
     }
-    
+
     /**
      * Reset password
      */
     async function resetPassword(userId) {
         if (!confirm('Send password reset email to this user?')) return;
-        
+
         try {
             const response = await fetch(`/api/admin/users/${userId}/reset-password`, {
                 method: 'POST',
@@ -253,22 +278,22 @@ window.UserManagement = (function() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (!response.ok) throw new Error('Failed to reset password');
-            
+
             showSuccess('Password reset email sent!');
         } catch (error) {
             console.error('Error resetting password:', error);
             showError('Failed to reset password. Please try again.');
         }
     }
-    
+
     /**
      * Delete user
      */
     async function deleteUser(userId) {
         if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
-        
+
         try {
             const response = await fetch(`/api/admin/users/${userId}`, {
                 method: 'DELETE',
@@ -276,9 +301,9 @@ window.UserManagement = (function() {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
             });
-            
+
             if (!response.ok) throw new Error('Failed to delete user');
-            
+
             users = users.filter(u => u._id !== userId);
             filteredUsers = filteredUsers.filter(u => u._id !== userId);
             renderUsers();
@@ -288,25 +313,25 @@ window.UserManagement = (function() {
             showError('Failed to delete user. Please try again.');
         }
     }
-    
+
     /**
      * Filter users
      */
     function filterUsers(searchTerm, role) {
         filteredUsers = users.filter(user => {
-            const matchesSearch = !searchTerm || 
+            const matchesSearch = !searchTerm ||
                 user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-                
+
             const matchesRole = !role || user.role === role;
-            
+
             return matchesSearch && matchesRole;
         });
-        
+
         renderUsers();
     }
-    
+
     /**
      * Close modal
      */
@@ -314,7 +339,7 @@ window.UserManagement = (function() {
         const modal = document.getElementById('addUserModal');
         if (modal) modal.style.display = 'none';
     }
-    
+
     /**
      * Attach event listeners
      */
@@ -327,7 +352,7 @@ window.UserManagement = (function() {
                 filterUsers(e.target.value, roleFilter?.value);
             });
         }
-        
+
         // Role filter
         const roleFilter = document.getElementById('userRoleFilter');
         if (roleFilter) {
@@ -337,7 +362,7 @@ window.UserManagement = (function() {
             });
         }
     }
-    
+
     // Helper functions
     function escapeHtml(text) {
         const map = {
@@ -349,13 +374,13 @@ window.UserManagement = (function() {
         };
         return text.replace(/[&<>"']/g, m => map[m]);
     }
-    
+
     function formatDateTime(date) {
         if (!date) return 'Never';
         const d = new Date(date);
         return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
     }
-    
+
     function showSuccess(message) {
         // Use existing notification system
         if (window.DashboardEnhancements?.Notifications) {
@@ -368,7 +393,7 @@ window.UserManagement = (function() {
             alert(message);
         }
     }
-    
+
     function showError(message) {
         if (window.DashboardEnhancements?.Notifications) {
             window.DashboardEnhancements.Notifications.add({
@@ -380,7 +405,7 @@ window.UserManagement = (function() {
             alert(message);
         }
     }
-    
+
     function showInfo(message) {
         if (window.DashboardEnhancements?.Notifications) {
             window.DashboardEnhancements.Notifications.add({
@@ -392,7 +417,7 @@ window.UserManagement = (function() {
             alert(message);
         }
     }
-    
+
     // Public API
     return {
         init,

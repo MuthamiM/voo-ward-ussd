@@ -913,6 +913,37 @@ app.post("/api/auth/reset-password", loginLimiter, async (req, res) => {
   }
 });
 
+// Update Profile (including profile picture)
+app.post("/api/auth/update-profile", requireAuth, async (req, res) => {
+  try {
+    const { profile_picture, full_name, phone } = req.body;
+    const userId = req.user._id || req.user.id;
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    const updateData = { updated_at: new Date() };
+
+    if (profile_picture) updateData.profile_picture = profile_picture;
+    if (full_name) updateData.full_name = full_name;
+    if (phone) updateData.phone = phone;
+
+    await database.collection("admin_users").updateOne(
+      { _id: new ObjectId(userId) },
+      { $set: updateData }
+    );
+
+    console.log(`✅ Profile updated for user: ${req.user.username}`);
+    res.json({ success: true, message: "Profile updated successfully" });
+
+  } catch (err) {
+    console.error("Update profile error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Social Login
 app.post("/api/auth/social-login", loginLimiter, async (req, res) => {
   try {

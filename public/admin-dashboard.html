@@ -2813,7 +2813,7 @@
 
             // Read file and convert to base64
             const reader = new FileReader();
-            reader.onload = function (e) {
+            reader.onload = async function (e) {
                 const imageUrl = e.target.result;
 
                 // Update top-right avatar
@@ -2830,7 +2830,28 @@
                 const userKey = `profilePic_${currentUser.username || currentUser.id}`;
                 localStorage.setItem(userKey, imageUrl);
 
-                showToast('Profile picture updated successfully!', 'success');
+                // Save to database
+                try {
+                    const authToken = localStorage.getItem('authToken');
+                    const response = await fetch('/admin/api/auth/update-profile', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${authToken}`
+                        },
+                        body: JSON.stringify({ profile_picture: imageUrl })
+                    });
+
+                    if (response.ok) {
+                        showToast('Profile picture saved!', 'success');
+                    } else {
+                        console.log('Profile picture saved locally (DB save optional)');
+                        showToast('Profile picture updated!', 'success');
+                    }
+                } catch (err) {
+                    console.log('Profile picture saved locally:', err.message);
+                    showToast('Profile picture updated!', 'success');
+                }
 
                 // Close dropdown
                 const dropdown = document.getElementById('profileDropdown');
