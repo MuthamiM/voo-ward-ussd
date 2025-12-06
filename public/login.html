@@ -563,35 +563,45 @@
                 <button type="submit" class="sign-in-btn" id="loginBtn">
                     <span>SIGN IN</span>
                 </button>
+
+                <div class="or-text">Sign in with</div>
+
+                <div class="social-buttons">
+                    <button type="button" class="social-btn facebook-btn">
+                        <i class="fab fa-facebook-f"></i> Facebook
+                    </button>
+                    <button type="button" class="social-btn google-btn" id="registerBtn" onclick="showRegistrationModal()">
+                        Other
+                    </button>
+                </div>
             </form>
+        </div>
 
-            <div class="or-text">Other</div>
-
-            <div class="social-buttons">
-                <button class="social-btn facebook-btn" type="button" onclick="handleSocialLogin('facebook')">
-                    <i class="fab fa-facebook-f"></i>
-                    Facebook
-                </button>
-                <button class="social-btn" id="registerBtn" type="button" onclick="showRegistrationModal()"
-                    style="background: linear-gradient(135deg, #10b981, #059669);">
-                    <i class="fas fa-user-plus"></i>
-                    Register as User
-                </button>
+        <!-- Registration Modal -->
+        <div id="registrationModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
+                <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin will approve your application.</p>
+                
+                <form id="registrationForm">
+                    <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
+                    <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required>
+                    <input type="tel" id="regPhone" class="input-field" placeholder="Phone (e.g. 07... or 011...)" required>
+                    <input type="text" id="regUsername" class="input-field" placeholder="Desired Username" required>
+                    <input type="password" id="regPassword" class="input-field" placeholder="Desired Password" required>
+                    <select id="regRole" class="input-field" style="background: rgba(255, 255, 255, 0.1); color: white;" required>
+                        <option value="" disabled selected style="color: black;">Select Role</option>
+                        <option value="clerk" style="color: black;">Clerk</option>
+                        <option value="pa" style="color: black;">PA</option>
+                    </select>
+                    <button type="submit" class="sign-in-btn" id="regSubmitBtn">
+                        <span>SUBMIT APPLICATION</span>
+                    </button>
+                </form>
+                <div id="regMsg" class="message"></div>
             </div>
         </div>
-    </div>
-
-    <!-- Registration Modal -->
-    <div id="registrationModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
-            <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
-            <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">Fill in your details. Admin
-                will approve your application.</p>
-            </form>
-            <div id="regMsg" class="message"></div>
-        </div>
-    </div>
 
     <!-- Forgot Password Modal -->
     <div id="forgotModal" class="modal">
@@ -770,11 +780,11 @@
                 const data = await response.json();
                 if (!data.canRegister) {
                     regBtn.disabled = true;
-                    regBtn.innerHTML = '<i class="fas fa-lock"></i> Registration Closed (3/3 Users)';
+                    regBtn.innerHTML = '<i class="fas fa-lock"></i> Registration Closed';
                     regBtn.style.opacity = '0.5';
                     regBtn.style.cursor = 'not-allowed';
                 } else {
-                    regBtn.innerHTML = '<i class="fas fa-user-plus"></i> Register (' + data.currentUsers + '/3 Users)';
+                    regBtn.innerHTML = 'Other';
                 }
             } catch (err) { console.error('Error checking registration status:', err); }
         }
@@ -787,6 +797,8 @@
             const fullName = document.getElementById('regFullName').value.trim();
             const idNumber = document.getElementById('regIdNumber').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value.trim();
             const role = document.getElementById('regRole').value;
 
             regSubmitBtn.disabled = true;
@@ -797,14 +809,14 @@
                 const response = await fetch(API_BASE + '/api/auth/register-request', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, idNumber, phone, role })
+                    body: JSON.stringify({ fullName, idNumber, phone, role, username, password })
                 });
                 const data = await response.json();
 
                 if (response.ok) {
                     regMsg.style.display = 'block';
                     regMsg.style.color = '#10b981';
-                    regMsg.textContent = 'Application submitted! Admin will review and send credentials via SMS.';
+                    regMsg.textContent = 'Application submitted! Please wait for admin approval.';
                     regForm.reset();
                     setTimeout(() => hideRegistrationModal(), 3000);
                 } else {

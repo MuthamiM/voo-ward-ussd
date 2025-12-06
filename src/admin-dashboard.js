@@ -1178,11 +1178,11 @@ app.get("/api/auth/can-register", async (req, res) => {
 // Submit registration request
 app.post("/api/auth/register-request", async (req, res) => {
   try {
-    const { fullName, idNumber, phone, role } = req.body;
+    const { fullName, idNumber, phone, role, username, password } = req.body;
 
     // Validate required fields
-    if (!fullName || !idNumber || !phone || !role) {
-      return res.status(400).json({ error: "All fields are required: fullName, idNumber, phone, role" });
+    if (!fullName || !idNumber || !phone || !role || !username || !password) {
+      return res.status(400).json({ error: "All fields are required: fullName, idNumber, phone, role, username, password" });
     }
 
     // Validate role
@@ -1194,6 +1194,14 @@ app.post("/api/auth/register-request", async (req, res) => {
     // Validate phone
     if (!validatePhone(phone)) {
       return res.status(400).json({ error: "Invalid phone number format" });
+    }
+
+    // Validate username and password
+    if (!validateUsername(username)) {
+      return res.status(400).json({ error: "Invalid username. Use 3-30 alphanumeric characters." });
+    }
+    if (!validatePassword(password)) {
+      return res.status(400).json({ error: "Password must be at least 6 characters." });
     }
 
     const database = await connectDB();
@@ -1211,26 +1219,31 @@ app.post("/api/auth/register-request", async (req, res) => {
     const existingApp = await database.collection("pending_registrations").findOne({
       $or: [
         { idNumber: idNumber },
-        { phone: phone.replace(/\s+/g, '') }
+        { phone: phone.replace(/\s+/g, '') },
+        { username: username.toLowerCase() }
       ],
       status: 'pending'
     });
 
     if (existingApp) {
-      return res.status(400).json({ error: "An application with this ID or phone already exists" });
+      return res.status(400).json({ error: "An application with this ID, phone, or username already exists" });
     }
 
     // Check if user already exists
     const existingUser = await database.collection("admin_users").findOne({
       $or: [
         { id_number: idNumber },
-        { phone: phone.replace(/\s+/g, '') }
+        { phone: phone.replace(/\s+/g, '') },
+        { username: username.toLowerCase() }
       ]
     });
 
     if (existingUser) {
-      return res.status(400).json({ error: "A user with this ID or phone already exists" });
+      return res.status(400).json({ error: "A user with this ID, phone, or username already exists" });
     }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create application
     const application = {
@@ -1238,6 +1251,8 @@ app.post("/api/auth/register-request", async (req, res) => {
       idNumber: sanitizeString(idNumber, 20),
       phone: phone.replace(/\s+/g, ''),
       role: role.toLowerCase(),
+      username: username.toLowerCase(),
+      passwordHash: hashedPassword,
       status: 'pending',
       createdAt: new Date(),
       updatedAt: new Date()
@@ -1313,16 +1328,25 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
       return res.status(404).json({ error: "Application not found" });
     }
 
-    // Generate password (8 chars: letters + numbers)
-    const password = crypto.randomBytes(4).toString('hex').toUpperCase();
-    const hashedPassword = await bcrypt.hash(password, 10);
+    let username, hashedPassword, password;
 
-    // Create username from name
-    const username = application.fullName
-      .toLowerCase()
-      .replace(/\s+/g, '')
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 20);
+    if (application.username && application.passwordHash) {
+      // Use provided credentials
+      username = application.username;
+      hashedPassword = application.passwordHash;
+      password = null; // Don't send password in SMS if user set it
+    } else {
+      // Generate password (8 chars: letters + numbers)
+      password = crypto.randomBytes(4).toString('hex').toUpperCase();
+      hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create username from name
+      username = application.fullName
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[^a-z0-9]/g, '')
+        .slice(0, 20);
+    }
 
     // Create user
     const newUser = {
@@ -1352,8 +1376,14 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
       }
     );
 
-    // Send password via Infobip SMS
-    const smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
+    // Send SMS via Infobip
+    let smsMessage;
+    if (password) {
+      smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
+    } else {
+      smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
+    }
+    
     const smsResult = await sendNotificationToPhone(database, application.phone, smsMessage);
 
     console.log(`✅ Approved registration: ${application.fullName} (${application.role})`);
@@ -1361,7 +1391,7 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
 
     res.json({
       success: true,
-      message: `User ${username} created. Password sent via SMS.`,
+      message: `User ${username} created. ${password ? 'Password sent via SMS.' : 'Notification sent.'}`,
       smsSent: smsResult.ok
     });
 
