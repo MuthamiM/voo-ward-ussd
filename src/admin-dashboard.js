@@ -1280,18 +1280,66 @@ app.post("/api/auth/register-request", async (req, res) => {
       updatedAt: new Date()
     };
 
-    await database.collection("pending_registrations").insertOne(pendingApp);
+    const insertResult = await database.collection("pending_registrations").insertOne(pendingApp);
 
-    console.log(`📋 New pending registration: ${fullName} (${role}) - awaiting admin approval`);
+    console.log(`📋 New pending registration: ${fullName} (${role}) - ID: ${insertResult.insertedId}`);
     res.json({
       success: true,
-      message: "Application submitted! An admin will review and approve your registration. You will receive your login PIN once approved.",
-      pending: true
+      message: "Application submitted! Please wait for admin approval.",
+      applicationId: insertResult.insertedId.toString()
     });
 
   } catch (error) {
     console.error("Registration request error:", error.message, error.stack);
     res.status(500).json({ error: "Server error: " + error.message });
+  }
+});
+
+// Check registration status (for polling)
+app.get("/api/auth/check-registration/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // First check if still pending
+    const pendingApp = await database.collection("pending_registrations").findOne({
+      _id: new ObjectId(id)
+    });
+
+    if (pendingApp) {
+      return res.json({
+        status: pendingApp.status || 'pending',
+        role: pendingApp.role,
+        reason: pendingApp.rejectReason
+      });
+    }
+
+    // Check if approved (moved to approved_registrations with credentials)
+    const approved = await database.collection("approved_registrations").findOne({
+      applicationId: id
+    });
+
+    if (approved) {
+      return res.json({
+        status: 'approved',
+        role: approved.role,
+        credentials: {
+          username: approved.username,
+          pin: approved.pin
+        }
+      });
+    }
+
+    // Not found
+    res.status(404).json({ error: "Application not found" });
+
+  } catch (error) {
+    console.error("Check registration error:", error);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
@@ -1354,25 +1402,19 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
       return res.status(404).json({ error: "Application not found" });
     }
 
-    let username, hashedPassword, password;
+    // Admin can override the role
+    const assignedRole = req.body.role || application.role;
 
-    if (application.username && application.passwordHash) {
-      // Use provided credentials
-      username = application.username;
-      hashedPassword = application.passwordHash;
-      password = null; // Don't send password in SMS if user set it
-    } else {
-      // Generate password (8 chars: letters + numbers)
-      password = crypto.randomBytes(4).toString('hex').toUpperCase();
-      hashedPassword = await bcrypt.hash(password, 10);
+    // Generate 6-digit PIN
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPassword = await bcrypt.hash(pin, 10);
 
-      // Create username from name
-      username = application.fullName
-        .toLowerCase()
-        .replace(/\s+/g, '')
-        .replace(/[^a-z0-9]/g, '')
-        .slice(0, 20);
-    }
+    // Use provided username or generate from name
+    const username = application.username || application.fullName
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 20);
 
     // Create user
     const newUser = {
@@ -1381,7 +1423,7 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
       full_name: application.fullName,
       id_number: application.idNumber,
       phone: application.phone,
-      role: application.role,
+      role: assignedRole,
       created_at: new Date(),
       updated_at: new Date(),
       approved_by: req.user.username,
@@ -1390,35 +1432,35 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
 
     await database.collection("admin_users").insertOne(newUser);
 
-    // Update application status
-    await database.collection("pending_registrations").updateOne(
-      { _id: new ObjectId(req.params.id) },
-      {
-        $set: {
-          status: 'approved',
-          approvedBy: req.user.username,
-          approvedAt: new Date()
-        }
-      }
-    );
+    // Store credentials in approved_registrations for polling
+    await database.collection("approved_registrations").insertOne({
+      applicationId: req.params.id,
+      username: username,
+      pin: pin,
+      role: assignedRole,
+      fullName: application.fullName,
+      approvedAt: new Date(),
+      approvedBy: req.user.username
+    });
+
+    // Delete from pending (so polling finds it in approved)
+    await database.collection("pending_registrations").deleteOne({
+      _id: new ObjectId(req.params.id)
+    });
 
     // Send SMS via Infobip
-    let smsMessage;
-    if (password) {
-      smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nPassword: ${password}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
-    } else {
-      smsMessage = `VOO Ward Access Approved!\nUsername: ${username}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
-    }
+    const smsMessage = `VOO Ward Access Approved!\nRole: ${assignedRole.toUpperCase()}\nUsername: ${username}\nPIN: ${pin}\nLogin at: https://voo-ward-ussd-1.onrender.com/login.html`;
 
     const smsResult = await sendNotificationToPhone(database, application.phone, smsMessage);
 
-    console.log(`✅ Approved registration: ${application.fullName} (${application.role})`);
+    console.log(`✅ Approved registration: ${application.fullName} as ${assignedRole} - PIN: ${pin}`);
     console.log(`📱 SMS sent: ${smsResult.ok ? 'Success' : 'Failed'}`);
 
     res.json({
       success: true,
-      message: `User ${username} created. ${password ? 'Password sent via SMS.' : 'Notification sent.'}`,
-      smsSent: smsResult.ok
+      message: `User ${username} created as ${assignedRole}. PIN sent via SMS.`,
+      smsSent: smsResult.ok,
+      credentials: { username, pin, role: assignedRole }
     });
 
   } catch (error) {
