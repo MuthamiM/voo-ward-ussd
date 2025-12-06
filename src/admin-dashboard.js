@@ -1737,29 +1737,7 @@ app.get('/api/auth/can-register', async (req, res) => {
   }
 });
 
-// 2. Submit Registration Request
-app.post('/api/auth/register-request', async (req, res) => {
-  try {
-    const { fullName, idNumber, phone, role } = req.body;
-    if (!fullName || !idNumber || !phone || !role) return res.status(400).json({ error: 'All fields required' });
-
-    const database = await connectDB();
-
-    // Check existing request
-    const existing = await database.collection('pending_registrations').findOne({ $or: [{ idNumber }, { phone }] });
-    if (existing) return res.status(409).json({ error: 'Application already pending' });
-
-    await database.collection('pending_registrations').insertOne({
-      fullName, idNumber, phone, role,
-      submittedAt: new Date(),
-      status: 'pending'
-    });
-
-    res.json({ success: true, message: 'Application submitted' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Registration endpoint defined earlier (line ~1179) - removed duplicate here
 
 // 3. List Pending Registrations (Admin)
 app.get('/api/admin/pending-registrations', requireAuth, async (req, res) => {
