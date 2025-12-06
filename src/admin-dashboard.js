@@ -1481,23 +1481,17 @@ app.post("/api/admin/reject-registration/:id", requireAuth, async (req, res) => 
       return res.status(503).json({ error: "Database not connected" });
     }
 
-    const result = await database.collection("pending_registrations").updateOne(
-      { _id: new ObjectId(req.params.id), status: 'pending' },
-      {
-        $set: {
-          status: 'rejected',
-          rejectedBy: req.user.username,
-          rejectedAt: new Date()
-        }
-      }
-    );
+    // DELETE the application (not just update status)
+    const result = await database.collection("pending_registrations").deleteOne({
+      _id: new ObjectId(req.params.id)
+    });
 
-    if (result.matchedCount === 0) {
+    if (result.deletedCount === 0) {
       return res.status(404).json({ error: "Application not found" });
     }
 
-    console.log(`❌ Rejected registration: ${req.params.id}`);
-    res.json({ success: true, message: "Application rejected" });
+    console.log(`❌ Rejected and deleted registration: ${req.params.id}`);
+    res.json({ success: true, message: "Application rejected and deleted" });
 
   } catch (error) {
     console.error("Rejection error:", error);
