@@ -857,46 +857,7 @@
         // Check status on load
         checkRegistrationStatus();
 
-        regForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fullName = document.getElementById('regFullName').value.trim();
-            const idNumber = document.getElementById('regIdNumber').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
-            const role = document.getElementById('regRole').value;
-
-            regSubmitBtn.disabled = true;
-            regSubmitBtn.innerHTML = '<span class="spinner"></span><span>SUBMITTING...</span>';
-            regMsg.style.display = 'none';
-
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, idNumber, phone, role, username })
-                });
-                const data = await response.json();
-
-                if (response.ok) {
-                    regMsg.style.display = 'block';
-                    regMsg.style.color = '#10b981';
-                    regMsg.textContent = 'Application submitted! Please wait for admin approval.';
-                    regForm.reset();
-                    setTimeout(() => hideRegistrationModal(), 3000);
-                } else {
-                    regMsg.style.display = 'block';
-                    regMsg.style.color = '#ef4444';
-                    regMsg.textContent = data.error || 'Registration failed';
-                }
-            } catch (err) {
-                regMsg.style.display = 'block';
-                regMsg.style.color = '#ef4444';
-                regMsg.textContent = 'Network error. Please try again.';
-            } finally {
-                regSubmitBtn.disabled = false;
-                regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
-            }
-        });
+        // Registration handler moved to second script block for better organization
 
         // Social Login Logic
         function handleSocialLogin(provider) { window.location.href = API_BASE + '/api/auth/' + provider; }
