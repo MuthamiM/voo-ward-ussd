@@ -820,7 +820,7 @@ app.post("/api/auth/forgot-password", loginLimiter, async (req, res) => {
 
     // Generate reset PIN (6 digits)
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+    const expiresAt = new Date(Date.now() + 24 * 3600000); // 24 hours
 
     // Store token in DB
     await database.collection("password_resets").insertOne({
