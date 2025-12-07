@@ -1,3 +1,6 @@
+// IMPORTANT: Sentry must be initialized FIRST - before any other imports
+const Sentry = require('./instrument');
+
 const express = require("express");
 const https = require("https");
 const path = require("path");
@@ -10,24 +13,6 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 const session = require('express-session');
 const chatbotSvc = require('./chatbot');
-
-// Sentry Error Tracking - https://sentry.io
-const Sentry = require('@sentry/node');
-if (process.env.SENTRY_DSN) {
-  Sentry.init({
-    dsn: process.env.SENTRY_DSN,
-    environment: process.env.NODE_ENV || 'production',
-    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
-    beforeSend(event) {
-      // Don't send events in development
-      if (process.env.NODE_ENV === 'development') return null;
-      return event;
-    }
-  });
-  console.log('✅ Sentry error tracking enabled');
-} else {
-  console.warn('⚠️ SENTRY_DSN not set - error tracking disabled');
-}
 
 // OAuth Configuration
 let oauth;
