@@ -1206,6 +1206,215 @@ app.get("/api/auth/can-register", async (req, res) => {
   }
 });
 
+// ============================================
+// OTP-BASED SELF REGISTRATION FLOW
+// ============================================
+
+// Step 1: Send OTP to phone for registration
+app.post("/api/auth/register-otp", async (req, res) => {
+  try {
+    const { fullName, idNumber, phone, role, username } = req.body;
+
+    // Validate required fields
+    if (!fullName || !idNumber || !phone || !role || !username) {
+      return res.status(400).json({ error: "All fields are required" });
+    }
+
+    // Validate role
+    const validRoles = ['clerk', 'pa', 'viewer'];
+    if (!validRoles.includes(role.toLowerCase())) {
+      return res.status(400).json({ error: "Invalid role" });
+    }
+
+    // Validate phone
+    if (!validatePhone(phone)) {
+      return res.status(400).json({ error: "Invalid phone number format" });
+    }
+
+    // Validate username
+    if (!validateUsername(username)) {
+      return res.status(400).json({ error: "Invalid username. Use 3-30 alphanumeric characters." });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check user limit
+    const userCount = await database.collection("admin_users").countDocuments({});
+    if (userCount >= 3) {
+      return res.status(400).json({ error: "Maximum user limit (3) reached. Registration closed." });
+    }
+
+    // Check for duplicate ID or phone
+    const existingUser = await database.collection("admin_users").findOne({
+      $or: [
+        { id_number: idNumber },
+        { phone: phone.replace(/\s+/g, '') }
+      ]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({ error: "A user with this ID or phone already exists" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store pending registration with OTP
+    await database.collection("registration_otps").deleteMany({ phone: phone.replace(/\s+/g, '') });
+    await database.collection("registration_otps").insertOne({
+      fullName: sanitizeString(fullName, 100),
+      idNumber: sanitizeString(idNumber, 20),
+      phone: phone.replace(/\s+/g, ''),
+      username: username.toLowerCase(),
+      role: role.toLowerCase(),
+      otp,
+      otpExpires,
+      createdAt: new Date()
+    });
+
+    // Send OTP via SMS
+    const smsMessage = `Your VOO Ward verification code is: ${otp}. Valid for 10 minutes.`;
+    const smsResult = await sendNotificationToPhone(database, phone, smsMessage);
+
+    console.log(`📱 Registration OTP sent to ${phone}: ${otp} (SMS: ${smsResult.ok ? 'OK' : 'FAILED'})`);
+
+    res.json({
+      success: true,
+      message: "Verification code sent to your phone",
+      phone: phone.replace(/\d(?=\d{4})/g, '*') // Mask phone number
+    });
+
+  } catch (error) {
+    console.error("Registration OTP error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Step 2: Verify OTP and create account
+app.post("/api/auth/register-verify", async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Phone and OTP are required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check user limit again (in case it changed)
+    const userCount = await database.collection("admin_users").countDocuments({});
+    if (userCount >= 3) {
+      return res.status(400).json({ error: "Maximum user limit reached" });
+    }
+
+    // Find pending registration
+    const pendingReg = await database.collection("registration_otps").findOne({
+      phone: phone.replace(/\s+/g, ''),
+      otp: otp,
+      otpExpires: { $gt: new Date() }
+    });
+
+    if (!pendingReg) {
+      return res.status(400).json({ error: "Invalid or expired verification code" });
+    }
+
+    // Generate 6-digit PIN for login
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedPassword = await bcrypt.hash(pin, 10);
+
+    // Create user
+    const newUser = {
+      username: pendingReg.username,
+      password: hashedPassword,
+      full_name: pendingReg.fullName,
+      id_number: pendingReg.idNumber,
+      phone: pendingReg.phone,
+      role: pendingReg.role,
+      created_at: new Date(),
+      updated_at: new Date(),
+      verified_at: new Date()
+    };
+
+    await database.collection("admin_users").insertOne(newUser);
+
+    // Delete OTP record
+    await database.collection("registration_otps").deleteOne({ _id: pendingReg._id });
+
+    // Send PIN via SMS
+    const smsMessage = `Welcome to VOO Ward!\nYour login PIN: ${pin}\nUsername: ${pendingReg.username}\nLogin: https://voo-ward-ussd-1.onrender.com/login.html`;
+    await sendNotificationToPhone(database, pendingReg.phone, smsMessage);
+
+    console.log(`✅ User registered via OTP: ${pendingReg.username} (${pendingReg.role}) PIN: ${pin}`);
+
+    res.json({
+      success: true,
+      message: "Account created successfully!",
+      credentials: {
+        username: pendingReg.username,
+        pin: pin,
+        role: pendingReg.role.toUpperCase()
+      }
+    });
+
+  } catch (error) {
+    console.error("Registration verify error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Resend OTP for registration
+app.post("/api/auth/register-resend", async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: "Phone number is required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Find existing registration
+    const pendingReg = await database.collection("registration_otps").findOne({
+      phone: phone.replace(/\s+/g, '')
+    });
+
+    if (!pendingReg) {
+      return res.status(400).json({ error: "No pending registration found. Please start over." });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+    await database.collection("registration_otps").updateOne(
+      { _id: pendingReg._id },
+      { $set: { otp, otpExpires } }
+    );
+
+    // Send OTP
+    const smsMessage = `Your new VOO Ward code: ${otp}. Valid for 10 minutes.`;
+    await sendNotificationToPhone(database, phone, smsMessage);
+
+    console.log(`📱 Resent OTP to ${phone}: ${otp}`);
+
+    res.json({ success: true, message: "New code sent" });
+
+  } catch (error) {
+    console.error("Resend OTP error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 // Submit registration request - OTP sent immediately as password
 app.post("/api/auth/register-request", async (req, res) => {
   try {

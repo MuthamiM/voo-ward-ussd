@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>Register - VOO Ward</title>
+    <title>Create Account - VOO Ward</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
         rel="stylesheet">
@@ -28,7 +28,6 @@
             --error: #ef4444;
             --warning: #f59e0b;
             --surface: rgba(255, 255, 255, 0.05);
-            --surface-hover: rgba(255, 255, 255, 0.1);
             --border: rgba(255, 255, 255, 0.1);
             --text: #ffffff;
             --text-secondary: rgba(255, 255, 255, 0.7);
@@ -45,10 +44,8 @@
             justify-content: center;
             padding: 20px;
             position: relative;
-            overflow: auto;
         }
 
-        /* Animated background */
         body::before {
             content: '';
             position: fixed;
@@ -68,17 +65,17 @@
 
             0%,
             100% {
-                transform: translateY(0px) rotate(0deg);
+                transform: translateY(0px);
             }
 
             50% {
-                transform: translateY(-20px) rotate(1deg);
+                transform: translateY(-20px);
             }
         }
 
         .signup-container {
             width: 100%;
-            max-width: 480px;
+            max-width: 460px;
             position: relative;
             z-index: 10;
         }
@@ -108,7 +105,7 @@
 
         .signup-header {
             text-align: center;
-            margin-bottom: 32px;
+            margin-bottom: 30px;
             position: relative;
             z-index: 2;
         }
@@ -129,13 +126,9 @@
 
         .signup-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--text) 0%, var(--text-secondary) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .signup-subtitle {
@@ -143,18 +136,98 @@
             font-size: 14px;
         }
 
-        /* Form Styles */
-        .form-group {
-            margin-bottom: 20px;
+        /* Steps indicator */
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
             position: relative;
             z-index: 2;
         }
 
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.4;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            opacity: 1;
+        }
+
+        .step.completed {
+            opacity: 1;
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .step.active .step-number {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .step.completed .step-number {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .step-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .step.active .step-label {
+            color: var(--text);
+        }
+
+        /* Form Styles */
+        .form-section {
+            display: none;
+            position: relative;
+            z-index: 2;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-weight: 500;
-            font-size: 14px;
+            font-size: 13px;
             color: var(--text-secondary);
         }
 
@@ -208,71 +281,83 @@
             color: white;
         }
 
-        /* Checkbox */
-        .checkbox-group {
+        /* OTP Input */
+        .otp-container {
             display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin: 24px 0;
-            position: relative;
-            z-index: 2;
+            gap: 10px;
+            justify-content: center;
+            margin: 25px 0;
         }
 
-        .checkbox-input {
-            width: 20px;
-            height: 20px;
-            margin-top: 2px;
-            accent-color: var(--primary);
-            cursor: pointer;
+        .otp-input {
+            width: 50px;
+            height: 56px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            transition: all 0.3s ease;
         }
 
-        .checkbox-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            line-height: 1.5;
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
         }
 
-        .checkbox-label a {
-            color: var(--primary);
-            text-decoration: underline;
-        }
-
-        .checkbox-label a:hover {
-            color: var(--secondary);
-        }
-
-        /* Submit Button */
-        .submit-btn {
+        /* Buttons */
+        .btn {
             width: 100%;
             padding: 16px;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             border: none;
             border-radius: 12px;
-            color: white;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            position: relative;
-            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
         }
 
-        .submit-btn:hover:not(:disabled) {
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
         }
 
-        .submit-btn:active:not(:disabled) {
-            transform: translateY(0);
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: white;
         }
 
-        .submit-btn:disabled {
-            opacity: 0.7;
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
+        }
+
+        .btn-link {
+            background: none;
+            color: var(--text-secondary);
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        .btn-link:hover {
+            color: var(--primary);
         }
 
         .spinner {
@@ -292,9 +377,9 @@
 
         /* Messages */
         .message {
-            padding: 14px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 16px;
             font-size: 14px;
             display: none;
             position: relative;
@@ -330,158 +415,73 @@
             color: #6ee7b7;
         }
 
-        /* Waiting Screen */
-        .waiting-screen {
-            text-align: center;
-            padding: 30px;
-            background: rgba(99, 102, 241, 0.1);
-            border-radius: 16px;
-            border: 2px solid var(--primary);
-            display: none;
-            position: relative;
-            z-index: 2;
-        }
-
-        .waiting-screen.show {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .waiting-spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(99, 102, 241, 0.3);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        .waiting-title {
-            color: var(--primary);
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .waiting-text {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .waiting-status {
-            color: var(--accent);
-            font-size: 12px;
-            margin-top: 15px;
-        }
-
-        /* Approved Screen */
-        .approved-screen {
-            text-align: center;
-            padding: 30px;
-            background: rgba(16, 185, 129, 0.1);
-            border-radius: 16px;
-            border: 2px solid var(--success);
-            display: none;
-            position: relative;
-            z-index: 2;
-        }
-
-        .approved-screen.show {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .approved-title {
-            color: var(--success);
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
+        /* Credentials Display */
         .credentials-box {
             background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 12px;
+            padding: 25px;
+            border-radius: 16px;
             margin: 20px 0;
+            text-align: center;
         }
 
         .credential-item {
-            margin: 15px 0;
+            margin: 20px 0;
         }
 
         .credential-label {
-            color: var(--text-secondary);
+            color: var(--text-muted);
             font-size: 12px;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .credential-value {
-            color: var(--success);
             font-family: 'Space Grotesk', monospace;
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
         }
 
-        .pin-display {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+        .credential-value.username {
+            color: var(--secondary);
+        }
+
+        .credential-value.pin {
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.15);
+            padding: 12px 24px;
+            border-radius: 10px;
+            display: inline-block;
         }
 
         .copy-btn {
-            background: var(--success);
+            background: var(--primary);
             border: none;
             color: white;
-            padding: 10px 16px;
+            padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
+            margin-left: 10px;
             transition: all 0.3s ease;
         }
 
         .copy-btn:hover {
-            background: #059669;
+            background: var(--primary-dark);
         }
 
         .warning-text {
             color: var(--error);
             font-size: 14px;
             font-weight: 600;
-            margin: 15px 0;
+            margin: 20px 0;
+            padding: 12px;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
         }
 
-        .login-btn {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            border: none;
-            color: white;
-            padding: 14px 30px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
-        }
-
-        /* Back to Login Link */
+        /* Back Link */
         .back-link {
             text-align: center;
             margin-top: 24px;
@@ -493,14 +493,35 @@
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 14px;
-            transition: color 0.3s ease;
         }
 
         .back-link a:hover {
             color: var(--primary);
         }
 
-        /* Registration Closed */
+        /* Resend Timer */
+        .resend-section {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .resend-btn {
+            color: var(--primary);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .resend-btn:disabled {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Closed Registration */
         .registration-closed {
             text-align: center;
             padding: 40px 20px;
@@ -517,18 +538,6 @@
             margin-bottom: 20px;
         }
 
-        .closed-title {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--error);
-        }
-
-        .closed-text {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
         /* Responsive */
         @media (max-width: 520px) {
             .signup-card {
@@ -536,7 +545,13 @@
             }
 
             .signup-title {
-                font-size: 24px;
+                font-size: 22px;
+            }
+
+            .otp-input {
+                width: 44px;
+                height: 50px;
+                font-size: 20px;
             }
         }
     </style>
@@ -549,98 +564,130 @@
                 <div class="logo-icon">
                     <i class="fas fa-building"></i>
                 </div>
-                <h1 class="signup-title">Join VOO Ward</h1>
-                <p class="signup-subtitle">Create your account to get started</p>
+                <h1 class="signup-title">Create New Account</h1>
+                <p class="signup-subtitle">Join VOO Ward platform</p>
             </div>
 
-            <!-- Registration Closed Message -->
-            <div id="registrationClosed" class="registration-closed">
-                <i class="fas fa-lock closed-icon"></i>
-                <h2 class="closed-title">Registration Closed</h2>
-                <p class="closed-text">Maximum user limit has been reached. Please contact the administrator.</p>
+            <!-- Steps Indicator -->
+            <div class="steps">
+                <div class="step active" id="step1Indicator">
+                    <div class="step-number">1</div>
+                    <span class="step-label">Details</span>
+                </div>
+                <div class="step" id="step2Indicator">
+                    <div class="step-number">2</div>
+                    <span class="step-label">Verify</span>
+                </div>
+                <div class="step" id="step3Indicator">
+                    <div class="step-number"><i class="fas fa-check"></i></div>
+                    <span class="step-label">Done</span>
+                </div>
             </div>
 
-            <!-- Error/Success Messages -->
+            <!-- Messages -->
             <div id="errorMsg" class="message error"></div>
             <div id="successMsg" class="message success"></div>
 
-            <!-- Registration Form -->
-            <form id="signupForm">
-                <div class="form-group">
-                    <label class="form-label" for="fullName">Full Name</label>
-                    <input type="text" id="fullName" name="fullName" class="form-input"
-                        placeholder="Enter your full name" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="idNumber">ID Number</label>
-                    <input type="text" id="idNumber" name="idNumber" class="form-input"
-                        placeholder="Enter your national ID number" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" class="form-input" placeholder="e.g. 0712345678" required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="username">Username</label>
-                    <input type="text" id="username" name="username" class="form-input" placeholder="Choose a username"
-                        required>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="role">Role</label>
-                    <select id="role" name="role" class="form-select" required>
-                        <option value="" disabled selected>Select your role</option>
-                        <option value="clerk">Clerk</option>
-                        <option value="pa">PA (Personal Assistant)</option>
-                    </select>
-                </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="terms" name="terms" class="checkbox-input" required>
-                    <label for="terms" class="checkbox-label">
-                        I agree to the <a href="terms.html" target="_blank">Terms of Service</a> and
-                        <a href="privacy.html" target="_blank">Privacy Policy</a>
-                    </label>
-                </div>
-
-                <button type="submit" id="submitBtn" class="submit-btn">
-                    <span id="btnText">Submit Application</span>
-                </button>
-            </form>
-
-            <!-- Waiting Screen -->
-            <div id="waitingScreen" class="waiting-screen">
-                <div class="waiting-spinner"></div>
-                <h3 class="waiting-title"><i class="fas fa-hourglass-half"></i> Waiting for Admin Approval</h3>
-                <p class="waiting-text">Your application has been submitted. Please wait here for approval.</p>
-                <p id="waitingStatus" class="waiting-status">Checking status...</p>
+            <!-- Registration Closed -->
+            <div id="registrationClosed" class="registration-closed">
+                <i class="fas fa-lock closed-icon"></i>
+                <h2 style="color: var(--error); margin-bottom: 10px;">Registration Closed</h2>
+                <p style="color: var(--text-secondary);">Maximum user limit reached.</p>
             </div>
 
-            <!-- Approved Screen -->
-            <div id="approvedScreen" class="approved-screen">
-                <h3 class="approved-title"><i class="fas fa-check-circle"></i> Application Approved!</h3>
+            <!-- Step 1: User Details -->
+            <div id="step1" class="form-section active">
+                <form id="detailsForm">
+                    <div class="form-group">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" id="fullName" class="form-input" placeholder="Enter your full name" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ID Number</label>
+                        <input type="text" id="idNumber" class="form-input" placeholder="National ID number" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" id="phone" class="form-input" placeholder="0712345678" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="username" class="form-input" placeholder="Choose a username" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role</label>
+                        <select id="role" class="form-select" required>
+                            <option value="" disabled selected>Select your role</option>
+                            <option value="clerk">Clerk</option>
+                            <option value="pa">PA (Personal Assistant)</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="sendOtpBtn" class="btn btn-primary">
+                        <span id="sendOtpText">Send Verification Code</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Step 2: OTP Verification -->
+            <div id="step2" class="form-section">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <p style="color: var(--text-secondary); font-size: 14px;">
+                        Enter the 6-digit code sent to<br>
+                        <strong id="maskedPhone" style="color: var(--primary);"></strong>
+                    </p>
+                </div>
+                <div class="otp-container">
+                    <input type="text" class="otp-input" maxlength="1" data-index="0">
+                    <input type="text" class="otp-input" maxlength="1" data-index="1">
+                    <input type="text" class="otp-input" maxlength="1" data-index="2">
+                    <input type="text" class="otp-input" maxlength="1" data-index="3">
+                    <input type="text" class="otp-input" maxlength="1" data-index="4">
+                    <input type="text" class="otp-input" maxlength="1" data-index="5">
+                </div>
+                <button type="button" id="verifyBtn" class="btn btn-primary">
+                    <span id="verifyText">Verify & Create Account</span>
+                </button>
+                <div class="resend-section">
+                    <span>Didn't receive code? </span>
+                    <button type="button" id="resendBtn" class="resend-btn" disabled>Resend in <span
+                            id="countdown">60</span>s</button>
+                </div>
+                <button type="button" class="btn btn-link" onclick="goBack()">
+                    <i class="fas fa-arrow-left"></i> Change phone number
+                </button>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="step3" class="form-section">
+                <div style="text-align: center;">
+                    <div style="font-size: 60px; color: var(--success); margin-bottom: 15px;">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h2 style="color: var(--success); margin-bottom: 10px;">Account Created!</h2>
+                    <p style="color: var(--text-secondary); font-size: 14px;">Save your login credentials below</p>
+                </div>
                 <div class="credentials-box">
-                    <p id="roleDisplay" style="color: var(--accent); margin-bottom: 10px;"></p>
                     <div class="credential-item">
                         <p class="credential-label">Your Username</p>
-                        <p id="usernameDisplay" class="credential-value"></p>
+                        <p id="displayUsername" class="credential-value username"></p>
                     </div>
                     <div class="credential-item">
-                        <p class="credential-label">Your PIN</p>
-                        <div class="pin-display">
-                            <span id="pinDisplay" class="credential-value"></span>
-                            <button type="button" class="copy-btn" onclick="copyPin()">
-                                <i class="fas fa-copy"></i> Copy
-                            </button>
-                        </div>
+                        <p class="credential-label">Your Login PIN</p>
+                        <span id="displayPin" class="credential-value pin"></span>
+                        <button type="button" class="copy-btn" onclick="copyPin()">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                    </div>
+                    <div class="credential-item">
+                        <p class="credential-label">Role</p>
+                        <p id="displayRole" style="color: var(--accent); font-weight: 600;"></p>
                     </div>
                 </div>
-                <p class="warning-text"><i class="fas fa-exclamation-triangle"></i> SAVE YOUR PIN NOW! You won't see it
-                    again.</p>
-                <button type="button" class="login-btn" onclick="goToLogin()">
+                <p class="warning-text">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    SAVE YOUR PIN NOW! You won't see it again.
+                </p>
+                <button type="button" class="btn btn-success" onclick="goToLogin()">
                     <i class="fas fa-sign-in-alt"></i> Go to Login
                 </button>
             </div>
@@ -653,192 +700,265 @@
 
     <script>
         const API_BASE = window.location.origin + '/admin';
-        let applicationId = null;
-        let pollInterval = null;
+        let userPhone = '';
+        let countdownTimer = null;
 
-        // DOM Elements
-        const signupForm = document.getElementById('signupForm');
-        const submitBtn = document.getElementById('submitBtn');
-        const btnText = document.getElementById('btnText');
-        const errorMsg = document.getElementById('errorMsg');
-        const successMsg = document.getElementById('successMsg');
-        const waitingScreen = document.getElementById('waitingScreen');
-        const approvedScreen = document.getElementById('approvedScreen');
-        const registrationClosed = document.getElementById('registrationClosed');
-
-        // Check if registration is available
-        async function checkRegistrationStatus() {
+        // Check registration availability
+        async function checkRegistration() {
             try {
                 const response = await fetch(API_BASE + '/api/auth/can-register');
                 const data = await response.json();
-
                 if (!data.canRegister) {
-                    signupForm.style.display = 'none';
-                    registrationClosed.classList.add('show');
+                    document.getElementById('step1').classList.remove('active');
+                    document.getElementById('registrationClosed').classList.add('show');
+                    document.querySelector('.steps').style.display = 'none';
                 }
-
-                console.log('Registration status:', data);
             } catch (err) {
-                console.error('Error checking registration status:', err);
+                console.error('Error:', err);
             }
         }
 
-        // Show error message
-        function showError(message) {
-            errorMsg.textContent = message;
-            errorMsg.classList.add('show');
-            successMsg.classList.remove('show');
-            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+        // Show error
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.add('show');
+            document.getElementById('successMsg').classList.remove('show');
+            setTimeout(() => el.classList.remove('show'), 5000);
         }
 
-        // Show success message
-        function showSuccess(message) {
-            successMsg.textContent = message;
-            successMsg.classList.add('show');
-            errorMsg.classList.remove('show');
+        // Show success
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.classList.add('show');
+            document.getElementById('errorMsg').classList.remove('show');
         }
 
-        // Form submission
-        signupForm.addEventListener('submit', async function (e) {
+        // Update step indicators
+        function updateSteps(currentStep) {
+            for (let i = 1; i <= 3; i++) {
+                const indicator = document.getElementById(`step${i}Indicator`);
+                const section = document.getElementById(`step${i}`);
+
+                indicator.classList.remove('active', 'completed');
+                section.classList.remove('active');
+
+                if (i < currentStep) {
+                    indicator.classList.add('completed');
+                } else if (i === currentStep) {
+                    indicator.classList.add('active');
+                    section.classList.add('active');
+                }
+            }
+        }
+
+        // Step 1: Send OTP
+        document.getElementById('detailsForm').addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            // Get form values
             const fullName = document.getElementById('fullName').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const username = document.getElementById('username').value.trim();
             const role = document.getElementById('role').value;
-            const terms = document.getElementById('terms').checked;
 
-            // Validate
             if (!fullName || !idNumber || !phone || !username || !role) {
                 showError('Please fill in all fields');
                 return;
             }
 
-            if (!terms) {
-                showError('Please accept the Terms of Service');
-                return;
-            }
+            userPhone = phone;
+            const btn = document.getElementById('sendOtpBtn');
+            const btnText = document.getElementById('sendOtpText');
 
-            // Disable button and show loading
-            submitBtn.disabled = true;
-            btnText.innerHTML = '<span class="spinner"></span> Submitting...';
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Sending...';
 
             try {
-                console.log('Submitting registration...', { fullName, idNumber, phone, username, role });
-
-                const response = await fetch(API_BASE + '/api/auth/register-request', {
+                const response = await fetch(API_BASE + '/api/auth/register-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fullName,
-                        idNumber,
-                        phone,
-                        role,
-                        username
-                    })
+                    body: JSON.stringify({ fullName, idNumber, phone, role, username })
                 });
 
                 const data = await response.json();
-                console.log('Registration response:', data);
 
                 if (response.ok && data.success) {
-                    // Hide form, show waiting screen
-                    signupForm.style.display = 'none';
-                    waitingScreen.classList.add('show');
-
-                    // Store application ID and start polling
-                    applicationId = data.applicationId;
-                    if (applicationId) {
-                        startPolling();
-                    }
+                    document.getElementById('maskedPhone').textContent = data.phone || phone;
+                    updateSteps(2);
+                    startCountdown();
+                    document.querySelector('.otp-input').focus();
                 } else {
-                    showError(data.error || 'Registration failed. Please try again.');
-                    submitBtn.disabled = false;
-                    btnText.textContent = 'Submit Application';
+                    showError(data.error || 'Failed to send code');
                 }
             } catch (err) {
-                console.error('Registration error:', err);
-                showError('Network error. Please check your connection and try again.');
-                submitBtn.disabled = false;
-                btnText.textContent = 'Submit Application';
+                showError('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Send Verification Code';
             }
         });
 
-        // Poll for approval status
-        function startPolling() {
-            let pollCount = 0;
-            const maxPolls = 360; // 30 minutes
+        // OTP input handling
+        const otpInputs = document.querySelectorAll('.otp-input');
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function (e) {
+                const value = e.target.value.replace(/\D/g, '');
+                e.target.value = value;
 
-            pollInterval = setInterval(async () => {
-                pollCount++;
-                document.getElementById('waitingStatus').textContent = `Checking status... (${pollCount})`;
-
-                try {
-                    const response = await fetch(API_BASE + '/api/auth/check-registration/' + applicationId);
-                    const data = await response.json();
-
-                    console.log('Poll status:', data);
-
-                    if (data.status === 'approved' && data.credentials) {
-                        clearInterval(pollInterval);
-                        showApproved(data);
-                    } else if (data.status === 'rejected') {
-                        clearInterval(pollInterval);
-                        waitingScreen.classList.remove('show');
-                        signupForm.style.display = 'block';
-                        showError('Your application was rejected. ' + (data.reason || 'Please contact admin.'));
-                        submitBtn.disabled = false;
-                        btnText.textContent = 'Submit Application';
-                    }
-                } catch (err) {
-                    console.log('Poll error:', err);
+                if (value && index < 5) {
+                    otpInputs[index + 1].focus();
                 }
 
-                if (pollCount >= maxPolls) {
-                    clearInterval(pollInterval);
-                    document.getElementById('waitingStatus').textContent = 'Timeout. Please refresh and try again.';
+                // Auto-submit when all filled
+                const otp = getOTP();
+                if (otp.length === 6) {
+                    verifyOTP();
                 }
-            }, 5000);
+            });
+
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+
+            input.addEventListener('paste', function (e) {
+                e.preventDefault();
+                const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                if (pasted.length === 6) {
+                    otpInputs.forEach((inp, i) => inp.value = pasted[i] || '');
+                    verifyOTP();
+                }
+            });
+        });
+
+        function getOTP() {
+            return Array.from(otpInputs).map(i => i.value).join('');
         }
 
-        // Show approved screen
-        function showApproved(data) {
-            waitingScreen.classList.remove('show');
-            approvedScreen.classList.add('show');
+        // Verify OTP
+        document.getElementById('verifyBtn').addEventListener('click', verifyOTP);
 
-            document.getElementById('roleDisplay').textContent = 'Role: ' + data.role.toUpperCase();
-            document.getElementById('usernameDisplay').textContent = data.credentials.username;
-            document.getElementById('pinDisplay').textContent = data.credentials.pin;
+        async function verifyOTP() {
+            const otp = getOTP();
+            if (otp.length !== 6) {
+                showError('Please enter the complete 6-digit code');
+                return;
+            }
+
+            const btn = document.getElementById('verifyBtn');
+            const btnText = document.getElementById('verifyText');
+
+            btn.disabled = true;
+            btnText.innerHTML = '<span class="spinner"></span> Verifying...';
+
+            try {
+                const response = await fetch(API_BASE + '/api/auth/register-verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone, otp })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    clearInterval(countdownTimer);
+                    document.getElementById('displayUsername').textContent = data.credentials.username;
+                    document.getElementById('displayPin').textContent = data.credentials.pin;
+                    document.getElementById('displayRole').textContent = data.credentials.role;
+                    updateSteps(3);
+                } else {
+                    showError(data.error || 'Invalid code');
+                    otpInputs.forEach(i => i.value = '');
+                    otpInputs[0].focus();
+                }
+            } catch (err) {
+                showError('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'Verify & Create Account';
+            }
         }
 
-        // Copy PIN to clipboard
+        // Countdown timer
+        function startCountdown() {
+            let seconds = 60;
+            const resendBtn = document.getElementById('resendBtn');
+            const countdown = document.getElementById('countdown');
+
+            resendBtn.disabled = true;
+            countdown.parentElement.style.display = 'inline';
+
+            countdownTimer = setInterval(() => {
+                seconds--;
+                countdown.textContent = seconds;
+
+                if (seconds <= 0) {
+                    clearInterval(countdownTimer);
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Resend Code';
+                }
+            }, 1000);
+        }
+
+        // Resend OTP
+        document.getElementById('resendBtn').addEventListener('click', async function () {
+            this.disabled = true;
+            this.textContent = 'Sending...';
+
+            try {
+                const response = await fetch(API_BASE + '/api/auth/register-resend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: userPhone })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showSuccess('New code sent!');
+                    startCountdown();
+                } else {
+                    showError(data.error || 'Failed to resend');
+                    this.disabled = false;
+                    this.textContent = 'Resend Code';
+                }
+            } catch (err) {
+                showError('Network error');
+                this.disabled = false;
+                this.textContent = 'Resend Code';
+            }
+        });
+
+        // Go back to step 1
+        function goBack() {
+            clearInterval(countdownTimer);
+            otpInputs.forEach(i => i.value = '');
+            updateSteps(1);
+        }
+
+        // Copy PIN
         function copyPin() {
-            const pin = document.getElementById('pinDisplay').textContent;
+            const pin = document.getElementById('displayPin').textContent;
             navigator.clipboard.writeText(pin).then(() => {
                 const btn = event.target.closest('button');
                 btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                btn.style.background = '#059669';
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
-                    btn.style.background = '';
-                }, 2000);
-            }).catch(() => {
-                alert('PIN: ' + pin);
-            });
+                setTimeout(() => btn.innerHTML = '<i class="fas fa-copy"></i> Copy', 2000);
+            }).catch(() => alert('PIN: ' + pin));
         }
 
-        // Go to login page
+        // Go to login
         function goToLogin() {
             window.location.href = 'login.html';
         }
 
-        // Check registration status on load
-        checkRegistrationStatus();
+        // Init
+        checkRegistration();
     </script>
 </body>
 
 </html>
 </CodeContent>
-<parameter name="EmptyFile">false
+<parameter name="Complexity">7
