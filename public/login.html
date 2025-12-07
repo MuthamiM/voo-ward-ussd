@@ -570,10 +570,9 @@
                     <button type="button" class="social-btn facebook-btn">
                         <i class="fab fa-facebook-f"></i> Facebook
                     </button>
-                    <button type="button" class="social-btn google-btn" id="registerBtn"
-                        onclick="showRegistrationModal()">
-                        Other
-                    </button>
+                    <a href="signup.html" class="social-btn google-btn" id="registerBtn" style="text-decoration: none;">
+                        <i class="fas fa-user-plus"></i> Register
+                    </a>
                 </div>
             </form>
         </div>
@@ -910,7 +909,7 @@
         // Explicit registration handler to avoid form submit issues
         async function handleRegistrationSubmit() {
             const form = document.getElementById('registrationForm');
-            
+
             // Manual validation
             if (!form.checkValidity()) {
                 form.reportValidity();
@@ -979,7 +978,7 @@
                         const pollInterval = setInterval(async () => {
                             pollCount++;
                             const statusEl = document.getElementById('waitingStatus');
-                            if(statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
+                            if (statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
 
                             try {
                                 const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
@@ -989,7 +988,7 @@
                                     clearInterval(pollInterval);
                                     // Show credentials!
                                     const ws = document.getElementById('waitingScreen');
-                                    if(ws) {
+                                    if (ws) {
                                         ws.innerHTML = \`
                                     <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
                                     
@@ -1054,4 +1053,5 @@
         }
     </script>
 </body>
+
 </html>
