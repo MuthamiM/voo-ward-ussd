@@ -163,6 +163,16 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
+// Sentry test endpoint - triggers an error to verify Sentry is working
+app.get('/api/test-sentry', (req, res) => {
+  try {
+    throw new Error('Sentry Test Error - This is a test to verify error tracking is working!');
+  } catch (e) {
+    Sentry.captureException(e);
+    res.json({ success: true, message: 'Test error sent to Sentry! Check your Sentry dashboard.' });
+  }
+});
+
 // CORS - secure origin handling
 const ALLOWED_ORIGINS = [
   'http://localhost:4000',
