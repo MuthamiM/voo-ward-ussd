@@ -11,6 +11,24 @@ require("dotenv").config();
 const session = require('express-session');
 const chatbotSvc = require('./chatbot');
 
+// Sentry Error Tracking - https://sentry.io
+const Sentry = require('@sentry/node');
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV || 'production',
+    tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
+    beforeSend(event) {
+      // Don't send events in development
+      if (process.env.NODE_ENV === 'development') return null;
+      return event;
+    }
+  });
+  console.log('✅ Sentry error tracking enabled');
+} else {
+  console.warn('⚠️ SENTRY_DSN not set - error tracking disabled');
+}
+
 // OAuth Configuration
 let oauth;
 try {
@@ -111,6 +129,30 @@ function sendSMS(to, text) {
     req.end();
   });
 }
+
+// ============================================
+// ERROR TRACKING - Sentry handles all alerts
+// ============================================
+// Sentry will capture errors and send alerts via:
+// - Email notifications
+// - Sentry mobile app (push notifications that ring your phone)
+// - Slack/Discord integrations
+
+// Capture unhandled errors with Sentry
+process.on('uncaughtException', (err) => {
+  console.error('💥 UNCAUGHT EXCEPTION:', err);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(err);
+  }
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 UNHANDLED REJECTION:', reason);
+  if (process.env.SENTRY_DSN) {
+    Sentry.captureException(reason);
+  }
+});
 
 const app = express();
 
