@@ -19,15 +19,13 @@ Sentry.init({
     // Don't send errors in development
     beforeSend(event) {
         if (process.env.NODE_ENV === 'development') {
-            console.log('⚠️ Sentry event (dev mode - not sent):', event.exception?.values?.[0]?.type);
+            console.log('Sentry event (dev mode - not sent):', event.exception?.values?.[0]?.type);
             return null;
         }
         return event;
     }
 });
 
-console.log('✅ Sentry error tracking initialized');
+console.log('Sentry error tracking initialized');
 
 module.exports = Sentry;
-</CodeContent >
-    <parameter name="Complexity">4
