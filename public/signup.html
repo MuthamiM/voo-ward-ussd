@@ -7,7 +7,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>Create Account - VOO Ward</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -25,7 +25,7 @@
             --error: #ef4444;
             --accent: #f59e0b;
             --border: rgba(255, 255, 255, 0.1);
-            --text: #ffffff;
+            --text: #fff;
             --text-secondary: rgba(255, 255, 255, 0.7);
             --text-muted: rgba(255, 255, 255, 0.5);
         }
@@ -38,7 +38,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 15px;
         }
 
         body::before {
@@ -48,15 +48,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+            background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
                 radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%);
             z-index: -1;
         }
 
         .signup-container {
             width: 100%;
-            max-width: 560px;
+            max-width: 480px;
             z-index: 10;
         }
 
@@ -64,54 +63,53 @@
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
-            border-radius: 24px;
-            padding: 35px 40px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            border-radius: 20px;
+            padding: 25px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
         .signup-header {
             text-align: center;
-            margin-bottom: 25px;
+            margin-bottom: 18px;
         }
 
         .logo-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 14px;
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
-            margin: 0 auto 15px;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+            font-size: 20px;
+            margin: 0 auto 12px;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
         }
 
         .signup-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
 
         .signup-subtitle {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 13px;
         }
 
-        /* Steps */
         .steps {
             display: flex;
             justify-content: center;
-            gap: 35px;
-            margin-bottom: 25px;
+            gap: 30px;
+            margin-bottom: 18px;
         }
 
         .step {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             opacity: 0.4;
             transition: all 0.3s;
         }
@@ -122,8 +120,8 @@
         }
 
         .step-number {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid var(--border);
@@ -131,7 +129,7 @@
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .step.active .step-number {
@@ -145,7 +143,7 @@
         }
 
         .step-label {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
         }
 
@@ -153,7 +151,6 @@
             color: var(--text);
         }
 
-        /* Form Sections */
         .form-section {
             display: none;
         }
@@ -166,7 +163,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(8px);
             }
 
             to {
@@ -175,11 +172,10 @@
             }
         }
 
-        /* Two Column Layout */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
         }
 
         .form-row.full {
@@ -187,26 +183,26 @@
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
             font-weight: 500;
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary);
         }
 
         .form-input,
         .form-select {
             width: 100%;
-            padding: 12px 14px;
+            padding: 10px 12px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text);
-            font-size: 14px;
+            font-size: 13px;
             font-family: inherit;
             transition: all 0.3s;
         }
@@ -215,7 +211,7 @@
         .form-select:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
         }
 
         .form-input::placeholder {
@@ -225,9 +221,9 @@
         .form-select {
             cursor: pointer;
             appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='white' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10l-5 5z'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: right 14px center;
+            background-position: right 12px center;
         }
 
         .form-select option {
@@ -235,49 +231,45 @@
             color: white;
         }
 
-        /* Checkbox */
         .checkbox-row {
             display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            margin: 20px 0;
+            align-items: center;
+            gap: 8px;
+            margin: 14px 0;
         }
 
         .checkbox-row input {
-            width: 18px;
-            height: 18px;
-            margin-top: 2px;
+            width: 16px;
+            height: 16px;
             accent-color: var(--primary);
             cursor: pointer;
         }
 
         .checkbox-row label {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary);
-            line-height: 1.4;
         }
 
         .checkbox-row a {
             color: var(--primary);
         }
 
-        /* OTP */
         .otp-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             justify-content: center;
-            margin: 25px 0;
+            margin: 20px 0;
         }
 
         .otp-input {
-            width: 48px;
-            height: 54px;
+            width: 44px;
+            height: 48px;
             text-align: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
             background: rgba(255, 255, 255, 0.05);
             border: 2px solid var(--border);
-            border-radius: 10px;
+            border-radius: 8px;
             color: var(--text);
         }
 
@@ -287,20 +279,19 @@
             outline: none;
         }
 
-        /* Buttons */
         .btn {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: none;
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .btn-primary {
@@ -310,7 +301,7 @@
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
         }
 
         .btn-success {
@@ -326,8 +317,8 @@
         .btn-link {
             background: none;
             color: var(--text-secondary);
-            font-size: 13px;
-            padding: 10px;
+            font-size: 12px;
+            padding: 8px;
         }
 
         .btn-link:hover {
@@ -335,8 +326,8 @@
         }
 
         .spinner {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
@@ -349,12 +340,11 @@
             }
         }
 
-        /* Messages */
         .message {
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            font-size: 13px;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            font-size: 12px;
             display: none;
         }
 
@@ -366,7 +356,7 @@
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateY(-8px);
+                transform: translateY(-6px);
             }
 
             to {
@@ -387,30 +377,29 @@
             color: #6ee7b7;
         }
 
-        /* Credentials */
         .credentials-box {
             background: rgba(0, 0, 0, 0.3);
-            padding: 25px;
-            border-radius: 14px;
-            margin: 20px 0;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 15px 0;
             text-align: center;
         }
 
         .credential-item {
-            margin: 18px 0;
+            margin: 14px 0;
         }
 
         .credential-label {
             color: var(--text-muted);
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .credential-value {
             font-family: 'Space Grotesk', monospace;
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 700;
             letter-spacing: 2px;
         }
@@ -422,8 +411,8 @@
         .credential-value.pin {
             color: var(--success);
             background: rgba(16, 185, 129, 0.15);
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
             display: inline-block;
         }
 
@@ -431,28 +420,28 @@
             background: var(--primary);
             border: none;
             color: white;
-            padding: 8px 14px;
-            border-radius: 6px;
+            padding: 6px 12px;
+            border-radius: 5px;
             cursor: pointer;
-            font-size: 12px;
-            margin-left: 8px;
+            font-size: 11px;
+            margin-left: 6px;
         }
 
         .warning-text {
             color: var(--error);
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            margin: 15px 0;
-            padding: 10px;
+            margin: 12px 0;
+            padding: 8px;
             background: rgba(239, 68, 68, 0.1);
-            border-radius: 6px;
+            border-radius: 5px;
         }
 
         .resend-section {
             text-align: center;
-            margin-top: 18px;
+            margin-top: 14px;
             color: var(--text-muted);
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .resend-btn {
@@ -460,7 +449,7 @@
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
         }
 
@@ -471,13 +460,13 @@
 
         .back-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 16px;
         }
 
         .back-link a {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 12px;
         }
 
         .back-link a:hover {
@@ -486,7 +475,7 @@
 
         .registration-closed {
             text-align: center;
-            padding: 30px;
+            padding: 25px;
             display: none;
         }
 
@@ -494,9 +483,9 @@
             display: block;
         }
 
-        @media (max-width: 520px) {
+        @media (max-width: 480px) {
             .signup-card {
-                padding: 25px 20px;
+                padding: 20px 18px;
             }
 
             .form-row {
@@ -504,8 +493,8 @@
             }
 
             .otp-input {
-                width: 42px;
-                height: 48px;
+                width: 38px;
+                height: 42px;
                 font-size: 18px;
             }
         }
@@ -540,12 +529,11 @@
             <div id="successMsg" class="message success"></div>
 
             <div id="registrationClosed" class="registration-closed">
-                <i class="fas fa-lock" style="font-size: 40px; color: var(--error); margin-bottom: 15px;"></i>
-                <h2 style="color: var(--error); margin-bottom: 8px;">Registration Closed</h2>
-                <p style="color: var(--text-secondary); font-size: 14px;">Maximum user limit reached.</p>
+                <i class="fas fa-lock" style="font-size: 36px; color: var(--error); margin-bottom: 12px;"></i>
+                <h2 style="color: var(--error); margin-bottom: 6px; font-size: 18px;">Registration Closed</h2>
+                <p style="color: var(--text-secondary); font-size: 13px;">Maximum user limit reached.</p>
             </div>
 
-            <!-- Step 1: Details -->
             <div id="step1" class="form-section active">
                 <form id="detailsForm">
                     <div class="form-row">
@@ -589,10 +577,9 @@
                 </form>
             </div>
 
-            <!-- Step 2: OTP -->
             <div id="step2" class="form-section">
-                <div style="text-align: center; margin-bottom: 18px;">
-                    <p style="color: var(--text-secondary); font-size: 14px;">
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <p style="color: var(--text-secondary); font-size: 13px;">
                         Enter the 6-digit code sent to<br>
                         <strong id="maskedPhone" style="color: var(--primary);"></strong>
                     </p>
@@ -618,14 +605,12 @@
                 </button>
             </div>
 
-            <!-- Step 3: Success -->
             <div id="step3" class="form-section">
                 <div style="text-align: center;">
-                    <div style="font-size: 50px; color: var(--success); margin-bottom: 10px;">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <h2 style="color: var(--success); margin-bottom: 8px;">Account Created!</h2>
-                    <p style="color: var(--text-secondary); font-size: 13px;">Save your credentials below</p>
+                    <div style="font-size: 40px; color: var(--success); margin-bottom: 8px;"><i
+                            class="fas fa-check-circle"></i></div>
+                    <h2 style="color: var(--success); margin-bottom: 6px; font-size: 18px;">Account Created!</h2>
+                    <p style="color: var(--text-secondary); font-size: 12px;">Save your credentials below</p>
                 </div>
                 <div class="credentials-box">
                     <div class="credential-item">
@@ -657,27 +642,25 @@
     </div>
 
     <script>
-        const API_BASE = window.location.origin + '/admin';
-        let userPhone = '';
-        let countdownTimer = null;
+        var API_BASE = window.location.origin + '/admin';
+        var userPhone = '';
+        var countdownTimer = null;
 
-        // Check registration
-        (async function checkRegistration() {
-            try {
-                const response = await fetch(API_BASE + '/api/auth/can-register');
-                const data = await response.json();
-                if (!data.canRegister) {
-                    document.getElementById('step1').classList.remove('active');
-                    document.getElementById('registrationClosed').classList.add('show');
-                    document.querySelector('.steps').style.display = 'none';
-                }
-            } catch (err) {
-                console.error('Check error:', err);
-            }
+        (function checkRegistration() {
+            fetch(API_BASE + '/api/auth/can-register')
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.canRegister) {
+                        document.getElementById('step1').classList.remove('active');
+                        document.getElementById('registrationClosed').classList.add('show');
+                        document.querySelector('.steps').style.display = 'none';
+                    }
+                })
+                .catch(function (e) { console.error('Check error:', e); });
         })();
 
         function showError(msg) {
-            const el = document.getElementById('errorMsg');
+            var el = document.getElementById('errorMsg');
             el.textContent = msg;
             el.classList.add('show');
             document.getElementById('successMsg').classList.remove('show');
@@ -685,16 +668,16 @@
         }
 
         function showSuccess(msg) {
-            const el = document.getElementById('successMsg');
+            var el = document.getElementById('successMsg');
             el.textContent = msg;
             el.classList.add('show');
             document.getElementById('errorMsg').classList.remove('show');
         }
 
         function updateSteps(current) {
-            for (let i = 1; i <= 3; i++) {
-                const ind = document.getElementById('step' + i + 'Indicator');
-                const sec = document.getElementById('step' + i);
+            for (var i = 1; i <= 3; i++) {
+                var ind = document.getElementById('step' + i + 'Indicator');
+                var sec = document.getElementById('step' + i);
                 ind.classList.remove('active', 'completed');
                 sec.classList.remove('active');
                 if (i < current) ind.classList.add('completed');
@@ -702,141 +685,113 @@
             }
         }
 
-        // Step 1: Send OTP
-        document.getElementById('detailsForm').addEventListener('submit', async function (e) {
+        document.getElementById('detailsForm').addEventListener('submit', function (e) {
             e.preventDefault();
+            var fullName = document.getElementById('fullName').value.trim();
+            var idNumber = document.getElementById('idNumber').value.trim();
+            var phone = document.getElementById('phone').value.trim();
+            var username = document.getElementById('username').value.trim();
+            var role = document.getElementById('role').value;
+            var terms = document.getElementById('terms').checked;
 
-            const fullName = document.getElementById('fullName').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const username = document.getElementById('username').value.trim();
-            const role = document.getElementById('role').value;
-            const terms = document.getElementById('terms').checked;
-
-            if (!fullName || !idNumber || !phone || !username || !role) {
-                showError('Please fill in all fields');
-                return;
-            }
-            if (!terms) {
-                showError('Please accept the terms');
-                return;
-            }
+            if (!fullName || !idNumber || !phone || !username || !role) { showError('Please fill in all fields'); return; }
+            if (!terms) { showError('Please accept the terms'); return; }
 
             userPhone = phone;
-            const btn = document.getElementById('sendOtpBtn');
-            const btnText = document.getElementById('sendOtpText');
-
+            var btn = document.getElementById('sendOtpBtn');
+            var btnText = document.getElementById('sendOtpText');
             btn.disabled = true;
             btnText.innerHTML = '<span class="spinner"></span> Sending...';
 
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-otp', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName: fullName, idNumber: idNumber, phone: phone, role: role, username: username })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    document.getElementById('maskedPhone').textContent = data.phone || phone;
-                    updateSteps(2);
-                    startCountdown();
-                    document.querySelector('.otp-input').focus();
-                } else {
-                    showError(data.error || 'Failed to send code');
-                }
-            } catch (err) {
-                showError('Network error. Try again.');
-            } finally {
-                btn.disabled = false;
-                btnText.textContent = 'Send Verification Code';
-            }
+            fetch(API_BASE + '/api/auth/register-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName: fullName, idNumber: idNumber, phone: phone, role: role, username: username })
+            })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok && res.data.success) {
+                        document.getElementById('maskedPhone').textContent = res.data.phone || phone;
+                        updateSteps(2);
+                        startCountdown();
+                        document.querySelector('.otp-input').focus();
+                    } else {
+                        showError(res.data.error || 'Failed to send code');
+                    }
+                })
+                .catch(function () { showError('Network error. Try again.'); })
+                .finally(function () { btn.disabled = false; btnText.textContent = 'Send Verification Code'; });
         });
 
-        // OTP handling
-        const otpInputs = document.querySelectorAll('.otp-input');
+        var otpInputs = document.querySelectorAll('.otp-input');
         otpInputs.forEach(function (input, index) {
             input.addEventListener('input', function (e) {
-                const value = e.target.value.replace(/\D/g, '');
+                var value = e.target.value.replace(/\D/g, '');
                 e.target.value = value;
                 if (value && index < 5) otpInputs[index + 1].focus();
                 if (getOTP().length === 6) verifyOTP();
             });
-
             input.addEventListener('keydown', function (e) {
-                if (e.key === 'Backspace' && !e.target.value && index > 0) {
-                    otpInputs[index - 1].focus();
-                }
+                if (e.key === 'Backspace' && !e.target.value && index > 0) otpInputs[index - 1].focus();
             });
-
             input.addEventListener('paste', function (e) {
                 e.preventDefault();
-                const pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+                var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
                 if (pasted.length >= 6) {
-                    for (let i = 0; i < 6; i++) otpInputs[i].value = pasted[i] || '';
+                    for (var i = 0; i < 6; i++) otpInputs[i].value = pasted[i] || '';
                     verifyOTP();
                 }
             });
         });
 
         function getOTP() {
-            let otp = '';
+            var otp = '';
             otpInputs.forEach(function (i) { otp += i.value; });
             return otp;
         }
 
         document.getElementById('verifyBtn').addEventListener('click', verifyOTP);
 
-        async function verifyOTP() {
-            const otp = getOTP();
+        function verifyOTP() {
+            var otp = getOTP();
             if (otp.length !== 6) { showError('Enter the 6-digit code'); return; }
-
-            const btn = document.getElementById('verifyBtn');
-            const btnText = document.getElementById('verifyText');
-
+            var btn = document.getElementById('verifyBtn');
+            var btnText = document.getElementById('verifyText');
             btn.disabled = true;
             btnText.innerHTML = '<span class="spinner"></span> Verifying...';
 
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: userPhone, otp: otp })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    if (countdownTimer) clearInterval(countdownTimer);
-                    document.getElementById('displayUsername').textContent = data.credentials.username;
-                    document.getElementById('displayPin').textContent = data.credentials.pin;
-                    document.getElementById('displayRole').textContent = data.credentials.role;
-                    updateSteps(3);
-                } else {
-                    showError(data.error || 'Invalid code');
-                    otpInputs.forEach(function (i) { i.value = ''; });
-                    otpInputs[0].focus();
-                }
-            } catch (err) {
-                showError('Network error');
-            } finally {
-                btn.disabled = false;
-                btnText.textContent = 'Verify & Create Account';
-            }
+            fetch(API_BASE + '/api/auth/register-verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: userPhone, otp: otp })
+            })
+                .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
+                .then(function (res) {
+                    if (res.ok && res.data.success) {
+                        if (countdownTimer) clearInterval(countdownTimer);
+                        document.getElementById('displayUsername').textContent = res.data.credentials.username;
+                        document.getElementById('displayPin').textContent = res.data.credentials.pin;
+                        document.getElementById('displayRole').textContent = res.data.credentials.role;
+                        updateSteps(3);
+                    } else {
+                        showError(res.data.error || 'Invalid code');
+                        otpInputs.forEach(function (i) { i.value = ''; });
+                        otpInputs[0].focus();
+                    }
+                })
+                .catch(function () { showError('Network error'); })
+                .finally(function () { btn.disabled = false; btnText.textContent = 'Verify & Create Account'; });
         }
 
         function startCountdown() {
-            let seconds = 60;
-            const resendBtn = document.getElementById('resendBtn');
-            const countdown = document.getElementById('countdown');
-
+            var seconds = 60;
+            var resendBtn = document.getElementById('resendBtn');
             resendBtn.disabled = true;
             resendBtn.innerHTML = 'Resend in <span id="countdown">60</span>s';
-
             countdownTimer = setInterval(function () {
                 seconds--;
-                document.getElementById('countdown').textContent = seconds;
+                var cd = document.getElementById('countdown');
+                if (cd) cd.textContent = seconds;
                 if (seconds <= 0) {
                     clearInterval(countdownTimer);
                     resendBtn.disabled = false;
@@ -845,31 +800,21 @@
             }, 1000);
         }
 
-        document.getElementById('resendBtn').addEventListener('click', async function () {
-            const btn = this;
+        document.getElementById('resendBtn').addEventListener('click', function () {
+            var btn = this;
             btn.disabled = true;
             btn.textContent = 'Sending...';
-
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-resend', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: userPhone })
-                });
-                const data = await response.json();
-                if (response.ok && data.success) {
-                    showSuccess('New code sent!');
-                    startCountdown();
-                } else {
-                    showError(data.error || 'Failed');
-                    btn.disabled = false;
-                    btn.textContent = 'Resend Code';
-                }
-            } catch (err) {
-                showError('Network error');
-                btn.disabled = false;
-                btn.textContent = 'Resend Code';
-            }
+            fetch(API_BASE + '/api/auth/register-resend', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: userPhone })
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) { showSuccess('New code sent!'); startCountdown(); }
+                    else { showError(data.error || 'Failed'); btn.disabled = false; btn.textContent = 'Resend Code'; }
+                })
+                .catch(function () { showError('Network error'); btn.disabled = false; btn.textContent = 'Resend Code'; });
         });
 
         function goBack() {
@@ -879,9 +824,9 @@
         }
 
         function copyPin() {
-            const pin = document.getElementById('displayPin').textContent;
+            var pin = document.getElementById('displayPin').textContent;
             navigator.clipboard.writeText(pin).then(function () {
-                const btn = event.target.closest('button');
+                var btn = event.target.closest('button');
                 btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
                 setTimeout(function () { btn.innerHTML = '<i class="fas fa-copy"></i> Copy'; }, 2000);
             }).catch(function () { alert('PIN: ' + pin); });
@@ -893,4 +838,4 @@
 
 </html>
 </CodeContent>
-<parameter name="Complexity">5
+<parameter name="Complexity">4
