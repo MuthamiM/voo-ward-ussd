@@ -7,8 +7,15 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../lib/logger');
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 const { getDb } = require('../lib/mongo');
 const { ObjectId } = require('mongodb');
+
+// Create uploads directory for issue images
+const ISSUE_UPLOADS_DIR = path.join(__dirname, '../../public/uploads/issues');
+try { fs.mkdirSync(ISSUE_UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
+
 
 // In-memory OTP storage (use Redis in production)
 const otpStore = new Map();
@@ -314,4 +321,80 @@ router.get('/announcements', async (req, res) => {
     }
 });
 
+/**
+ * Submit issue from mobile app (PUBLIC with phone number)
+ * POST /api/citizen/mobile/issues
+ * This endpoint allows the mobile app to submit issues without citizen portal auth
+ * since the mobile app uses Supabase authentication
+ */
+router.post('/mobile/issues', async (req, res) => {
+    try {
+        const { phoneNumber, title, category, description, location, images, userId } = req.body;
+
+        if (!phoneNumber || !category || !description) {
+            return res.status(400).json({ error: 'Phone number, category, and description required' });
+        }
+
+        const db = await getDb();
+
+        // Generate ticket ID
+        const count = await db.collection('issues').countDocuments();
+        const ticket = 'ISS-' + String(count + 1).padStart(3, '0');
+
+        // Process base64 images
+        const imageUrls = [];
+        if (images && Array.isArray(images)) {
+            for (let i = 0; i < Math.min(images.length, 5); i++) {
+                try {
+                    // Handle base64 with or without data URL prefix
+                    let base64Data = images[i];
+                    if (base64Data.includes(',')) {
+                        base64Data = base64Data.split(',')[1];
+                    }
+                    const buffer = Buffer.from(base64Data, 'base64');
+                    const filename = `issue-${Date.now()}-${i}.jpg`;
+                    const filepath = path.join(ISSUE_UPLOADS_DIR, filename);
+                    fs.writeFileSync(filepath, buffer);
+                    imageUrls.push(`/uploads/issues/${filename}`);
+                    logger.info(`Saved issue image: ${filename}`);
+                } catch (imgErr) {
+                    logger.error('Failed to save issue image:', imgErr);
+                }
+            }
+        }
+
+        const issue = {
+            ticket,
+            title: title || category,
+            category,
+            message: description,
+            description,
+            location: typeof location === 'string' ? location : JSON.stringify(location),
+            images: imageUrls,
+            phone_number: phoneNumber,
+            user_id: userId || null,
+            status: 'open',
+            source: 'Mobile App',
+            created_at: new Date(),
+            updated_at: new Date(),
+            comments: []
+        };
+
+        const result = await db.collection('issues').insertOne(issue);
+
+        logger.info(`Issue created via mobile app: ${ticket} with ${imageUrls.length} images`);
+
+        res.status(201).json({
+            success: true,
+            ticket,
+            issueNumber: ticket,
+            issue: { ...issue, _id: result.insertedId }
+        });
+    } catch (err) {
+        logger.error('Create mobile issue error:', err);
+        res.status(500).json({ error: 'Failed to create issue' });
+    }
+});
+
 module.exports = router;
+
