@@ -1091,7 +1091,7 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
-                    <div class="logo-icon">VK</div>
+                    <img src="/uploads/voo_logo.png" alt="VOO Logo" class="logo-icon" style="width: 48px; height: 48px; border-radius: 12px; object-fit: contain; background: linear-gradient(135deg, #6366f1, #8b5cf6);">
                     <div class="logo-text">
                         <div class="logo-title">VOO Ward</div>
                         <div class="logo-subtitle">Admin Dashboard</div>
@@ -3703,6 +3703,18 @@
                             </span>
                         </div>
                     </div>                    <p style="color: #ccc; margin: 0 0 16px 0; font-size: 14px; line-height: 1.5;">${issue.description}</p>
+                    
+                    ${issue.images && issue.images.length > 0 ? `
+                    <div style="display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;">
+                        ${issue.images.map(img => `
+                            <img src="${img}" alt="Issue image" 
+                                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: transform 0.2s;"
+                                 onmouseover="this.style.transform='scale(1.1)'" 
+                                 onmouseout="this.style.transform='scale(1)'" 
+                                 onclick="window.open('${img}', '_blank')">
+                        `).join('')}
+                    </div>
+                    ` : ''}
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px; font-size: 12px;">
                         <div>
