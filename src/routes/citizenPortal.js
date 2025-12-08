@@ -244,16 +244,65 @@ router.get('/bursaries', authenticateCitizen, async (req, res) => {
 });
 
 /**
- * Get announcements
+ * Submit bursary application
+ * POST /api/citizen/bursaries
+ */
+router.post('/bursaries', authenticateCitizen, async (req, res) => {
+    try {
+        const { institutionName, course, yearOfStudy, institutionType, reason, amountRequested } = req.body;
+        const phoneNumber = req.citizen.phoneNumber;
+
+        if (!institutionName || !course || !yearOfStudy) {
+            return res.status(400).json({ error: 'Institution, course, and year of study required' });
+        }
+
+        const db = await getDb();
+
+        // Generate reference code
+        const count = await db.collection('bursaries').countDocuments();
+        const refCode = 'BUR-' + String(count + 1).padStart(4, '0');
+
+        const application = {
+            ref_code: refCode,
+            phone_number: phoneNumber,
+            institution_name: institutionName,
+            course,
+            year_of_study: yearOfStudy,
+            institution_type: institutionType || 'Other',
+            reason: reason || '',
+            amount_requested: amountRequested || 0,
+            status: 'pending',
+            source: 'Mobile App',
+            created_at: new Date(),
+            updated_at: new Date()
+        };
+
+        const result = await db.collection('bursaries').insertOne(application);
+
+        logger.info(`Bursary application submitted via mobile: ${refCode}`);
+
+        res.status(201).json({
+            success: true,
+            refCode,
+            application: { ...application, _id: result.insertedId }
+        });
+    } catch (err) {
+        logger.error('Submit bursary error:', err);
+        res.status(500).json({ error: 'Failed to submit bursary application' });
+    }
+});
+
+/**
+ * Get announcements (PUBLIC - no auth required)
  * GET /api/citizen/announcements
  */
-router.get('/announcements', authenticateCitizen, async (req, res) => {
+router.get('/announcements', async (req, res) => {
     try {
         const db = await getDb();
 
         // Fetch published announcements
         const announcements = await db.collection('announcements')
-            .find({}) // Assuming all announcements are public for now, or filter by { published: true }
+            .find({}) // All announcements are public
             .sort({ created_at: -1 })
             .limit(20)
             .toArray();
