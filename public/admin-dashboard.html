@@ -2514,14 +2514,201 @@
             }
         }
 
-        function loadIssuesData() {
-            // Implement issues data loading
-            console.log('Loading issues data...');
+        async function loadIssuesData() {
+            console.log('Loading issues data from MongoDB...');
+            const issuesList = document.getElementById('issuesList');
+            const issuesCount = document.getElementById('issuesCount');
+
+            try {
+                issuesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ccc;">
+                        <div class="loading"></div>
+                        <div style="margin-top: 16px;">Loading issues...</div>
+                    </div>
+                `;
+
+                const response = await fetch(`${API_BASE}/api/admin/issues`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load issues');
+
+                const issues = await response.json();
+                console.log('Loaded issues:', issues.length);
+
+                if (!issues || issues.length === 0) {
+                    issuesList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #ccc;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                            <div>No issues reported yet</div>
+                            <p style="font-size: 14px; opacity: 0.7;">Issues submitted from the mobile app will appear here</p>
+                        </div>
+                    `;
+                    if (issuesCount) issuesCount.textContent = 'No issues';
+                    return;
+                }
+
+                // Update stats
+                updateIssueStats(issues);
+                if (issuesCount) issuesCount.textContent = `${issues.length} total issues`;
+
+                // Render issues with images
+                issuesList.innerHTML = issues.map(issue => `
+                    <div class="issue-card" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                            <div>
+                                <h3 style="color: #fff; margin: 0 0 8px 0; font-size: 16px;">${issue.title || issue.category}</h3>
+                                <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #ccc;">
+                                    <span style="color: #E8847C;">#${issue.ticket || issue._id?.toString().slice(-6) || 'N/A'}</span>
+                                    <span>📍 ${issue.location || 'No location'}</span>
+                                    <span>📋 ${issue.category || 'General'}</span>
+                                    <span>📱 ${issue.source || 'Unknown'}</span>
+                                </div>
+                            </div>
+                            <span style="background: ${getStatusColor(issue.status)}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; text-transform: uppercase;">${issue.status || 'open'}</span>
+                        </div>
+                        
+                        <p style="color: #ccc; margin: 0 0 12px 0; font-size: 14px;">${issue.description || issue.message || ''}</p>
+                        
+                        ${issue.images && issue.images.length > 0 ? `
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                            ${issue.images.map(img => `
+                                <img src="${img}" alt="Issue image" 
+                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1);"
+                                     onclick="window.open('${img}', '_blank')"
+                                     onerror="this.style.display='none'">
+                            `).join('')}
+                        </div>
+                        ` : ''}
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 12px;">
+                            <div style="color: #aaa;">
+                                <span>Reported by: ${issue.reporter_name || issue.phone_number || 'Anonymous'}</span>
+                                <span style="margin-left: 16px;">📅 ${new Date(issue.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <button onclick='showUpdateIssueModal(${JSON.stringify(issue).replace(/'/g, "&#39;")})' 
+                                    style="background: #E8847C; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                                <i class="fas fa-edit"></i> Update
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                console.error('Error loading issues:', error);
+                issuesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #f87171;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div>Failed to load issues</div>
+                        <p style="font-size: 14px;">${error.message}</p>
+                        <button onclick="loadIssuesData()" style="margin-top: 16px; padding: 8px 16px; background: #E8847C; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            🔄 Retry
+                        </button>
+                    </div>
+                `;
+            }
         }
 
-        function loadBursariesData() {
-            // Implement bursaries data loading
-            console.log('Loading bursaries data...');
+        function getStatusColor(status) {
+            const colors = {
+                'open': '#f59e0b',
+                'pending': '#f59e0b',
+                'in-progress': '#3b82f6',
+                'resolved': '#10b981',
+                'closed': '#6b7280'
+            };
+            return colors[status] || '#6b7280';
+        }
+
+        async function loadBursariesData() {
+            console.log('Loading bursaries data from MongoDB...');
+            const bursariesList = document.getElementById('bursariesList');
+
+            try {
+                bursariesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ccc;">
+                        <div class="loading"></div>
+                        <div style="margin-top: 16px;">Loading bursary applications...</div>
+                    </div>
+                `;
+
+                const response = await fetch(`${API_BASE}/api/admin/bursaries`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load bursaries');
+
+                const bursaries = await response.json();
+                console.log('Loaded bursaries:', bursaries.length);
+
+                if (!bursaries || bursaries.length === 0) {
+                    bursariesList.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #ccc;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🎓</div>
+                            <div>No bursary applications yet</div>
+                            <p style="font-size: 14px; opacity: 0.7;">Applications from the mobile app will appear here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Render bursaries
+                bursariesList.innerHTML = `
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Applicant</th>
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Institution</th>
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Course</th>
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Amount</th>
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Status</th>
+                                    <th style="text-align: left; padding: 12px; color: #aaa;">Date</th>
+                                    <th style="text-align: center; padding: 12px; color: #aaa;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${bursaries.map(b => `
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <td style="padding: 12px; color: #fff;">
+                                            <div>${b.fullName || b.full_name || 'N/A'}</div>
+                                            <div style="font-size: 12px; color: #aaa;">${b.phoneNumber || b.phone_number || ''}</div>
+                                        </td>
+                                        <td style="padding: 12px; color: #ccc;">${b.institutionName || b.institution || 'N/A'}</td>
+                                        <td style="padding: 12px; color: #ccc;">${b.course || 'N/A'}</td>
+                                        <td style="padding: 12px; color: #10b981;">KES ${b.amountRequested || b.amount || 'N/A'}</td>
+                                        <td style="padding: 12px;">
+                                            <span style="background: ${b.status === 'approved' ? '#10b981' : b.status === 'rejected' ? '#ef4444' : '#f59e0b'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px; text-transform: uppercase;">${b.status || 'pending'}</span>
+                                        </td>
+                                        <td style="padding: 12px; color: #aaa; font-size: 12px;">${new Date(b.created_at || b.appliedAt).toLocaleDateString()}</td>
+                                        <td style="padding: 12px; text-align: center;">
+                                            <button onclick='processBursary("${b._id}", "${b.fullName || b.full_name}")' style="background: #E8847C; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                                                Process
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading bursaries:', error);
+                bursariesList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #f87171;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                        <div>Failed to load bursaries</div>
+                        <button onclick="loadBursariesData()" style="margin-top: 16px; padding: 8px 16px; background: #E8847C; color: white; border: none; border-radius: 6px; cursor: pointer;">🔄 Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function processBursary(id, name) {
+            showToast(`Processing bursary for ${name}...`, 'info');
+            // Open process modal
+            showProcessBursaryModal();
         }
 
         function navigateTo(page) {
