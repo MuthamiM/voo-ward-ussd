@@ -95,9 +95,46 @@ async function deleteImage(publicId) {
     }
 }
 
+/**
+ * List all images from Cloudinary folder
+ * @param {string} folder - Folder to list images from
+ * @param {number} maxResults - Maximum number of images to return
+ * @returns {Promise<{success: boolean, images?: array, error?: string}>}
+ */
+async function listImages(folder = 'issues', maxResults = 100) {
+    try {
+        const result = await cloudinary.api.resources({
+            type: 'upload',
+            prefix: `voo-ward/${folder}`,
+            max_results: maxResults,
+            resource_type: 'image'
+        });
+
+        const images = result.resources.map(img => ({
+            publicId: img.public_id,
+            url: img.secure_url,
+            thumbnailUrl: cloudinary.url(img.public_id, {
+                width: 200,
+                height: 200,
+                crop: 'fill',
+                quality: 'auto'
+            }),
+            format: img.format,
+            createdAt: img.created_at,
+            bytes: img.bytes
+        }));
+
+        return { success: true, images };
+    } catch (error) {
+        logger.error('Cloudinary list error:', error);
+        return { success: false, error: error.message, images: [] };
+    }
+}
+
 module.exports = {
     uploadBase64Image,
     uploadMultipleImages,
     deleteImage,
+    listImages,
     cloudinary
 };

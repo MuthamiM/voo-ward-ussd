@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const { getDb } = require('../lib/mongo');
 const { ObjectId } = require('mongodb');
+const { listImages, deleteImage } = require('../lib/cloudinaryService');
 
 // Create uploads directory for issue images
 const ISSUE_UPLOADS_DIR = path.join(__dirname, '../../public/uploads/issues');
@@ -476,5 +477,543 @@ router.post('/mobile/bursaries', async (req, res) => {
     }
 });
 
-module.exports = router;
+/**
+ * MOBILE APP ENDPOINTS
+ * ==========================================
+ */
 
+/**
+ * Mobile User Registration with username/password
+ * POST /api/citizen/mobile/register
+     */
+router.post('/mobile/register', async (req, res) => {
+    try {
+        const {
+            fullName,
+            username,
+            phoneNumber,
+            nationalId,
+            village,
+            password
+        } = req.body;
+
+        if (!username || !password || !fullName || !phoneNumber) {
+            return res.status(400).json({ error: 'Username, password, name and phone required' });
+        }
+
+        // Validate password strength
+        if (password.length < 8) {
+            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        }
+
+        const db = await getDb();
+
+        // Check if username exists
+        const existingUser = await db.collection('mobile_users').findOne({ username: username.toLowerCase() });
+        if (existingUser) {
+            return res.status(400).json({ error: 'Username already taken' });
+        }
+
+        // Check if phone exists
+        const existingPhone = await db.collection('mobile_users').findOne({ phone_number: phoneNumber });
+        if (existingPhone) {
+            return res.status(400).json({ error: 'Phone number already registered' });
+        }
+
+        // Hash password (simple hash - use bcrypt in production)
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+        const user = {
+            username: username.toLowerCase(),
+            full_name: fullName,
+            phone_number: phoneNumber,
+            national_id: nationalId || '',
+            village: village || '',
+            password: hashedPassword,
+            created_at: new Date(),
+            updated_at: new Date()
+        };
+
+        const result = await db.collection('mobile_users').insertOne(user);
+        logger.info(`Mobile user registered: ${username}`);
+
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful',
+            userId: result.insertedId.toString()
+        });
+    } catch (err) {
+        logger.error('Mobile register error:', err);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
+/**
+ * Mobile User Login with username/password
+ * POST /api/citizen/mobile/login
+ */
+router.post('/mobile/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password required' });
+        }
+
+        const db = await getDb();
+        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+
+        const user = await db.collection('mobile_users').findOne({
+            username: username.toLowerCase(),
+            password: hashedPassword
+        });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        // Generate session token
+        const token = crypto.randomBytes(32).toString('hex');
+        citizenSessions.set(token, {
+            userId: user._id.toString(),
+            username: user.username,
+            phoneNumber: user.phone_number,
+            createdAt: Date.now(),
+            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
+        logger.info(`Mobile user logged in: ${username}`);
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user._id.toString(),
+                username: user.username,
+                fullName: user.full_name,
+                phoneNumber: user.phone_number,
+                village: user.village || ''
+            }
+        });
+    } catch (err) {
+        logger.error('Mobile login error:', err);
+        res.status(500).json({ error: 'Login failed' });
+    }
+});
+
+/**
+ * Mobile OTP Send (for verification during registration)
+ * POST /api/citizen/mobile/otp/send
+ */
+router.post('/mobile/otp/send', async (req, res) => {
+    try {
+        const { phoneNumber } = req.body;
+
+        if (!phoneNumber) {
+            return res.status(400).json({ error: 'Phone number required' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = generateOTP();
+        const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
+
+        // Store OTP
+        otpStore.set(phoneNumber, { otp, expiresAt });
+
+        // Log OTP (in production, send via SMS)
+        console.log(`📱 Mobile OTP for ${phoneNumber}: ${otp}`);
+        logger.info(`OTP generated for mobile: ${phoneNumber}`);
+
+        res.json({
+            success: true,
+            message: 'OTP sent to your phone',
+            // Return OTP for testing (remove in production)
+            otp: otp
+        });
+    } catch (err) {
+        logger.error('Mobile OTP send error:', err);
+        res.status(500).json({ error: 'Failed to send OTP' });
+    }
+});
+
+/**
+ * Mobile OTP Verify
+ * POST /api/citizen/mobile/otp/verify
+ */
+router.post('/mobile/otp/verify', async (req, res) => {
+    try {
+        const { phoneNumber, otp } = req.body;
+
+        if (!phoneNumber || !otp) {
+            return res.status(400).json({ error: 'Phone number and OTP required' });
+        }
+
+        const storedOTP = otpStore.get(phoneNumber);
+
+        if (!storedOTP) {
+            return res.status(401).json({ error: 'OTP not found or expired', verified: false });
+        }
+
+        if (storedOTP.expiresAt < Date.now()) {
+            otpStore.delete(phoneNumber);
+            return res.status(401).json({ error: 'OTP expired', verified: false });
+        }
+
+        if (storedOTP.otp !== otp) {
+            return res.status(401).json({ error: 'Invalid OTP', verified: false });
+        }
+
+        // OTP verified - clear it
+        otpStore.delete(phoneNumber);
+        logger.info(`OTP verified for mobile: ${phoneNumber}`);
+
+        res.json({
+            success: true,
+            verified: true,
+            message: 'Phone verified successfully'
+        });
+    } catch (err) {
+        logger.error('Mobile OTP verify error:', err);
+        res.status(500).json({ error: 'Verification failed', verified: false });
+    }
+});
+
+/**
+ * Get Mobile User Profile
+ * GET /api/citizen/mobile/profile/:userId
+ */
+router.get('/mobile/profile/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const db = await getDb();
+
+        const user = await db.collection('mobile_users').findOne(
+            { _id: new ObjectId(userId) },
+            { projection: { password: 0 } }
+        );
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                id: user._id.toString(),
+                username: user.username,
+                fullName: user.full_name,
+                phoneNumber: user.phone_number,
+                nationalId: user.national_id || '',
+                village: user.village || '',
+                createdAt: user.created_at
+            }
+        });
+    } catch (err) {
+        logger.error('Get mobile profile error:', err);
+        res.status(500).json({ error: 'Failed to get profile' });
+    }
+});
+
+/**
+ * Update Mobile User Profile
+ * PUT /api/citizen/mobile/profile/:userId
+ */
+router.put('/mobile/profile/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { fullName, phoneNumber, village } = req.body;
+        const db = await getDb();
+
+        const result = await db.collection('mobile_users').updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: {
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    village: village,
+                    updated_at: new Date()
+                }
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        logger.info(`Mobile profile updated: ${userId}`);
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully'
+        });
+    } catch (err) {
+        logger.error('Update mobile profile error:', err);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+/**
+ * Get User Issues by userId
+ * GET /api/citizen/mobile/issues/:userId
+ */
+router.get('/mobile/issues/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const db = await getDb();
+
+        const issues = await db.collection('issues')
+            .find({ user_id: userId })
+            .sort({ created_at: -1 })
+            .toArray();
+
+        res.json({
+            success: true,
+            issues: issues.map(issue => ({
+                id: issue._id.toString(),
+                ticket: issue.ticket,
+                title: issue.title,
+                category: issue.category,
+                description: issue.description,
+                status: issue.status,
+                location: issue.location,
+                imageUrl: issue.image_url,
+                thumbnailUrl: issue.thumbnail_url,
+                createdAt: issue.created_at
+            }))
+        });
+    } catch (err) {
+        logger.error('Get user issues error:', err);
+        res.status(500).json({ error: 'Failed to get issues' });
+    }
+});
+
+/**
+ * Get User Bursaries by userId
+ * GET /api/citizen/mobile/bursaries/:userId
+ */
+router.get('/mobile/bursaries/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const db = await getDb();
+
+        const bursaries = await db.collection('bursaries')
+            .find({ user_id: userId })
+            .sort({ created_at: -1 })
+            .toArray();
+
+        res.json({
+            success: true,
+            bursaries: bursaries.map(b => ({
+                id: b._id.toString(),
+                refCode: b.ref_code,
+                institutionName: b.institution_name,
+                course: b.course,
+                yearOfStudy: b.year_of_study,
+                status: b.status,
+                amountRequested: b.amount_requested,
+                createdAt: b.created_at
+            }))
+        });
+    } catch (err) {
+        logger.error('Get user bursaries error:', err);
+        res.status(500).json({ error: 'Failed to get bursaries' });
+    }
+});
+
+/**
+ * MEDIA GALLERY ENDPOINTS
+ * ==========================================
+ */
+
+/**
+ * Get all images from Cloudinary (Media Gallery)
+ * GET /api/citizen/media/images
+ */
+router.get('/media/images', async (req, res) => {
+    try {
+        const folder = req.query.folder || 'issues';
+        const result = await listImages(folder);
+
+        if (result.success) {
+            res.json({ success: true, images: result.images });
+        } else {
+            res.status(500).json({ error: result.error, images: [] });
+        }
+    } catch (err) {
+        logger.error('Get media images error:', err);
+        res.status(500).json({ error: 'Failed to get images' });
+    }
+});
+
+/**
+ * Delete an image from Cloudinary
+ * DELETE /api/citizen/media/images/:publicId
+ */
+router.delete('/media/images/:publicId', async (req, res) => {
+    try {
+        const { publicId } = req.params;
+        const result = await deleteImage(decodeURIComponent(publicId));
+
+        if (result.success) {
+            res.json({ success: true, message: 'Image deleted' });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (err) {
+        logger.error('Delete media image error:', err);
+        res.status(500).json({ error: 'Failed to delete image' });
+    }
+});
+
+/**
+ * Get all mobile app users (for dashboard)
+ * GET /api/citizen/mobile/users
+ */
+router.get('/mobile/users', async (req, res) => {
+    try {
+        const db = await getDb();
+        const users = await db.collection('mobile_users')
+            .find({}, { projection: { password: 0 } })
+            .sort({ created_at: -1 })
+            .toArray();
+
+        res.json({
+            success: true,
+            users: users.map(u => ({
+                id: u._id.toString(),
+                username: u.username,
+                fullName: u.full_name,
+                phoneNumber: u.phone_number,
+                nationalId: u.national_id || '',
+                village: u.village || '',
+                createdAt: u.created_at
+            })),
+            total: users.length
+        });
+    } catch (err) {
+        logger.error('Get mobile users error:', err);
+        res.status(500).json({ error: 'Failed to get users' });
+    }
+});
+
+/**
+ * DATABASE BACKUP/RECOVERY ENDPOINTS
+ * ==========================================
+ */
+
+/**
+ * Create database backup (recovery point)
+ * POST /api/citizen/admin/backup
+ */
+router.post('/admin/backup', async (req, res) => {
+    try {
+        const db = await getDb();
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+        // Get all collections data
+        const collections = ['mobile_users', 'issues', 'bursaries', 'constituents', 'announcements'];
+        const backup = {
+            timestamp,
+            createdAt: new Date(),
+            data: {}
+        };
+
+        for (const collName of collections) {
+            try {
+                backup.data[collName] = await db.collection(collName).find({}).toArray();
+            } catch (e) {
+                backup.data[collName] = [];
+            }
+        }
+
+        // Store backup in a backups collection
+        await db.collection('backups').insertOne(backup);
+
+        logger.info(`Database backup created: ${timestamp}`);
+
+        res.json({
+            success: true,
+            backupId: timestamp,
+            message: 'Backup created successfully',
+            stats: Object.keys(backup.data).reduce((acc, k) => {
+                acc[k] = backup.data[k].length;
+                return acc;
+            }, {})
+        });
+    } catch (err) {
+        logger.error('Database backup error:', err);
+        res.status(500).json({ error: 'Failed to create backup' });
+    }
+});
+
+/**
+ * List available backups
+ * GET /api/citizen/admin/backups
+ */
+router.get('/admin/backups', async (req, res) => {
+    try {
+        const db = await getDb();
+        const backups = await db.collection('backups')
+            .find({}, { projection: { data: 0 } })
+            .sort({ createdAt: -1 })
+            .limit(20)
+            .toArray();
+
+        res.json({
+            success: true,
+            backups: backups.map(b => ({
+                id: b._id.toString(),
+                timestamp: b.timestamp,
+                createdAt: b.createdAt
+            }))
+        });
+    } catch (err) {
+        logger.error('List backups error:', err);
+        res.status(500).json({ error: 'Failed to list backups' });
+    }
+});
+
+/**
+ * Restore from backup
+ * POST /api/citizen/admin/restore/:backupId
+ */
+router.post('/admin/restore/:backupId', async (req, res) => {
+    try {
+        const { backupId } = req.params;
+        const db = await getDb();
+
+        const backup = await db.collection('backups').findOne({ timestamp: backupId });
+
+        if (!backup) {
+            return res.status(404).json({ error: 'Backup not found' });
+        }
+
+        // Restore each collection
+        const restored = {};
+        for (const [collName, docs] of Object.entries(backup.data)) {
+            if (docs.length > 0) {
+                // Create backup of current state before restore
+                const currentDocs = await db.collection(collName).find({}).toArray();
+                await db.collection(`${collName}_pre_restore_${Date.now()}`).insertMany(currentDocs);
+
+                // Clear and restore
+                await db.collection(collName).deleteMany({});
+                await db.collection(collName).insertMany(docs);
+                restored[collName] = docs.length;
+            }
+        }
+
+        logger.info(`Database restored from backup: ${backupId}`);
+
+        res.json({
+            success: true,
+            message: 'Database restored successfully',
+            restored
+        });
+    } catch (err) {
+        logger.error('Database restore error:', err);
+        res.status(500).json({ error: 'Failed to restore backup' });
+    }
+});
+
+module.exports = router;
