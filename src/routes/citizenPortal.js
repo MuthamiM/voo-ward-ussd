@@ -325,11 +325,11 @@ router.get('/announcements', async (req, res) => {
  * Submit issue from mobile app (PUBLIC with phone number)
  * POST /api/citizen/mobile/issues
  * This endpoint allows the mobile app to submit issues without citizen portal auth
- * since the mobile app uses Supabase authentication
+ * Uses Cloudinary for image storage
  */
 router.post('/mobile/issues', async (req, res) => {
     try {
-        const { phoneNumber, title, category, description, location, images, userId } = req.body;
+        const { phoneNumber, title, category, description, location, images, userId, fullName } = req.body;
 
         if (!phoneNumber || !category || !description) {
             return res.status(400).json({ error: 'Phone number, category, and description required' });
@@ -341,24 +341,35 @@ router.post('/mobile/issues', async (req, res) => {
         const count = await db.collection('issues').countDocuments();
         const ticket = 'ISS-' + String(count + 1).padStart(3, '0');
 
-        // Process base64 images
-        const imageUrls = [];
-        if (images && Array.isArray(images)) {
-            for (let i = 0; i < Math.min(images.length, 5); i++) {
-                try {
-                    // Handle base64 with or without data URL prefix
-                    let base64Data = images[i];
-                    if (base64Data.includes(',')) {
-                        base64Data = base64Data.split(',')[1];
+        // Upload images to Cloudinary if available
+        let imageUrls = [];
+        let thumbnailUrls = [];
+
+        if (images && Array.isArray(images) && images.length > 0) {
+            try {
+                // Try Cloudinary first
+                const cloudinaryService = require('../lib/cloudinaryService');
+                const uploadResult = await cloudinaryService.uploadMultipleImages(images, 'issues');
+                imageUrls = uploadResult.urls;
+                thumbnailUrls = uploadResult.thumbnails;
+                logger.info(`Uploaded ${imageUrls.length} images to Cloudinary for ${ticket}`);
+            } catch (cloudErr) {
+                logger.warn('Cloudinary upload failed, falling back to local storage:', cloudErr.message);
+                // Fallback to local storage
+                for (let i = 0; i < Math.min(images.length, 5); i++) {
+                    try {
+                        let base64Data = images[i];
+                        if (base64Data.includes(',')) {
+                            base64Data = base64Data.split(',')[1];
+                        }
+                        const buffer = Buffer.from(base64Data, 'base64');
+                        const filename = `issue-${Date.now()}-${i}.jpg`;
+                        const filepath = path.join(ISSUE_UPLOADS_DIR, filename);
+                        fs.writeFileSync(filepath, buffer);
+                        imageUrls.push(`/uploads/issues/${filename}`);
+                    } catch (imgErr) {
+                        logger.error('Failed to save issue image:', imgErr);
                     }
-                    const buffer = Buffer.from(base64Data, 'base64');
-                    const filename = `issue-${Date.now()}-${i}.jpg`;
-                    const filepath = path.join(ISSUE_UPLOADS_DIR, filename);
-                    fs.writeFileSync(filepath, buffer);
-                    imageUrls.push(`/uploads/issues/${filename}`);
-                    logger.info(`Saved issue image: ${filename}`);
-                } catch (imgErr) {
-                    logger.error('Failed to save issue image:', imgErr);
                 }
             }
         }
@@ -371,8 +382,10 @@ router.post('/mobile/issues', async (req, res) => {
             description,
             location: typeof location === 'string' ? location : JSON.stringify(location),
             images: imageUrls,
+            thumbnails: thumbnailUrls,
             phone_number: phoneNumber,
             user_id: userId || null,
+            reporter_name: fullName || null,
             status: 'open',
             source: 'Mobile App',
             created_at: new Date(),
@@ -393,6 +406,73 @@ router.post('/mobile/issues', async (req, res) => {
     } catch (err) {
         logger.error('Create mobile issue error:', err);
         res.status(500).json({ error: 'Failed to create issue' });
+    }
+});
+
+/**
+ * Submit bursary application from mobile app (PUBLIC with user info)
+ * POST /api/citizen/mobile/bursaries
+ * This endpoint allows the mobile app to submit bursary applications without citizen portal auth
+ * since the mobile app uses Supabase authentication
+ */
+router.post('/mobile/bursaries', async (req, res) => {
+    try {
+        const {
+            phoneNumber,
+            userId,
+            fullName,
+            institutionName,
+            course,
+            yearOfStudy,
+            institutionType,
+            reason,
+            amountRequested
+        } = req.body;
+
+        if (!institutionName || !course || !yearOfStudy) {
+            return res.status(400).json({ error: 'Institution, course, and year of study required' });
+        }
+
+        const db = await getDb();
+
+        // Generate reference code
+        const count = await db.collection('bursaries').countDocuments();
+        const refCode = 'BUR-' + String(count + 1).padStart(4, '0');
+
+        const application = {
+            ref_code: refCode,
+            application_number: refCode,
+            phone_number: phoneNumber || '',
+            user_id: userId || null,
+            full_name: fullName || '',
+            institution_name: institutionName,
+            institutionName: institutionName,  // For dashboard compatibility
+            course,
+            year_of_study: yearOfStudy,
+            yearOfStudy: yearOfStudy,  // For dashboard compatibility
+            institution_type: institutionType || 'university',
+            reason: reason || '',
+            amount_requested: amountRequested || 0,
+            amountRequested: amountRequested || 0,  // For dashboard compatibility
+            status: 'pending',
+            source: 'Mobile App',
+            created_at: new Date(),
+            updated_at: new Date()
+        };
+
+        const result = await db.collection('bursaries').insertOne(application);
+
+        logger.info(`Bursary application submitted via mobile: ${refCode}`);
+
+        res.status(201).json({
+            success: true,
+            refCode,
+            applicationNumber: refCode,
+            application: { ...application, _id: result.insertedId }
+        });
+    } catch (err) {
+        logger.error('Submit mobile bursary error:', err);
+        res.status(500).json({ error: 'Failed to submit bursary application' });
     }
 });
 
