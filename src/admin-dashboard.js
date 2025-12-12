@@ -2802,12 +2802,12 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
     }
 
     // Auto-create announcement if resolved
-    if (status === 'Resolved' || status === 'Resolved') {
+    if (status === 'Resolved') {
       try {
         await supabaseService.createAnnouncement({
-          title: `Issue Resolved: ${issueTitle}`,
-          body: `We are pleased to inform you that the issue "${issueTitle}" has been resolved. ${action_note ? `Note: ${action_note}` : ''}`,
-          priority: 'normal',
+          title: `🎉 MBUA NENE DELIVERS: ${issueTitle} RESOLVED!`,
+          body: `Great news! The issue "${issueTitle}" has been successfully resolved by MCA Mbua Nene's office. ${action_note ? `Details: ${action_note}` : 'Thank you for your patience.'}`,
+          priority: 'high',
           target_audience: 'all'
         });
         console.log(`Auto-announcement created for resolved issue ${id}`);
