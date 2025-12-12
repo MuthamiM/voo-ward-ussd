@@ -443,8 +443,7 @@ router.post('/mobile/issues', async (req, res) => {
 /**
  * Submit bursary application from mobile app (PUBLIC with user info)
  * POST /api/citizen/mobile/bursaries
- * This endpoint allows the mobile app to submit bursary applications without citizen portal auth
- * since the mobile app uses Supabase authentication
+ * Stores directly to Supabase so dashboard can see it
  */
 router.post('/mobile/bursaries', async (req, res) => {
     try {
@@ -460,13 +459,57 @@ router.post('/mobile/bursaries', async (req, res) => {
             amountRequested
         } = req.body;
 
+        // Validation - require all important fields
         if (!institutionName || !course || !yearOfStudy) {
             return res.status(400).json({ error: 'Institution, course, and year of study required' });
         }
+        
+        if (!amountRequested || amountRequested <= 0) {
+            return res.status(400).json({ error: 'Amount requested is required' });
+        }
 
+        // Store to Supabase (primary) so dashboard can see it
+        try {
+            const supabaseService = require('../services/supabaseService');
+            
+            // Generate reference code
+            const refCode = 'BUR-' + Date.now().toString().slice(-8);
+            
+            const result = await supabaseService.createBursaryApplication({
+                ref_code: refCode,
+                user_id: userId || null,
+                applicant_name: fullName || 'Unknown',
+                full_name: fullName || 'Unknown',
+                phone: phoneNumber || '',
+                institution_name: institutionName,
+                school_name: institutionName,
+                course: course,
+                year_of_study: yearOfStudy,
+                institution_type: institutionType || 'university',
+                amount_requested: amountRequested,
+                reason: reason || '',
+                status: 'Pending',
+                source: 'Mobile App'
+            });
+
+            if (result.success) {
+                logger.info(`Bursary application submitted to Supabase: ${refCode}`);
+                return res.status(201).json({
+                    success: true,
+                    refCode,
+                    applicationNumber: refCode,
+                    application: result.data
+                });
+            } else {
+                logger.warn('Supabase bursary insert failed:', result.error);
+                // Fall through to MongoDB
+            }
+        } catch (supaErr) {
+            logger.warn('Supabase bursary service error, using MongoDB fallback:', supaErr.message);
+        }
+
+        // MongoDB fallback
         const db = await getDb();
-
-        // Generate reference code
         const count = await db.collection('bursaries').countDocuments();
         const refCode = 'BUR-' + String(count + 1).padStart(4, '0');
 
@@ -475,16 +518,17 @@ router.post('/mobile/bursaries', async (req, res) => {
             application_number: refCode,
             phone_number: phoneNumber || '',
             user_id: userId || null,
-            full_name: fullName || '',
+            full_name: fullName || 'Unknown',
+            applicant_name: fullName || 'Unknown',
             institution_name: institutionName,
-            institutionName: institutionName,  // For dashboard compatibility
+            institutionName: institutionName,
             course,
             year_of_study: yearOfStudy,
-            yearOfStudy: yearOfStudy,  // For dashboard compatibility
+            yearOfStudy: yearOfStudy,
             institution_type: institutionType || 'university',
             reason: reason || '',
             amount_requested: amountRequested || 0,
-            amountRequested: amountRequested || 0,  // For dashboard compatibility
+            amountRequested: amountRequested || 0,
             status: 'pending',
             source: 'Mobile App',
             created_at: new Date(),
@@ -492,8 +536,7 @@ router.post('/mobile/bursaries', async (req, res) => {
         };
 
         const result = await db.collection('bursaries').insertOne(application);
-
-        logger.info(`Bursary application submitted via mobile: ${refCode}`);
+        logger.info(`Bursary application submitted via MongoDB fallback: ${refCode}`);
 
         res.status(201).json({
             success: true,

@@ -371,6 +371,37 @@ class SupabaseService {
         });
     }
 
+    /**
+     * Create new bursary application (from mobile app)
+     */
+    async createBursaryApplication(data) {
+        try {
+            const result = await this.request('POST', '/rest/v1/bursary_applications', {
+                ref_code: data.ref_code,
+                user_id: data.user_id,
+                applicant_name: data.applicant_name || data.full_name || 'Unknown',
+                full_name: data.full_name || data.applicant_name || 'Unknown',
+                phone: data.phone || '',
+                id_number: data.id_number || '',
+                school_name: data.school_name || data.institution_name,
+                institution: data.institution_name || data.school_name,
+                admission_number: data.admission_number || '',
+                year_of_study: data.year_of_study,
+                requested_amount: data.amount_requested,
+                amount_requested: data.amount_requested,
+                reason: data.reason || '',
+                purpose: data.reason || '',
+                status: data.status || 'Pending',
+                created_at: new Date().toISOString()
+            });
+            
+            return { success: true, data: result };
+        } catch (e) {
+            console.error('[Supabase] createBursaryApplication error:', e);
+            return { success: false, error: 'Insert failed' };
+        }
+    }
+
     // ============ ANNOUNCEMENTS ============
 
     /**
