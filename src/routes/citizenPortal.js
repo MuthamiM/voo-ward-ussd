@@ -347,6 +347,96 @@ router.get('/announcements', async (req, res) => {
     }
 });
 
+// ============================================
+// LOST ID REPORTING
+// ============================================
+
+/**
+ * Report a lost ID (PUBLIC)
+ * POST /api/citizen/lost-ids
+ */
+router.post('/lost-ids', async (req, res) => {
+    try {
+        const { reporter_phone, reporter_name, id_owner_name, id_owner_phone, is_for_self, id_number, last_seen_location, date_lost, additional_info } = req.body;
+
+        if (!reporter_phone || !id_owner_name) {
+            return res.status(400).json({ error: 'Reporter phone and ID owner name are required' });
+        }
+
+        const result = await supabaseService.reportLostId({
+            reporter_phone,
+            reporter_name,
+            id_owner_name,
+            id_owner_phone,
+            is_for_self: is_for_self !== false,
+            id_number,
+            last_seen_location,
+            date_lost,
+            additional_info
+        });
+
+        if (result.success) {
+            res.json({ success: true, message: 'Lost ID reported successfully', data: result.data });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (err) {
+        logger.error('Report lost ID error:', err);
+        res.status(500).json({ error: 'Failed to report lost ID' });
+    }
+});
+
+/**
+ * Get my lost ID reports (PUBLIC with phone)
+ * GET /api/citizen/lost-ids/:phone
+ */
+router.get('/lost-ids/:phone', async (req, res) => {
+    try {
+        const allReports = await supabaseService.getAllLostIds();
+        const myReports = allReports.filter(r => r.reporter_phone === req.params.phone);
+        res.json(myReports);
+    } catch (err) {
+        logger.error('Get lost IDs error:', err);
+        res.status(500).json({ error: 'Failed to fetch lost ID reports' });
+    }
+});
+
+// ============================================
+// FEEDBACK
+// ============================================
+
+/**
+ * Submit feedback (PUBLIC)
+ * POST /api/citizen/feedback
+ */
+router.post('/feedback', async (req, res) => {
+    try {
+        const { user_id, user_phone, user_name, category, message, rating } = req.body;
+
+        if (!message) {
+            return res.status(400).json({ error: 'Message is required' });
+        }
+
+        const result = await supabaseService.submitFeedback({
+            user_id,
+            user_phone,
+            user_name,
+            category: category || 'general',
+            message,
+            rating
+        });
+
+        if (result.success) {
+            res.json({ success: true, message: 'Feedback submitted successfully', data: result.data });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (err) {
+        logger.error('Submit feedback error:', err);
+        res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+});
+
 /**
  * Submit issue from mobile app (PUBLIC with phone number)
  * POST /api/citizen/mobile/issues

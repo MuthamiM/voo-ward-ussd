@@ -546,6 +546,117 @@ class SupabaseService {
             return { success: false, error: 'Auto-deletion failed' };
         }
     }
+
+    // ============ LOST IDs ============
+
+    /**
+     * Report a lost ID
+     */
+    async reportLostId(data) {
+        try {
+            const result = await this.request('POST', '/rest/v1/lost_ids', {
+                reporter_phone: data.reporter_phone,
+                reporter_name: data.reporter_name,
+                id_owner_name: data.id_owner_name,
+                id_owner_phone: data.id_owner_phone,
+                is_for_self: data.is_for_self !== false,
+                id_number: data.id_number,
+                last_seen_location: data.last_seen_location,
+                date_lost: data.date_lost,
+                additional_info: data.additional_info,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            });
+            return { success: true, data: result };
+        } catch (e) {
+            console.error('[Supabase] reportLostId error:', e);
+            return { success: false, error: 'Failed to report lost ID' };
+        }
+    }
+
+    /**
+     * Get all lost ID reports
+     */
+    async getAllLostIds() {
+        try {
+            const result = await this.request('GET', '/rest/v1/lost_ids?select=*&order=created_at.desc&limit=100');
+            return Array.isArray(result) ? result : [];
+        } catch (e) {
+            console.error('[Supabase] getAllLostIds error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Update lost ID status
+     */
+    async updateLostIdStatus(id, status, adminNotes = null) {
+        try {
+            const updateData = { status, updated_at: new Date().toISOString() };
+            if (status === 'found') updateData.found_at = new Date().toISOString();
+            if (adminNotes) updateData.admin_notes = adminNotes;
+            
+            const result = await this.request('PATCH', `/rest/v1/lost_ids?id=eq.${id}`, updateData);
+            return { success: true, result };
+        } catch (e) {
+            console.error('[Supabase] updateLostIdStatus error:', e);
+            return { success: false, error: 'Update failed' };
+        }
+    }
+
+    // ============ FEEDBACK ============
+
+    /**
+     * Submit feedback
+     */
+    async submitFeedback(data) {
+        try {
+            const result = await this.request('POST', '/rest/v1/feedback', {
+                user_id: data.user_id,
+                user_phone: data.user_phone,
+                user_name: data.user_name,
+                category: data.category || 'general',
+                message: data.message,
+                rating: data.rating,
+                status: 'new',
+                created_at: new Date().toISOString()
+            });
+            return { success: true, data: result };
+        } catch (e) {
+            console.error('[Supabase] submitFeedback error:', e);
+            return { success: false, error: 'Failed to submit feedback' };
+        }
+    }
+
+    /**
+     * Get all feedback
+     */
+    async getAllFeedback() {
+        try {
+            const result = await this.request('GET', '/rest/v1/feedback?select=*&order=created_at.desc&limit=100');
+            return Array.isArray(result) ? result : [];
+        } catch (e) {
+            console.error('[Supabase] getAllFeedback error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Respond to feedback
+     */
+    async respondToFeedback(id, response) {
+        try {
+            const result = await this.request('PATCH', `/rest/v1/feedback?id=eq.${id}`, {
+                admin_response: response,
+                status: 'responded',
+                responded_at: new Date().toISOString()
+            });
+            return { success: true, result };
+        } catch (e) {
+            console.error('[Supabase] respondToFeedback error:', e);
+            return { success: false, error: 'Response failed' };
+        }
+    }
 }
 
 // Export singleton instance
