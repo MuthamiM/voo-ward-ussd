@@ -155,6 +155,8 @@
                 <a class="nav-item" data-page="users"><i class="fas fa-users nav-icon"></i> Users</a>
                 <a class="nav-item" data-page="announcements"><i class="fas fa-bullhorn nav-icon"></i> Announcements</a>
                 <a class="nav-item" data-page="bursary"><i class="fas fa-graduation-cap nav-icon"></i> Bursary</a>
+                <a class="nav-item" data-page="lostids"><i class="fas fa-id-card nav-icon"></i> Lost IDs</a>
+                <a class="nav-item" data-page="feedback"><i class="fas fa-comments nav-icon"></i> Feedback</a>
                 <a class="nav-item" data-page="settings"><i class="fas fa-cog nav-icon"></i> Settings</a>
             </nav>
             <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -252,6 +254,80 @@
                     <div class="settings-row"><span class="settings-label">Current Password</span><input type="password" class="settings-input" id="currentPassword"></div>
                     <div class="settings-row"><span class="settings-label">New Password</span><input type="password" class="settings-input" id="newPassword"></div>
                     <button class="btn btn-primary" onclick="changePassword()"><i class="fas fa-key"></i> Change Password</button>
+                </div>
+                </div>
+            </div>
+
+            <!-- Lost IDs -->
+            <div id="lostids" class="page">
+                <div class="page-header"><h1 class="page-title">Lost ID Reports</h1></div>
+                <div class="filter-bar">
+                    <select class="filter-select" id="filterLostIdStatus" onchange="filterLostIds()">
+                        <option value="">Status: All</option>
+                        <option value="pending">Pending</option>
+                        <option value="found">Found</option>
+                    </select>
+                    <div class="search-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="search-input" id="searchLostIds" placeholder="Search by name..." oninput="filterLostIds()">
+                    </div>
+                    <button class="btn btn-outline" onclick="loadLostIds()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID Owner</th>
+                                <th>ID Number</th>
+                                <th>Reporter</th>
+                                <th>Location</th>
+                                <th>Date Lost</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lostIdsTable">
+                            <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Feedback -->
+            <div id="feedback" class="page">
+                <div class="page-header"><h1 class="page-title">User Feedback</h1></div>
+                <div class="filter-bar">
+                    <select class="filter-select" id="filterFeedbackStatus" onchange="filterFeedback()">
+                        <option value="">Status: All</option>
+                        <option value="new">New</option>
+                        <option value="responded">Responded</option>
+                    </select>
+                    <select class="filter-select" id="filterFeedbackCategory" onchange="filterFeedback()">
+                        <option value="">Category: All</option>
+                        <option value="app">App</option>
+                        <option value="services">Services</option>
+                        <option value="suggestions">Suggestions</option>
+                        <option value="general">General</option>
+                    </select>
+                    <button class="btn btn-outline" onclick="loadFeedback()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div class="data-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Category</th>
+                                <th>Message</th>
+                                <th>Rating</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedbackTable">
+                            <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>
@@ -926,6 +1002,113 @@
             }
         }
 
+        // ============ LOST IDs ============
+        let allLostIds = [];
+        
+        async function loadLostIds() {
+            debug('Loading lost IDs...');
+            const res = await api('/lost-ids');
+            if (res) {
+                allLostIds = Array.isArray(res) ? res : (res.data || []);
+                renderLostIds(allLostIds);
+            }
+        }
+
+        function renderLostIds(data) {
+            const tbody = document.getElementById('lostIdsTable');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">No lost ID reports found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(l => `
+                <tr>
+                    <td><strong>${escapeHtml(l.id_owner_name)}</strong><br><small style="color:var(--text-muted)">${l.is_for_self ? 'Self' : 'For other'}</small></td>
+                    <td>${escapeHtml(l.id_number || '-')}</td>
+                    <td>${escapeHtml(l.reporter_name || '-')}<br><small style="color:var(--text-muted)">${escapeHtml(l.reporter_phone || '')}</small></td>
+                    <td>${escapeHtml(l.last_seen_location || '-')}</td>
+                    <td>${l.date_lost || '-'}</td>
+                    <td><span class="badge ${l.status === 'found' ? 'badge-resolved' : 'badge-pending'}">${(l.status || 'pending').toUpperCase()}</span></td>
+                    <td>
+                        <button class="action-btn approve" title="Mark as Found" onclick="markIdFound('${l.id}')"><i class="fas fa-check"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterLostIds() {
+            const status = document.getElementById('filterLostIdStatus').value.toLowerCase();
+            const search = document.getElementById('searchLostIds').value.toLowerCase();
+            let filtered = allLostIds;
+            if (status) filtered = filtered.filter(l => (l.status || 'pending') === status);
+            if (search) filtered = filtered.filter(l => (l.id_owner_name || '').toLowerCase().includes(search) || (l.reporter_name || '').toLowerCase().includes(search));
+            renderLostIds(filtered);
+        }
+
+        async function markIdFound(id) {
+            if (!confirm('Mark this ID as found?')) return;
+            const res = await api(`/lost-ids/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'found' }) });
+            if (res?.success) {
+                showToast('ID marked as found');
+                loadLostIds();
+            } else {
+                showToast(res?.error || 'Failed to update', 'error');
+            }
+        }
+
+        // ============ FEEDBACK ============
+        let allFeedback = [];
+
+        async function loadFeedback() {
+            debug('Loading feedback...');
+            const res = await api('/feedback');
+            if (res) {
+                allFeedback = Array.isArray(res) ? res : (res.data || []);
+                renderFeedback(allFeedback);
+            }
+        }
+
+        function renderFeedback(data) {
+            const tbody = document.getElementById('feedbackTable');
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">No feedback found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(f => `
+                <tr>
+                    <td>${escapeHtml(f.user_name || 'Anonymous')}<br><small style="color:var(--text-muted)">${escapeHtml(f.user_phone || '')}</small></td>
+                    <td><span class="badge" style="background:rgba(59,130,246,0.2);color:#3b82f6;">${(f.category || 'general').toUpperCase()}</span></td>
+                    <td style="max-width:250px;">${escapeHtml(f.message || '')}</td>
+                    <td>${f.rating ? '⭐'.repeat(f.rating) : '-'}</td>
+                    <td><span class="badge ${f.status === 'responded' ? 'badge-resolved' : 'badge-pending'}">${(f.status || 'new').toUpperCase()}</span></td>
+                    <td>${f.created_at ? new Date(f.created_at).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <button class="action-btn view" title="View/Respond" onclick="respondFeedback('${f.id}')"><i class="fas fa-reply"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function filterFeedback() {
+            const status = document.getElementById('filterFeedbackStatus').value.toLowerCase();
+            const category = document.getElementById('filterFeedbackCategory').value.toLowerCase();
+            let filtered = allFeedback;
+            if (status) filtered = filtered.filter(f => (f.status || 'new') === status);
+            if (category) filtered = filtered.filter(f => (f.category || 'general') === category);
+            renderFeedback(filtered);
+        }
+
+        async function respondFeedback(id) {
+            const response = prompt('Enter your response to this feedback:');
+            if (!response) return;
+            const res = await api(`/feedback/${id}`, { method: 'PATCH', body: JSON.stringify({ admin_response: response, status: 'responded' }) });
+            if (res?.success) {
+                showToast('Response sent');
+                loadFeedback();
+            } else {
+                showToast(res?.error || 'Failed to respond', 'error');
+            }
+        }
+
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', function() {
@@ -940,6 +1123,8 @@
                 if (pageId === 'users') loadUsers();
                 if (pageId === 'announcements') loadAnnouncements();
                 if (pageId === 'bursary') loadBursaries();
+                if (pageId === 'lostids') loadLostIds();
+                if (pageId === 'feedback') loadFeedback();
             });
         });
 

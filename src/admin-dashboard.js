@@ -2489,6 +2489,66 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   }
 });
 
+// ============ LOST IDs ============
+
+// Get all lost ID reports
+app.get("/admin/lost-ids", requireAuth, async (req, res) => {
+  try {
+    const data = await supabaseService.getAllLostIds();
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching lost IDs:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update lost ID status
+app.patch("/admin/lost-ids/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, admin_notes } = req.body;
+    const result = await supabaseService.updateLostIdStatus(id, status, admin_notes);
+    if (result.success) {
+      res.json({ success: true, message: 'Lost ID updated' });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (err) {
+    console.error("Error updating lost ID:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============ FEEDBACK ============
+
+// Get all feedback
+app.get("/admin/feedback", requireAuth, async (req, res) => {
+  try {
+    const data = await supabaseService.getAllFeedback();
+    res.json(data);
+  } catch (err) {
+    console.error("Error fetching feedback:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Respond to feedback
+app.patch("/admin/feedback/:id", requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { admin_response, status } = req.body;
+    const result = await supabaseService.respondToFeedback(id, admin_response);
+    if (result.success) {
+      res.json({ success: true, message: 'Response sent' });
+    } else {
+      res.status(400).json({ error: result.error });
+    }
+  } catch (err) {
+    console.error("Error responding to feedback:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Get recent activity/audit logs (all authenticated users)
 app.get("/api/admin/activity", requireAuth, async (req, res) => {
   try {
