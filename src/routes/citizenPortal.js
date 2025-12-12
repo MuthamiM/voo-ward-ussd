@@ -13,6 +13,7 @@ const { getDb } = require('../lib/mongo');
 const { ObjectId } = require('mongodb');
 const { listImages, deleteImage } = require('../lib/cloudinaryService');
 const bcrypt = require('bcryptjs');
+const supabaseService = require('../services/supabaseService');
 
 // Create uploads directory for issue images
 const ISSUE_UPLOADS_DIR = path.join(__dirname, '../../public/uploads/issues');
