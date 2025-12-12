@@ -317,12 +317,9 @@ class SupabaseService {
                 description: data.description,
                 location: data.location,
                 images: data.images || [],
-                image_urls: data.image_urls || data.images || [],
-                phone: data.phone || '',
-                user_id: data.user_id,
-                reporter_name: data.reporter_name,
+                user_phone: data.phone || data.user_phone || '',
+                user_id: data.user_id || null,
                 status: data.status || 'Pending',
-                source: data.source || 'Mobile App',
                 created_at: new Date().toISOString()
             });
             
