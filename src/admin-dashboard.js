@@ -2368,22 +2368,81 @@ app.get("/api/admin/app-users", requireAuth, async (req, res) => {
   }
 });
 
-// Get all bursary applications (MCA only)
+// Get all bursary applications (MCA only) - NOW FROM SUPABASE
 app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
+    const supabaseService = require('./services/supabaseService');
+    const bursaries = await supabaseService.getAllBursaries();
+    
+    // Map to consistent format for dashboard
+    const formattedBursaries = bursaries.map(b => ({
+      _id: b.id,
+      applicant_name: b.applicant_name || b.full_name,
+      id_number: b.id_number,
+      phone: b.phone,
+      school_name: b.school_name || b.institution,
+      admission_number: b.admission_number,
+      year_of_study: b.year_of_study,
+      requested_amount: b.requested_amount || b.amount_requested,
+      reason: b.reason || b.purpose,
+      status: b.status || 'Pending',
+      approved_amount: b.approved_amount,
+      approval_notes: b.approval_notes,
+      rejection_reason: b.rejection_reason,
+      created_at: b.created_at,
+      updated_at: b.updated_at
+    }));
 
-    const bursaries = await database.collection("bursary_applications")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-
-    res.json(bursaries);
+    res.json(formattedBursaries);
   } catch (err) {
-    console.error("Error fetching bursaries:", err);
+    console.error("Error fetching bursaries from Supabase:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Approve bursary application (MCA only) - SUPABASE
+app.post("/api/admin/bursaries/:id/approve", requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { amount, notes } = req.body;
+    const supabaseService = require('./services/supabaseService');
+    
+    const result = await supabaseService.approveBursary(
+      req.params.id,
+      amount,
+      notes,
+      req.user.username
+    );
+    
+    if (result.success) {
+      res.json({ success: true, message: 'Bursary application approved' });
+    } else {
+      res.status(400).json({ error: result.error || 'Approval failed' });
+    }
+  } catch (err) {
+    console.error("Error approving bursary:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Reject bursary application (MCA only) - SUPABASE
+app.post("/api/admin/bursaries/:id/reject", requireAuth, requireMCA, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const supabaseService = require('./services/supabaseService');
+    
+    const result = await supabaseService.rejectBursary(
+      req.params.id,
+      reason,
+      req.user.username
+    );
+    
+    if (result.success) {
+      res.json({ success: true, message: 'Bursary application rejected' });
+    } else {
+      res.status(400).json({ error: result.error || 'Rejection failed' });
+    }
+  } catch (err) {
+    console.error("Error rejecting bursary:", err);
     res.status(500).json({ error: err.message });
   }
 });

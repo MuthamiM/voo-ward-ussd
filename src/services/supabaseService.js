@@ -302,6 +302,75 @@ class SupabaseService {
         }
     }
 
+    // ============ BURSARY APPLICATIONS ============
+
+    /**
+     * Get all bursary applications
+     */
+    async getAllBursaries() {
+        try {
+            const result = await this.request('GET', '/rest/v1/bursary_applications?select=*&order=created_at.desc&limit=100');
+            return Array.isArray(result) ? result : [];
+        } catch (e) {
+            console.error('[Supabase] getAllBursaries error:', e);
+            return [];
+        }
+    }
+
+    /**
+     * Get bursary by ID
+     */
+    async getBursaryById(bursaryId) {
+        try {
+            const result = await this.request('GET', `/rest/v1/bursary_applications?id=eq.${bursaryId}&select=*`);
+            return Array.isArray(result) && result.length > 0 ? result[0] : null;
+        } catch (e) {
+            console.error('[Supabase] getBursaryById error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Update bursary status (approve/reject)
+     */
+    async updateBursary(bursaryId, updates) {
+        try {
+            const result = await this.request('PATCH', `/rest/v1/bursary_applications?id=eq.${bursaryId}`, {
+                ...updates,
+                updated_at: new Date().toISOString()
+            });
+            return { success: true, result };
+        } catch (e) {
+            console.error('[Supabase] updateBursary error:', e);
+            return { success: false, error: 'Update failed' };
+        }
+    }
+
+    /**
+     * Approve bursary application
+     */
+    async approveBursary(bursaryId, amount, notes, approvedBy) {
+        return this.updateBursary(bursaryId, {
+            status: 'Approved',
+            approved_amount: amount,
+            approval_notes: notes,
+            approved_by: approvedBy,
+            approved_at: new Date().toISOString()
+        });
+    }
+
+    /**
+     * Reject bursary application
+     */
+    async rejectBursary(bursaryId, reason, rejectedBy) {
+        return this.updateBursary(bursaryId, {
+            status: 'Rejected',
+            rejection_reason: reason,
+            rejected_by: rejectedBy,
+            rejected_at: new Date().toISOString()
+        });
+    }
+
     // ============ ANNOUNCEMENTS ============
 
     /**
