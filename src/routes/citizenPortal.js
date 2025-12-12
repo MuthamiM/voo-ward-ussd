@@ -355,7 +355,7 @@ router.get('/announcements', async (req, res) => {
 /**
  * Submit issue from mobile app (PUBLIC with phone number)
  * POST /api/citizen/mobile/issues
- * This endpoint allows the mobile app to submit issues without citizen portal auth
+ * Stores to Supabase (so dashboard can see it) with MongoDB fallback
  * Uses Cloudinary for image storage
  */
 router.post('/mobile/issues', async (req, res) => {
@@ -366,47 +366,65 @@ router.post('/mobile/issues', async (req, res) => {
             return res.status(400).json({ error: 'Phone number, category, and description required' });
         }
 
-        const db = await getDb();
-
-        // Generate ticket ID
-        const count = await db.collection('issues').countDocuments();
-        const ticket = 'ISS-' + String(count + 1).padStart(3, '0');
-
-        // Upload images to Cloudinary if available
+        // Upload images to Cloudinary first
         let imageUrls = [];
         let thumbnailUrls = [];
 
         if (images && Array.isArray(images) && images.length > 0) {
             try {
-                // Try Cloudinary first
                 const cloudinaryService = require('../lib/cloudinaryService');
                 const uploadResult = await cloudinaryService.uploadMultipleImages(images, 'issues');
                 imageUrls = uploadResult.urls;
                 thumbnailUrls = uploadResult.thumbnails;
-                logger.info(`Uploaded ${imageUrls.length} images to Cloudinary for ${ticket}`);
+                logger.info(`Uploaded ${imageUrls.length} images to Cloudinary`);
             } catch (cloudErr) {
-                logger.warn('Cloudinary upload failed, falling back to local storage:', cloudErr.message);
-                // Fallback to local storage
-                for (let i = 0; i < Math.min(images.length, 5); i++) {
-                    try {
-                        let base64Data = images[i];
-                        if (base64Data.includes(',')) {
-                            base64Data = base64Data.split(',')[1];
-                        }
-                        const buffer = Buffer.from(base64Data, 'base64');
-                        const filename = `issue-${Date.now()}-${i}.jpg`;
-                        const filepath = path.join(ISSUE_UPLOADS_DIR, filename);
-                        fs.writeFileSync(filepath, buffer);
-                        imageUrls.push(`/uploads/issues/${filename}`);
-                    } catch (imgErr) {
-                        logger.error('Failed to save issue image:', imgErr);
-                    }
-                }
+                logger.warn('Cloudinary upload failed:', cloudErr.message);
             }
         }
 
+        // Generate ticket ID
+        const ticket = 'ISS-' + Date.now().toString().slice(-6);
+
+        // Try Supabase first (so dashboard can see it)
+        try {
+            const supabaseService = require('../services/supabaseService');
+            const result = await supabaseService.createIssue({
+                issue_number: ticket,
+                title: title || category,
+                category,
+                description,
+                location: typeof location === 'string' ? location : JSON.stringify(location),
+                images: imageUrls,
+                image_urls: imageUrls,
+                phone: phoneNumber,
+                user_id: userId || null,
+                reporter_name: fullName || null,
+                status: 'Pending',
+                source: 'Mobile App'
+            });
+
+            if (result.success) {
+                logger.info(`Issue created in Supabase: ${ticket} with ${imageUrls.length} images`);
+                return res.status(201).json({
+                    success: true,
+                    ticket,
+                    issueNumber: ticket,
+                    issue: result.data
+                });
+            } else {
+                logger.warn('Supabase issue insert failed:', result.error);
+            }
+        } catch (supaErr) {
+            logger.warn('Supabase issue service error, using MongoDB fallback:', supaErr.message);
+        }
+
+        // MongoDB fallback
+        const db = await getDb();
+        const count = await db.collection('issues').countDocuments();
+        const fallbackTicket = 'ISS-' + String(count + 1).padStart(3, '0');
+
         const issue = {
-            ticket,
+            ticket: fallbackTicket,
             title: title || category,
             category,
             message: description,
@@ -425,13 +443,12 @@ router.post('/mobile/issues', async (req, res) => {
         };
 
         const result = await db.collection('issues').insertOne(issue);
-
-        logger.info(`Issue created via mobile app: ${ticket} with ${imageUrls.length} images`);
+        logger.info(`Issue created via MongoDB fallback: ${fallbackTicket}`);
 
         res.status(201).json({
             success: true,
-            ticket,
-            issueNumber: ticket,
+            ticket: fallbackTicket,
+            issueNumber: fallbackTicket,
             issue: { ...issue, _id: result.insertedId }
         });
     } catch (err) {

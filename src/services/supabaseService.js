@@ -305,6 +305,34 @@ class SupabaseService {
         }
     }
 
+    /**
+     * Create new issue (from mobile app)
+     */
+    async createIssue(data) {
+        try {
+            const result = await this.request('POST', '/rest/v1/issues', {
+                issue_number: data.issue_number,
+                title: data.title,
+                category: data.category,
+                description: data.description,
+                location: data.location,
+                images: data.images || [],
+                image_urls: data.image_urls || data.images || [],
+                phone: data.phone || '',
+                user_id: data.user_id,
+                reporter_name: data.reporter_name,
+                status: data.status || 'Pending',
+                source: data.source || 'Mobile App',
+                created_at: new Date().toISOString()
+            });
+            
+            return { success: true, data: result };
+        } catch (e) {
+            console.error('[Supabase] createIssue error:', e);
+            return { success: false, error: 'Insert failed' };
+        }
+    }
+
     // ============ BURSARY APPLICATIONS ============
 
     /**
