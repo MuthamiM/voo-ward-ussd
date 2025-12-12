@@ -363,13 +363,24 @@ class SupabaseService {
 
     /**
      * Update bursary status (approve/reject)
+     * Tries ref_code first, then id
      */
     async updateBursary(bursaryId, updates) {
         try {
-            const result = await this.request('PATCH', `/rest/v1/bursary_applications?id=eq.${bursaryId}`, {
+            // Try by ref_code first (for mobile submitted bursaries)
+            let result = await this.request('PATCH', `/rest/v1/bursary_applications?ref_code=eq.${bursaryId}`, {
                 ...updates,
                 updated_at: new Date().toISOString()
             });
+            
+            // If no rows updated, try by id
+            if (!result || result.length === 0) {
+                result = await this.request('PATCH', `/rest/v1/bursary_applications?id=eq.${bursaryId}`, {
+                    ...updates,
+                    updated_at: new Date().toISOString()
+                });
+            }
+            
             return { success: true, result };
         } catch (e) {
             console.error('[Supabase] updateBursary error:', e);

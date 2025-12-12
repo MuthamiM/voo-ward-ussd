@@ -869,9 +869,10 @@
             let html = '<table><thead><tr><th>Applicant</th><th>Institution</th><th>Course</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
             burses.forEach(b => {
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : '--';
-                const actions = b.status === 'pending' || !b.status ? `
-                    <button class="action-btn approve" onclick="updateBursary('${b.ref_code}', 'approved')" title="Approve"><i class="fas fa-check"></i></button>
-                    <button class="action-btn reject" onclick="updateBursary('${b.ref_code}', 'rejected')" title="Reject"><i class="fas fa-times"></i></button>
+                const statusLower = (b.status || 'pending').toLowerCase();
+                const actions = statusLower === 'pending' ? `
+                    <button class="action-btn approve" onclick="updateBursary('${b.ref_code || b.id}', 'approved')" title="Approve"><i class="fas fa-check"></i></button>
+                    <button class="action-btn reject" onclick="updateBursary('${b.ref_code || b.id}', 'rejected')" title="Reject"><i class="fas fa-times"></i></button>
                 ` : '--';
                 
                 html += `<tr>

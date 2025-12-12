@@ -2880,37 +2880,27 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
 // The sending path was already disabled earlier; keeping these endpoints would expose internal queues that are no longer used.
 // If you need a safe administrative endpoint in the future, re-add intentionally with appropriate access controls.
 
-// Update bursary status (MCA only)
+// Update bursary status (MCA only) - uses Supabase
 app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
 
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
+    const supabaseService = require('./services/supabaseService');
+    
+    // Capitalize status for consistency
+    const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    
+    const result = await supabaseService.updateBursary(id, {
+      status: normalizedStatus,
+      admin_notes: admin_notes || null
+    });
+
+    if (!result.success) {
+      return res.status(404).json({ error: "Bursary application not found or update failed" });
     }
 
-    const updateData = {
-      status,
-      updated_at: new Date(),
-      reviewed_at: new Date()
-    };
-
-    if (admin_notes) {
-      updateData.admin_notes = admin_notes;
-    }
-
-    const result = await database.collection("bursary_applications").updateOne(
-      { ref_code: id },
-      { $set: updateData }
-    );
-
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Bursary application not found" });
-    }
-
-    res.json({ success: true, message: `Bursary ${id} updated to ${status}` });
+    res.json({ success: true, message: `Bursary ${id} updated to ${normalizedStatus}` });
   } catch (err) {
     console.error("Error updating bursary:", err);
     res.status(500).json({ error: err.message });
