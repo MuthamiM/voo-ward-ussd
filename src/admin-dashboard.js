@@ -260,6 +260,21 @@ setInterval(() => {
   }
 }, 900000); // 15 minutes
 
+// Issue cleanup: Remove resolved issues older than 4 hours
+const ISSUE_CLEANUP_INTERVAL = 60 * 60 * 1000; // Check every hour
+setInterval(async () => {
+    try {
+        const supabaseService = require('./services/supabaseService');
+        // 4 hours ago
+        const cleanBefore = new Date(Date.now() - 4 * 60 * 60 * 1000);
+        console.log(`🧹 Running auto-cleanup for issues resolved before ${cleanBefore.toISOString()}`);
+        
+        await supabaseService.deleteResolvedIssuesBefore(cleanBefore);
+    } catch (e) {
+        console.error('Issue cleanup error', e);
+    }
+}, ISSUE_CLEANUP_INTERVAL);
+
 // Helper: Hash password
 function hashPassword(password) {
   return crypto.createHash("sha256").update(password).digest("hex");
@@ -1331,7 +1346,160 @@ app.post("/api/auth/register-otp", async (req, res) => {
   }
 });
 
-// Step 2: Verify OTP and create account
+// ============================================
+// NEW 3-STEP REGISTRATION FLOW
+// ============================================
+
+// Step 2a: Verify OTP only (returns verification token)
+app.post("/api/auth/register-verify-otp", async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ error: "Phone and OTP are required" });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Find pending registration
+    const pendingReg = await database.collection("registration_otps").findOne({
+      phone: phone.replace(/\s+/g, ''),
+      otp: otp,
+      otpExpires: { $gt: new Date() }
+    });
+
+    if (!pendingReg) {
+      return res.status(400).json({ error: "Invalid or expired verification code" });
+    }
+
+    // Generate verification token for step 3
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Update the pending registration with verified status and token
+    await database.collection("registration_otps").updateOne(
+      { _id: pendingReg._id },
+      {
+        $set: {
+          verified: true,
+          verificationToken,
+          verifiedAt: new Date()
+        }
+      }
+    );
+
+    console.log(`✅ OTP verified for ${phone}, token issued`);
+
+    res.json({
+      success: true,
+      message: "Phone number verified",
+      token: verificationToken
+    });
+
+  } catch (error) {
+    console.error("OTP verification error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Step 3: Complete registration with user-chosen password
+app.post("/api/auth/register-complete", async (req, res) => {
+  try {
+    const { phone, password, token } = req.body;
+
+    if (!phone || !password || !token) {
+      return res.status(400).json({ error: "Phone, password, and verification token are required" });
+    }
+
+    // Validate password strength
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: "Password must be 8+ characters with letters, numbers, and special characters"
+      });
+    }
+
+    const database = await connectDB();
+    if (!database) {
+      return res.status(503).json({ error: "Database not connected" });
+    }
+
+    // Check user limit
+    const userCount = await database.collection("admin_users").countDocuments({});
+    if (userCount >= 3) {
+      return res.status(400).json({ error: "Maximum user limit reached" });
+    }
+
+    // Find verified pending registration
+    const pendingReg = await database.collection("registration_otps").findOne({
+      phone: phone.replace(/\s+/g, ''),
+      verificationToken: token,
+      verified: true
+    });
+
+    if (!pendingReg) {
+      return res.status(400).json({ error: "Invalid or expired verification. Please start over." });
+    }
+
+    // Check if phone already used (prevent re-registration)
+    const usedPhone = await database.collection("used_phone_numbers").findOne({
+      phone: phone.replace(/\s+/g, '')
+    });
+
+    if (usedPhone) {
+      return res.status(400).json({ error: "This phone number is already registered. Please login instead." });
+    }
+
+    // Hash user's chosen password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const newUser = {
+      username: pendingReg.username,
+      password: hashedPassword,
+      full_name: pendingReg.fullName,
+      id_number: pendingReg.idNumber,
+      phone: pendingReg.phone,
+      role: pendingReg.role,
+      created_at: new Date(),
+      updated_at: new Date(),
+      verified_at: pendingReg.verifiedAt,
+      self_registered: true
+    };
+
+    const result = await database.collection("admin_users").insertOne(newUser);
+
+    // Mark phone as used (prevents re-registration)
+    await database.collection("used_phone_numbers").insertOne({
+      phone: pendingReg.phone,
+      user_id: result.insertedId,
+      registered_at: new Date()
+    });
+
+    // Delete OTP record
+    await database.collection("registration_otps").deleteOne({ _id: pendingReg._id });
+
+    // Send welcome SMS
+    const smsMessage = `Welcome to VOO Ward!\nAccount created successfully.\nUsername: ${pendingReg.username}\nLogin: https://voo-ward-ussd-1.onrender.com/login.html`;
+    await sendNotificationToPhone(database, pendingReg.phone, smsMessage);
+
+    console.log(`✅ User registered with custom password: ${pendingReg.username} (${pendingReg.role})`);
+
+    res.json({
+      success: true,
+      message: "Account created successfully!",
+      username: pendingReg.username
+    });
+
+  } catch (error) {
+    console.error("Registration complete error:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// Legacy Step 2: Verify OTP and create account (auto-generate PIN)
 app.post("/api/auth/register-verify", async (req, res) => {
   try {
     const { phone, otp } = req.body;
@@ -1649,7 +1817,27 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
     }
 
     // Admin can override the role
-    const assignedRole = req.body.role || application.role;
+    let assignedRole = (req.body.role || application.role || 'clerk').toLowerCase();
+    
+    // Validate role
+    const validRoles = ['pa', 'clerk', 'mca'];
+    if (!validRoles.includes(assignedRole)) {
+      return res.status(400).json({ error: "Invalid role. Must be PA, Clerk, or MCA" });
+    }
+
+    // Check if MCA exists (only 1 allowed) and limit total admins to 3
+    const users = await database.collection("admin_users").find({}).toArray();
+    if (users.length >= 3) {
+      return res.status(400).json({ error: "Maximum user limit (3) reached. Cannot approve more users." });
+    }
+    
+    // Enforce role limits: 1 MCA only
+    if (assignedRole === 'mca') {
+      const existingMCA = users.find(u => u.role === 'mca');
+      if (existingMCA) {
+        return res.status(400).json({ error: "An MCA user already exists. Only one MCA allowed." });
+      }
+    }
 
     // Generate 6-digit PIN
     const pin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -2119,22 +2307,63 @@ app.post('/api/admin/reject-registration/:id', requireAuth, async (req, res) => 
 // ADMIN API ROUTES
 // ============================================
 
-// Get all reported issues (PA and MCA can access)
+// Get all reported issues (PA and MCA can access) - NOW FROM SUPABASE
 app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
+    // Use Supabase service to get issues (same as mobile app)
+    const supabaseService = require('./services/supabaseService');
+    const issues = await supabaseService.getAllIssues();
+    
+    // Map to consistent format for dashboard
+    const formattedIssues = issues.map(issue => {
+      const imageUrls = issue.images || issue.image_urls || [];
+      return {
+        _id: issue.id,
+        ticket: issue.issue_number || (issue.id ? `ISS-${String(issue.id).slice(-6).toUpperCase()}` : null),
+        title: issue.title,
+        category: issue.category,
+        description: issue.description,
+        location: issue.location,
+        status: issue.status || 'pending',
+        image_url: imageUrls.length > 0 ? imageUrls[0] : null,
+        image_urls: imageUrls,
+        user_id: issue.user_id,
+        phone_number: issue.phone,
+        action_note: issue.resolution_notes || issue.action_note,
+        created_at: issue.created_at,
+        updated_at: issue.updated_at,
+        resolved_at: issue.resolved_at,
+      };
+    });
 
-    const issues = await database.collection("issues")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-
-    res.json(issues);
+    res.json(formattedIssues);
   } catch (err) {
-    console.error("Error fetching issues:", err);
+    console.error("Error fetching issues from Supabase:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all App Users (Citizens) from Supabase (Admin access)
+app.get("/api/admin/app-users", requireAuth, async (req, res) => {
+  try {
+    const supabaseService = require('./services/supabaseService');
+    const users = await supabaseService.getAllUsers();
+    
+    // Map to consistent format
+    const formattedUsers = users.map(u => ({
+      _id: u.id,
+      username: u.username,
+      full_name: u.full_name,
+      phone: u.phone,
+      id_number: u.id_number,
+      village: u.village,
+      created_at: u.created_at,
+      source: 'Mobile App'
+    }));
+
+    res.json(formattedUsers);
+  } catch (err) {
+    console.error("Error fetching app users from Supabase:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -2406,53 +2635,63 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, action_note } = req.body;
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-    // Build update object
-    const update = { status, updated_at: new Date() };
-    if (typeof action_note === 'string') {
-      update.action_note = action_note;
-      update.action_by = req.user?.username || 'unknown';
-      update.action_at = new Date();
-    }
-    const result = await database.collection("issues").updateOne(
-      { ticket: id },
-      { $set: update }
-    );
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Issue not found" });
-    }
-    // Fetch updated issue
-    const updated = await database.collection('issues').findOne({ ticket: id });
+    
+    // Use Supabase to update issue
+    const supabaseService = require('./services/supabaseService');
+    
+    // Extract numeric ID from ticket format
+    let issueId = id;
+    let issueTitle = 'Issue';
 
-    // If status changed to resolved, update USSD interactions and notify reporter(s)
-    try {
-      const newStatus = (status || '').toString().toLowerCase();
-      if (newStatus === 'resolved' || newStatus === 'resolved') {
-        // Update any USSD interactions for the reporter's phone
-        try {
-          if (updated && updated.phone_number) {
-            await database.collection('ussd_interactions').updateMany(
-              { phone_number: updated.phone_number },
-              { $set: { issue_status: status, related_ticket: id, updated_at: new Date() } }
-            );
-          }
-        } catch (uErr) {
-          console.warn('Failed to update USSD interactions for issue', id, uErr && uErr.message);
-        }
-
-        // Notifications are disabled in this deployment. We still update USSD interactions above.
-        if (updated && updated.phone_number) {
-          console.log('Notification suppressed for issue', id, 'phone', updated.phone_number);
+    if (id.startsWith('ISS-')) {
+      // Find issue by issue_number (e.g. ISS-004)
+      const allIssues = await supabaseService.getAllIssues();
+      const found = allIssues.find(i => i.issue_number === id);
+      if (found) {
+        issueId = found.id;
+        issueTitle = found.title;
+      } else {
+        // Fallback: try finding by old ticket pattern
+        const foundOld = allIssues.find(i => `ISS-${String(i.id).slice(-6).toUpperCase()}` === id);
+        if (foundOld) {
+          issueId = foundOld.id;
+          issueTitle = foundOld.title;
         }
       }
-    } catch (e) {
-      console.warn('Post-update hooks error for issue', id, e && e.message);
+    }
+    
+    // Update issue
+    const updateData = {
+      status: status,
+      action_note: action_note,
+    };
+
+    if (status === 'Resolved') {
+        updateData.resolved_at = new Date().toISOString();
     }
 
-    res.json({ success: true, message: `Issue ${id} updated`, update, issue: updated });
+    const result = await supabaseService.updateIssue(issueId, updateData);
+    
+    if (!result.success) {
+      return res.status(400).json({ error: result.error || "Update failed" });
+    }
+
+    // Auto-create announcement if resolved
+    if (status === 'Resolved' || status === 'Resolved') {
+      try {
+        await supabaseService.createAnnouncement({
+          title: `Issue Resolved: ${issueTitle}`,
+          body: `We are pleased to inform you that the issue "${issueTitle}" has been resolved. ${action_note ? `Note: ${action_note}` : ''}`,
+          priority: 'normal',
+          target_audience: 'all'
+        });
+        console.log(`Auto-announcement created for resolved issue ${id}`);
+      } catch (annErr) {
+        console.error('Failed to create auto-announcement:', annErr);
+      }
+    }
+
+    res.json({ success: true, message: `Issue ${id} updated` });
   } catch (err) {
     console.error("Error updating issue:", err);
     res.status(500).json({ error: err.message });
@@ -3494,6 +3733,14 @@ async function startServer() {
 
     // Initialize admin user
     await initializeAdmin();
+
+    // Start background jobs
+    try {
+      startIssueCleanupJob();
+      console.log('⏰ Cleanup job scheduled');
+    } catch (e) {
+      console.warn('Failed to start cleanup job:', e);
+    }
   } else {
     console.log(`  MongoDB NOT Connected - Check MONGO_URI in .env`);
   }
@@ -3506,9 +3753,46 @@ async function startServer() {
   });
 }
 
+// === CLEANUP JOB ===
+// Deletes resolved issues older than 4 hours
+const CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 mins
+
+function startIssueCleanupJob() {
+    // Run immediately
+    runCleanup();
+    // Then interval
+    setInterval(runCleanup, CLEANUP_INTERVAL);
+}
+
+async function runCleanup() {
+    try {
+        console.log('[Cleanup] Running issue cleanup job...');
+        const supabaseService = require('./services/supabaseService');
+        const issues = await supabaseService.getAllIssues();
+        const now = new Date();
+        const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+        
+        const toDelete = issues.filter(i => 
+            (i.status === 'Resolved' || i.status === 'resolved') && 
+            new Date(i.updated_at || i.created_at) < fourHoursAgo
+        );
+        
+        console.log(`[Cleanup] Found ${toDelete.length} resolved issues older than 4 hours.`);
+        
+        for (const issue of toDelete) {
+            await supabaseService.deleteIssue(issue.id);
+            console.log(`[Cleanup] Deleted issue ${issue.id} (Resolved > 4h ago)`);
+        }
+    } catch (err) {
+        console.error('[Cleanup] Job failed:', err);
+    }
+}
+
 // If this file is executed directly (node admin-dashboard.js) start its own server.
 if (require.main === module) {
-  startServer().catch(err => {
+  startServer().then(() => {
+      startIssueCleanupJob();
+  }).catch(err => {
     console.error('Failed to start admin-dashboard server:', err && err.message);
     process.exit(1);
   });

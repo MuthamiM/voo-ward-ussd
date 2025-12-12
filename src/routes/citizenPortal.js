@@ -12,17 +12,35 @@ const fs = require('fs');
 const { getDb } = require('../lib/mongo');
 const { ObjectId } = require('mongodb');
 const { listImages, deleteImage } = require('../lib/cloudinaryService');
+const bcrypt = require('bcryptjs');
 
 // Create uploads directory for issue images
 const ISSUE_UPLOADS_DIR = path.join(__dirname, '../../public/uploads/issues');
 try { fs.mkdirSync(ISSUE_UPLOADS_DIR, { recursive: true }); } catch (e) { /* ignore */ }
 
+// Ensure database indexes for performance
+async function ensureIndexes() {
+    try {
+        const db = await getDb();
+        // OTPs: auto-expire after 5 minutes
+        await db.collection('mobile_otps').createIndex({ "createdAt": 1 }, { expireAfterSeconds: 300 });
+        await db.collection('mobile_otps').createIndex({ "phoneNumber": 1 }, { unique: true });
 
-// In-memory OTP storage (use Redis in production)
-const otpStore = new Map();
+        // Sessions: auto-expire after 7 days
+        await db.collection('mobile_sessions').createIndex({ "createdAt": 1 }, { expireAfterSeconds: 604800 });
+        await db.collection('mobile_sessions').createIndex({ "token": 1 }, { unique: true });
 
-// In-memory citizen sessions (use Redis in production)
-const citizenSessions = new Map();
+        // Users: unique username and phone
+        await db.collection('mobile_users').createIndex({ "username": 1 }, { unique: true });
+        await db.collection('mobile_users').createIndex({ "phone_number": 1 }, { unique: true });
+
+        logger.info('Database indexes ensured for performance');
+    } catch (e) {
+        logger.error('Failed to ensure indexes:', e);
+    }
+}
+// Run indexes check
+ensureIndexes();
 
 /**
  * Generate 6-digit OTP
@@ -47,8 +65,19 @@ router.post('/request-otp', async (req, res) => {
         const otp = generateOTP();
         const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-        // Store OTP
-        otpStore.set(phoneNumber, { otp, expiresAt });
+        // Store OTP in database
+        const db = await getDb();
+        await db.collection('mobile_otps').updateOne(
+            { phoneNumber },
+            {
+                $set: {
+                    otp,
+                    expiresAt,
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true }
+        );
 
         // TODO: Send OTP via SMS (integrate with Africa's Talking or Twilio)
         logger.info(`OTP generated for ${phoneNumber}: ${otp}`);
@@ -80,15 +109,16 @@ router.post('/verify-otp', async (req, res) => {
     }
 
     try {
-        // Check OTP
-        const storedOTP = otpStore.get(phoneNumber);
+        // Check OTP from database
+        const db = await getDb();
+        const storedOTP = await db.collection('mobile_otps').findOne({ phoneNumber });
 
         if (!storedOTP) {
             return res.status(401).json({ error: 'OTP expired or not found' });
         }
 
         if (storedOTP.expiresAt < Date.now()) {
-            otpStore.delete(phoneNumber);
+            await db.collection('mobile_otps').deleteOne({ phoneNumber });
             return res.status(401).json({ error: 'OTP expired' });
         }
 
@@ -97,7 +127,7 @@ router.post('/verify-otp', async (req, res) => {
         }
 
         // OTP verified - clear it
-        otpStore.delete(phoneNumber);
+        await db.collection('mobile_otps').deleteOne({ phoneNumber });
 
         // Generate session token
         const token = crypto.randomBytes(32).toString('hex');
@@ -110,7 +140,7 @@ router.post('/verify-otp', async (req, res) => {
         citizenSessions.set(token, sessionData);
 
         // Check if citizen exists in DB, if not create/update
-        const db = await getDb();
+        // Reuse existing db connection
         const citizen = await db.collection('constituents').findOne({ phone_number: phoneNumber });
 
         if (!citizen) {
@@ -485,7 +515,9 @@ router.post('/mobile/bursaries', async (req, res) => {
 /**
  * Mobile User Registration with username/password
  * POST /api/citizen/mobile/register
-     */
+ * Uses Supabase for primary storage (shared with mobile app)
+ * MongoDB as fallback
+ */
 router.post('/mobile/register', async (req, res) => {
     try {
         const {
@@ -502,10 +534,42 @@ router.post('/mobile/register', async (req, res) => {
         }
 
         // Validate password strength
-        if (password.length < 8) {
-            return res.status(400).json({ error: 'Password must be at least 8 characters' });
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
+        // Try Supabase first (primary storage)
+        try {
+            const supabaseService = require('../services/supabaseService');
+            const result = await supabaseService.registerUser({
+                fullName,
+                phone: phoneNumber,
+                idNumber: nationalId || '',
+                password,
+                village,
+                username: username.toLowerCase()
+            });
+
+            if (result.success) {
+                logger.info(`Mobile user registered via Supabase: ${username}`);
+                return res.status(201).json({
+                    success: true,
+                    message: 'Registration successful',
+                    userId: result.user?.id
+                });
+            } else {
+                // If Supabase fails with duplicate, return that error
+                if (result.error?.includes('already')) {
+                    return res.status(400).json({ error: result.error });
+                }
+                // Otherwise fall through to MongoDB
+                logger.warn('Supabase registration failed, trying MongoDB:', result.error);
+            }
+        } catch (supaErr) {
+            logger.warn('Supabase service unavailable, using MongoDB fallback:', supaErr.message);
+        }
+
+        // MongoDB fallback
         const db = await getDb();
 
         // Check if username exists
@@ -520,8 +584,8 @@ router.post('/mobile/register', async (req, res) => {
             return res.status(400).json({ error: 'Phone number already registered' });
         }
 
-        // Hash password (simple hash - use bcrypt in production)
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+        // Hash password with bcrypt
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = {
             username: username.toLowerCase(),
@@ -535,7 +599,7 @@ router.post('/mobile/register', async (req, res) => {
         };
 
         const result = await db.collection('mobile_users').insertOne(user);
-        logger.info(`Mobile user registered: ${username}`);
+        logger.info(`Mobile user registered via MongoDB: ${username}`);
 
         res.status(201).json({
             success: true,
@@ -548,9 +612,12 @@ router.post('/mobile/register', async (req, res) => {
     }
 });
 
+
 /**
  * Mobile User Login with username/password
  * POST /api/citizen/mobile/login
+ * Uses Supabase for primary auth (shared with mobile app)
+ * MongoDB as fallback
  */
 router.post('/mobile/login', async (req, res) => {
     try {
@@ -560,15 +627,71 @@ router.post('/mobile/login', async (req, res) => {
             return res.status(400).json({ error: 'Username and password required' });
         }
 
-        const db = await getDb();
-        const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+        // Try Supabase first (primary auth)
+        try {
+            const supabaseService = require('../services/supabaseService');
+            const result = await supabaseService.loginUser(username, password);
 
+            if (result.success) {
+                // Generate session token
+                const token = crypto.randomBytes(32).toString('hex');
+                citizenSessions.set(token, {
+                    userId: result.user.id,
+                    username: result.user.username || username,
+                    phoneNumber: result.user.phone,
+                    createdAt: Date.now(),
+                    expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
+                });
+
+                logger.info(`Mobile user logged in via Supabase: ${username}`);
+
+                return res.json({
+                    success: true,
+                    token,
+                    user: {
+                        id: result.user.id,
+                        username: result.user.username || username,
+                        fullName: result.user.fullName,
+                        phoneNumber: result.user.phone,
+                        phone: result.user.phone,
+                        village: result.user.village || ''
+                    }
+                });
+            } else {
+                // If user not found in Supabase, try MongoDB
+                if (result.error?.includes('not found')) {
+                    logger.info('User not in Supabase, trying MongoDB');
+                } else {
+                    // Invalid password or other error from Supabase
+                    return res.status(401).json({ error: result.error || 'Invalid credentials' });
+                }
+            }
+        } catch (supaErr) {
+            logger.warn('Supabase login unavailable, using MongoDB fallback:', supaErr.message);
+        }
+
+        // MongoDB fallback
+        const db = await getDb();
         const user = await db.collection('mobile_users').findOne({
-            username: username.toLowerCase(),
-            password: hashedPassword
+            username: username.toLowerCase()
         });
 
         if (!user) {
+            return res.status(401).json({ error: 'Invalid username or password' });
+        }
+
+        // Check password (support both bcrypt and legacy sha256)
+        let passwordValid = false;
+        if (user.password.startsWith('$2')) {
+            // bcrypt hash
+            passwordValid = await bcrypt.compare(password, user.password);
+        } else {
+            // legacy sha256
+            const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
+            passwordValid = user.password === hashedPassword;
+        }
+
+        if (!passwordValid) {
             return res.status(401).json({ error: 'Invalid username or password' });
         }
 
@@ -582,7 +705,7 @@ router.post('/mobile/login', async (req, res) => {
             expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days
         });
 
-        logger.info(`Mobile user logged in: ${username}`);
+        logger.info(`Mobile user logged in via MongoDB: ${username}`);
 
         res.json({
             success: true,
@@ -592,6 +715,7 @@ router.post('/mobile/login', async (req, res) => {
                 username: user.username,
                 fullName: user.full_name,
                 phoneNumber: user.phone_number,
+                phone: user.phone_number,
                 village: user.village || ''
             }
         });
@@ -600,6 +724,7 @@ router.post('/mobile/login', async (req, res) => {
         res.status(500).json({ error: 'Login failed' });
     }
 });
+
 
 /**
  * Mobile OTP Send (for verification during registration)

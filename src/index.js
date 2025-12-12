@@ -84,8 +84,9 @@ app.get("/health/detailed", async (req, res) => {
 
 // parsers & logs
 app.use(morgan("combined"));
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+// Increase payload limit for base64 image uploads
+app.use(bodyParser.urlencoded({ extended: false, limit: '50mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
 
 // Import USSD core handler
 const { handleUssdCore } = require('./ussdCore');

@@ -677,6 +677,19 @@
         const errorMsg = document.getElementById('errorMsg');
         const successMsg = document.getElementById('successMsg');
 
+        // Pre-fill username from query parameter (after registration redirect)
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const username = params.get('username');
+            if (username) {
+                document.getElementById('username').value = username;
+                document.getElementById('password').focus();
+                // Show welcome message for new registrations
+                successMsg.textContent = '✓ Account created! Enter your password to login.';
+                successMsg.classList.add('show');
+            }
+        })();
+
         function showError(message) {
             errorMsg.textContent = message;
             errorMsg.classList.add('show');
@@ -705,15 +718,12 @@
             const pin = document.getElementById('password').value;
 
             if (!username || !pin) {
-                showError('Please enter both username and PIN');
+                showError('Please enter both username and password');
                 return;
             }
 
-            // Validate password is digits only
-            if (!/^\d+$/.test(pin)) {
-                showError('Password must contain only digits');
-                return;
-            }
+            // Support both PIN (digits only) and password (alphanumeric)
+            // No restriction needed - backend will validate
 
             loginBtn.disabled = true;
             loginBtn.innerHTML = '<span class="spinner"></span><span>SIGNING IN...</span>';

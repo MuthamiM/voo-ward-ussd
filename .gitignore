@@ -93,3 +93,6 @@ uploads/
 secrets/
 .secrets
 credentials.json
+
+# Large binary files (APKs)
+*.apk

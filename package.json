@@ -12,10 +12,12 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.929.0",
     "@sentry/node": "^7.120.4",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "body-parser": "^2.2.0",
+    "cloudinary": "^1.41.3",
     "compression": "^1.7.4",
-    "dotenv": "^16.3.1",
+    "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "express-rate-limit": "^6.11.2",
     "express-session": "^1.18.2",
@@ -27,11 +29,10 @@
     "passport": "^0.7.0",
     "passport-facebook": "^3.0.0",
     "passport-twitter": "^1.0.4",
+    "pg": "^8.11.3",
     "pino": "^8.17.0",
     "redis": "^4.6.0",
     "sharp": "^0.32.5",
-    "twilio": "^4.20.0",
-    "cloudinary": "^1.41.0",
-    "pg": "^8.11.3"
+    "twilio": "^4.20.0"
   }
 }
