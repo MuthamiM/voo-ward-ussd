@@ -2494,6 +2494,7 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
 // Get all lost ID reports
 app.get("/admin/lost-ids", requireAuth, async (req, res) => {
   try {
+    const supabaseService = require('./services/supabaseService');
     const data = await supabaseService.getAllLostIds();
     res.json(data);
   } catch (err) {
@@ -2505,6 +2506,7 @@ app.get("/admin/lost-ids", requireAuth, async (req, res) => {
 // Update lost ID status
 app.patch("/admin/lost-ids/:id", requireAuth, async (req, res) => {
   try {
+    const supabaseService = require('./services/supabaseService');
     const { id } = req.params;
     const { status, admin_notes } = req.body;
     const result = await supabaseService.updateLostIdStatus(id, status, admin_notes);
@@ -2524,6 +2526,7 @@ app.patch("/admin/lost-ids/:id", requireAuth, async (req, res) => {
 // Get all feedback
 app.get("/admin/feedback", requireAuth, async (req, res) => {
   try {
+    const supabaseService = require('./services/supabaseService');
     const data = await supabaseService.getAllFeedback();
     res.json(data);
   } catch (err) {
@@ -2535,6 +2538,7 @@ app.get("/admin/feedback", requireAuth, async (req, res) => {
 // Respond to feedback
 app.patch("/admin/feedback/:id", requireAuth, async (req, res) => {
   try {
+    const supabaseService = require('./services/supabaseService');
     const { id } = req.params;
     const { admin_response, status } = req.body;
     const result = await supabaseService.respondToFeedback(id, admin_response);
