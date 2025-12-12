@@ -333,18 +333,12 @@ router.post('/bursaries', authenticateCitizen, async (req, res) => {
 /**
  * Get announcements (PUBLIC - no auth required)
  * GET /api/citizen/announcements
+ * Uses Supabase as primary source (MongoDB disabled)
  */
 router.get('/announcements', async (req, res) => {
     try {
-        const db = await getDb();
-
-        // Fetch published announcements
-        const announcements = await db.collection('announcements')
-            .find({}) // All announcements are public
-            .sort({ created_at: -1 })
-            .limit(20)
-            .toArray();
-
+        // Use Supabase for announcements (MongoDB is disabled)
+        const announcements = await supabaseService.getAnnouncements();
         res.json(announcements);
     } catch (err) {
         logger.error('Get announcements error:', err);
