@@ -454,18 +454,20 @@ class SupabaseService {
 
     /**
      * Create announcement
+     * Note: Supabase announcements table uses 'content' not 'body'
      */
-    async createAnnouncement({ title, body, priority = 'normal', target_audience = 'all' }) {
+    async createAnnouncement({ title, body, content, priority = 'normal', target_audience = 'all', image_url = null }) {
         try {
             const data = {
                 title,
-                body,
-                content: body,
+                content: content || body, // Supabase uses 'content' not 'body'
                 priority,
                 target_audience,
                 is_active: true,
                 created_at: new Date().toISOString(),
             };
+            
+            if (image_url) data.image_url = image_url;
             
             const result = await this.request('POST', '/rest/v1/announcements', data);
             return { success: true, result };
