@@ -1025,29 +1025,31 @@ router.put('/mobile/profile/:userId', async (req, res) => {
 /**
  * Get User Issues by userId
  * GET /api/citizen/mobile/issues/:userId
+ * Uses Supabase (MongoDB is disabled)
  */
 router.get('/mobile/issues/:userId', async (req, res) => {
     try {
         const { userId } = req.params;
-        const db = await getDb();
-
-        const issues = await db.collection('issues')
-            .find({ user_id: userId })
-            .sort({ created_at: -1 })
-            .toArray();
+        
+        // Use Supabase to get issues for this user
+        const allIssues = await supabaseService.getAllIssues();
+        const userIssues = allIssues.filter(issue => 
+            issue.user_id === userId || issue.user_phone === userId
+        );
 
         res.json({
             success: true,
-            issues: issues.map(issue => ({
-                id: issue._id.toString(),
-                ticket: issue.ticket,
+            issues: userIssues.map(issue => ({
+                id: issue.id,
+                ticket: issue.issue_number,
                 title: issue.title,
                 category: issue.category,
                 description: issue.description,
                 status: issue.status,
                 location: issue.location,
-                imageUrl: issue.image_url,
-                thumbnailUrl: issue.thumbnail_url,
+                imageUrl: issue.images?.[0] || null,
+                thumbnailUrl: issue.images?.[0] || null,
+                images: issue.images || [],
                 createdAt: issue.created_at
             }))
         });
