@@ -1,20 +1,23 @@
 /**
  * Supabase Service for USSD Dashboard
  * Connects dashboard to Supabase app_users table (shared with mobile app)
- * Keeps MongoDB as fallback but Supabase is primary for mobile users
+ * Uses SERVICE_ROLE key to bypass RLS for admin dashboard access
  */
 
 const https = require('https');
 const crypto = require('crypto');
 
-// Supabase credentials (same as mobile app)
+// Supabase credentials - use service_role for dashboard (bypasses RLS)
 const SUPABASE_URL = 'https://xzhmdxtzpuxycvsatjoe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6aG1keHR6cHV4eWN2c2F0am9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNTYwNzAsImV4cCI6MjA4MDczMjA3MH0.2tZ7eu6DtBg2mSOitpRa4RNvgCGg3nvMWeDmn9fPJY0';
+// Service role key bypasses RLS - set via env var SUPABASE_SERVICE_KEY
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || SUPABASE_ANON_KEY;
 
 class SupabaseService {
     constructor() {
         this.baseUrl = SUPABASE_URL;
-        this.apiKey = SUPABASE_ANON_KEY;
+        // Use service_role key for admin dashboard access (bypasses RLS)
+        this.apiKey = SUPABASE_SERVICE_KEY;
     }
 
     /**
