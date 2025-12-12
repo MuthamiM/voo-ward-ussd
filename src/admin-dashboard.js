@@ -241,10 +241,12 @@ if (oauth.passport) {
 const errorHandler = require('./middleware/errorHandler');
 const redisCache = require('./services/redisCache');
 
-// Simple session storage (in production, use Redis or proper session management)
-const sessions = new Map();
+// Redis-backed session storage (with fallback to in-memory)
+// Import the admin session store which provides Map-compatible interface
+const sessions = require('./services/adminSessionStore');
+console.log('✅ Admin session store initialized (Redis + fallback)');
 
-// Session cleanup: Remove expired sessions every 15 minutes to prevent memory leaks
+// Session cleanup: The Redis session store handles its own cleanup
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT_MS) || 1800000; // 30 minutes default
 setInterval(() => {
   const now = new Date();
