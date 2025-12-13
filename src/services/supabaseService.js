@@ -288,20 +288,27 @@ class SupabaseService {
      */
     async updateIssue(issueId, updates) {
         try {
-            // Try to update by id (numeric) or by matching ticket pattern
-            let query = `/rest/v1/issues?id=eq.${issueId}`;
-            
-            const result = await this.request('PATCH', query, {
-                status: updates.status,
-                resolution_notes: updates.action_note,
-                resolved_at: updates.resolved_at,
+            // Build update payload with only columns that exist in Supabase
+            const payload = {
                 updated_at: new Date().toISOString(),
-            });
+            };
             
+            // Only include fields that exist
+            if (updates.status) payload.status = updates.status;
+            if (updates.action_note) payload.action_note = updates.action_note;
+            if (updates.resolved_at) payload.resolved_at = updates.resolved_at;
+            
+            console.log(`[Supabase] Updating issue ${issueId} with:`, JSON.stringify(payload));
+            
+            const query = `/rest/v1/issues?id=eq.${issueId}`;
+            const result = await this.request('PATCH', query, payload);
+            
+            console.log(`[Supabase] Update result:`, JSON.stringify(result));
             return { success: true, result };
         } catch (e) {
             console.error('[Supabase] updateIssue error:', e);
-            return { success: false, error: 'Update failed' };
+            console.error('[Supabase] Error details:', JSON.stringify(e));
+            return { success: false, error: e.error?.message || e.error?.hint || 'Update failed' };
         }
     }
 
