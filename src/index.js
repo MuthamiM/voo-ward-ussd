@@ -285,7 +285,7 @@ io.on('connection', (socket) => {
     console.log(`👤 ${user.fullName} joined chat`);
   });
   
-  // Handle chat message
+  // Handle chat message (supports text, image, voice)
   socket.on('chat:message', async (data) => {
     const sender = onlineUsers.get(socket.id);
     if (!sender) return;
@@ -295,7 +295,9 @@ io.on('connection', (socket) => {
       sender: sender.username,
       senderName: sender.fullName,
       senderRole: sender.role,
-      text: data.text,
+      text: data.text || '',
+      image: data.image || null,  // base64 image
+      voice: data.voice || null,  // base64 audio
       timestamp: new Date().toISOString()
     };
     
@@ -307,6 +309,8 @@ io.on('connection', (socket) => {
         sender_name: message.senderName,
         sender_role: message.senderRole,
         message_text: message.text,
+        image_url: message.image,
+        voice_url: message.voice,
         created_at: message.timestamp
       });
     } catch (e) {
@@ -315,7 +319,8 @@ io.on('connection', (socket) => {
     
     // Broadcast message to all connected admins
     io.emit('chat:message', message);
-    console.log(`💬 ${sender.fullName}: ${data.text.substring(0, 50)}...`);
+    const preview = data.text ? data.text.substring(0, 30) : (data.image ? '[Image]' : '[Voice]');
+    console.log(`💬 ${sender.fullName}: ${preview}...`);
   });
   
   // Handle typing indicator
@@ -355,6 +360,8 @@ app.get('/admin/api/admin/chat/messages', async (req, res) => {
       senderName: m.sender_name,
       senderRole: m.sender_role,
       text: m.message_text,
+      image: m.image_url,
+      voice: m.voice_url,
       timestamp: m.created_at
     })).reverse();
     
