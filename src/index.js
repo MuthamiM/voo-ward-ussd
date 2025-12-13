@@ -249,9 +249,119 @@ app.get('/favicon.ico', (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+
+// Create HTTP server for Socket.IO
+const http = require('http');
+const server = http.createServer(app);
+
+// Initialize Socket.IO for admin chat
+const { Server } = require('socket.io');
+const io = new Server(server, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+// Store online users
+const onlineUsers = new Map();
+
+// Socket.IO event handlers for admin chat
+io.on('connection', (socket) => {
+  console.log('🔌 Socket connected:', socket.id);
+  
+  // Admin joins chat
+  socket.on('chat:join', (userData) => {
+    const user = {
+      id: socket.id,
+      username: userData.username,
+      fullName: userData.fullName || userData.username,
+      role: userData.role
+    };
+    onlineUsers.set(socket.id, user);
+    
+    // Broadcast updated online users list
+    io.emit('chat:users', Array.from(onlineUsers.values()));
+    console.log(`👤 ${user.fullName} joined chat`);
+  });
+  
+  // Handle chat message
+  socket.on('chat:message', async (data) => {
+    const sender = onlineUsers.get(socket.id);
+    if (!sender) return;
+    
+    const message = {
+      id: Date.now().toString(),
+      sender: sender.username,
+      senderName: sender.fullName,
+      senderRole: sender.role,
+      text: data.text,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Save to MongoDB if available
+    if (app.locals.connectDB) {
+      try {
+        const db = await app.locals.connectDB();
+        await db.collection('admin_chat_messages').insertOne(message);
+      } catch (e) {
+        console.error('Failed to save chat message:', e.message);
+      }
+    }
+    
+    // Broadcast message to all connected admins
+    io.emit('chat:message', message);
+    console.log(`💬 ${sender.fullName}: ${data.text.substring(0, 50)}...`);
+  });
+  
+  // Handle typing indicator
+  socket.on('chat:typing', (isTyping) => {
+    const sender = onlineUsers.get(socket.id);
+    if (!sender) return;
+    
+    socket.broadcast.emit('chat:typing', {
+      username: sender.username,
+      fullName: sender.fullName,
+      isTyping
+    });
+  });
+  
+  // Handle disconnect
+  socket.on('disconnect', () => {
+    const user = onlineUsers.get(socket.id);
+    onlineUsers.delete(socket.id);
+    
+    if (user) {
+      io.emit('chat:users', Array.from(onlineUsers.values()));
+      console.log(`👋 ${user.fullName} left chat`);
+    }
+  });
+});
+
+// REST endpoint for chat history
+app.get('/admin/api/admin/chat/messages', async (req, res) => {
+  if (!app.locals.connectDB) {
+    return res.json([]);
+  }
+  
+  try {
+    const db = await app.locals.connectDB();
+    const messages = await db.collection('admin_chat_messages')
+      .find()
+      .sort({ timestamp: -1 })
+      .limit(100)
+      .toArray();
+    res.json(messages.reverse());
+  } catch (e) {
+    console.error('Failed to fetch chat history:', e.message);
+    res.json([]);
+  }
+});
+
+server.listen(PORT, () => {
   console.log(`[PRODUCTION] VOO Kyamatu Ward USSD API listening on :${PORT}`);
   console.log("Health:", `http://localhost:${PORT}/health`);
   console.log("USSD:", `http://localhost:${PORT}/ussd`);
   console.log("Citizen Portal:", `http://localhost:${PORT}/api/citizen`);
+  console.log("Admin Chat: WebSocket enabled ✅");
 });

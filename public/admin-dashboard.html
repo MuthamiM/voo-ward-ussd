@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -157,6 +158,7 @@
                 <a class="nav-item" data-page="bursary"><i class="fas fa-graduation-cap nav-icon"></i> Bursary</a>
                 <a class="nav-item" data-page="lostids"><i class="fas fa-id-card nav-icon"></i> Lost IDs</a>
                 <a class="nav-item" data-page="feedback"><i class="fas fa-comments nav-icon"></i> Feedback</a>
+                <a class="nav-item" data-page="chat"><i class="fas fa-comment-dots nav-icon"></i> Admin Chat</a>
                 <a class="nav-item" data-page="settings"><i class="fas fa-cog nav-icon"></i> Settings</a>
             </nav>
             <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
@@ -327,6 +329,27 @@
                             <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Loading...</td></tr>
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Admin Chat -->
+            <div id="chat" class="page">
+                <div class="page-header"><h1 class="page-title">Admin Chat</h1><span id="chatStatus" style="font-size:12px;color:var(--text-muted);margin-left:12px;">Connecting...</span></div>
+                <div style="display:flex;gap:16px;height:calc(100vh - 180px);">
+                    <!-- Online Users -->
+                    <div style="width:200px;background:var(--card-bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
+                        <h3 style="margin:0 0 12px;font-size:14px;color:var(--text-muted);">Online Users</h3>
+                        <div id="onlineUsersList" style="display:flex;flex-direction:column;gap:8px;"></div>
+                    </div>
+                    <!-- Chat Messages -->
+                    <div style="flex:1;display:flex;flex-direction:column;background:var(--card-bg);border-radius:12px;border:1px solid var(--border);overflow:hidden;">
+                        <div id="chatMessages" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;"></div>
+                        <div id="typingIndicator" style="padding:0 16px;font-size:12px;color:var(--text-muted);height:20px;"></div>
+                        <div style="padding:12px;border-top:1px solid var(--border);display:flex;gap:8px;">
+                            <input type="text" id="chatInput" placeholder="Type a message..." style="flex:1;padding:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;" onkeydown="if(event.key==='Enter')sendChatMessage()">
+                            <button onclick="sendChatMessage()" style="padding:12px 20px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -1128,7 +1151,138 @@
                 if (pageId === 'bursary') loadBursaries();
                 if (pageId === 'lostids') loadLostIds();
                 if (pageId === 'feedback') loadFeedback();
+                if (pageId === 'chat') initChat();
             });
+        });
+
+        // ============ ADMIN CHAT ============
+        let chatSocket = null;
+        let chatInitialized = false;
+        
+        function initChat() {
+            if (chatInitialized) return;
+            chatInitialized = true;
+            
+            debug('Initializing admin chat...');
+            
+            // Connect to Socket.IO
+            chatSocket = io(window.location.origin, {
+                transports: ['websocket', 'polling']
+            });
+            
+            chatSocket.on('connect', () => {
+                debug('Chat connected: ' + chatSocket.id);
+                document.getElementById('chatStatus').textContent = 'Connected';
+                document.getElementById('chatStatus').style.color = 'var(--success)';
+                
+                // Join chat with user info
+                chatSocket.emit('chat:join', {
+                    username: currentUser?.username || 'admin',
+                    fullName: currentUser?.fullName || currentUser?.username || 'Admin',
+                    role: currentUser?.role || 'Admin'
+                });
+                
+                // Load chat history
+                loadChatHistory();
+            });
+            
+            chatSocket.on('disconnect', () => {
+                document.getElementById('chatStatus').textContent = 'Disconnected';
+                document.getElementById('chatStatus').style.color = 'var(--error)';
+            });
+            
+            // Receive messages
+            chatSocket.on('chat:message', (msg) => {
+                appendChatMessage(msg);
+            });
+            
+            // Online users update
+            chatSocket.on('chat:users', (users) => {
+                renderOnlineUsers(users);
+            });
+            
+            // Typing indicator
+            chatSocket.on('chat:typing', (data) => {
+                const indicator = document.getElementById('typingIndicator');
+                indicator.textContent = data.isTyping ? `${data.fullName} is typing...` : '';
+            });
+        }
+        
+        async function loadChatHistory() {
+            try {
+                const messages = await api('/api/admin/chat/messages');
+                if (Array.isArray(messages)) {
+                    const container = document.getElementById('chatMessages');
+                    container.innerHTML = '';
+                    messages.forEach(msg => appendChatMessage(msg, false));
+                    container.scrollTop = container.scrollHeight;
+                }
+            } catch (e) {
+                debug('Failed to load chat history');
+            }
+        }
+        
+        function appendChatMessage(msg, scroll = true) {
+            const container = document.getElementById('chatMessages');
+            const isMe = msg.sender === (currentUser?.username || 'admin');
+            
+            const msgEl = document.createElement('div');
+            msgEl.style.cssText = `
+                max-width: 70%;
+                padding: 10px 14px;
+                border-radius: 12px;
+                ${isMe ? 'align-self: flex-end; background: var(--primary); color: white;' : 'align-self: flex-start; background: var(--border); color: var(--text);'}
+            `;
+            
+            const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            msgEl.innerHTML = `
+                ${!isMe ? `<div style="font-size:11px;font-weight:600;margin-bottom:4px;opacity:0.8;">${escapeHtml(msg.senderName)} (${msg.senderRole || 'Admin'})</div>` : ''}
+                <div>${escapeHtml(msg.text)}</div>
+                <div style="font-size:10px;opacity:0.7;text-align:right;margin-top:4px;">${time}</div>
+            `;
+            container.appendChild(msgEl);
+            
+            if (scroll) container.scrollTop = container.scrollHeight;
+        }
+        
+        function renderOnlineUsers(users) {
+            const container = document.getElementById('onlineUsersList');
+            if (!users || users.length === 0) {
+                container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">No users online</div>';
+                return;
+            }
+            container.innerHTML = users.map(u => `
+                <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--border);border-radius:8px;">
+                    <div style="width:8px;height:8px;background:var(--success);border-radius:50%;"></div>
+                    <div>
+                        <div style="font-size:13px;font-weight:500;">${escapeHtml(u.fullName)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${u.role || 'Admin'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        let typingTimeout = null;
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !chatSocket) return;
+            
+            chatSocket.emit('chat:message', { text });
+            input.value = '';
+        }
+        
+        // Typing indicator
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('chatInput');
+            if (input) {
+                input.addEventListener('input', () => {
+                    if (!chatSocket) return;
+                    chatSocket.emit('chat:typing', true);
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => chatSocket.emit('chat:typing', false), 1500);
+                });
+            }
         });
 
         // Initialize
