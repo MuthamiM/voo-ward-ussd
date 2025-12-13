@@ -625,11 +625,11 @@
                         <td>${date}</td>
                         <td>
                             <button class="action-btn view" onclick="viewIssue('${escapeHtml(issue.ticket)}')" title="View"><i class="fas fa-eye"></i></button>
-                            <select class="status-dropdown" onchange="setIssueStatus('${escapeHtml(issue._id || issue.id)}', this.value)" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--text);cursor:pointer;">
+                            <select class="status-dropdown" onchange="setIssueStatus('${escapeHtml(issue._id || issue.id)}', this.value)" style="padding:6px;border-radius:6px;border:1px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;">
                                 <option value="" disabled selected>Change Status</option>
-                                <option value="Pending" ${(issue.status || 'Pending').toLowerCase() === 'pending' ? 'disabled' : ''}>⏳ Pending</option>
-                                <option value="In Progress" ${(issue.status || '').toLowerCase() === 'in progress' ? 'disabled' : ''}>🔄 In Progress</option>
-                                <option value="Resolved" ${(issue.status || '').toLowerCase() === 'resolved' ? 'disabled' : ''}>✅ Resolved</option>
+                                <option value="Pending" ${(issue.status || 'Pending').toLowerCase() === 'pending' ? 'disabled' : ''}>Pending</option>
+                                <option value="In Progress" ${(issue.status || '').toLowerCase() === 'in progress' ? 'disabled' : ''}>In Progress</option>
+                                <option value="Resolved" ${(issue.status || '').toLowerCase() === 'resolved' ? 'disabled' : ''}>Resolved</option>
                             </select>
                         </td>
                     </tr>`;
