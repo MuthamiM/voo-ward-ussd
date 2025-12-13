@@ -84,15 +84,29 @@ router.patch('/:id', requireAuth, async (req, res) => {
     
     console.log(`📝 Updating issue ${issueId} to status: ${status}`);
     
-    // Find the actual numeric ID if ticket number was provided
-    let numericId = issueId;
+    // First, find the issue to get its details and correct ID
+    const issues = await supabaseService.getAllIssues();
+    let issue = null;
+    
+    // Try to find by various ID formats
     if (issueId.startsWith('ISS-')) {
-      const issues = await supabaseService.getAllIssues();
-      const issue = issues.find(i => i.issue_number === issueId);
-      if (issue) {
-        numericId = issue.id;
-      }
+      // Ticket number format
+      issue = issues.find(i => i.issue_number === issueId);
+    } else {
+      // Numeric or UUID format
+      issue = issues.find(i => 
+        String(i.id) === String(issueId) || 
+        i.id === issueId ||
+        i.issue_number === issueId
+      );
     }
+    
+    if (!issue) {
+      console.log(`❌ Issue ${issueId} not found`);
+      return res.status(404).json({ error: 'Issue not found' });
+    }
+    
+    console.log(`✅ Found issue: ID=${issue.id}, Title="${issue.title || issue.category}"`);
     
     const updates = {
       status: status,
@@ -100,11 +114,29 @@ router.patch('/:id', requireAuth, async (req, res) => {
       resolved_at: status === 'Resolved' ? new Date().toISOString() : null
     };
     
-    const result = await supabaseService.updateIssue(numericId, updates);
+    const result = await supabaseService.updateIssue(issue.id, updates);
     
     if (result.success) {
+      // Auto-create announcement when issue is resolved
+      if (status === 'Resolved') {
+        try {
+          const issueTitle = issue.title || issue.category || 'Community Issue';
+          const announcementResult = await supabaseService.createAnnouncement({
+            title: `🎉 MBUA NENE DELIVERS: ${issueTitle} RESOLVED!`,
+            body: `Great news! The issue "${issueTitle}" has been successfully resolved by MCA Mbua Nene's office. ${action_note ? `Details: ${action_note}` : 'Thank you for your patience.'}`,
+            priority: 'high',
+            target_audience: 'all'
+          });
+          console.log(`📢 Auto-announcement created for resolved issue ${issue.id}:`, announcementResult.success);
+        } catch (annErr) {
+          console.error('Failed to create auto-announcement:', annErr);
+          // Don't fail the main update if announcement fails
+        }
+      }
+      
       res.json({ success: true, message: 'Issue updated successfully' });
     } else {
+      console.log(`❌ Update failed:`, result.error);
       res.status(400).json({ error: result.error || 'Update failed' });
     }
   } catch (err) {
