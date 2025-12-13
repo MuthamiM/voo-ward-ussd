@@ -299,14 +299,18 @@ io.on('connection', (socket) => {
       timestamp: new Date().toISOString()
     };
     
-    // Save to MongoDB if available
-    if (app.locals.connectDB) {
-      try {
-        const db = await app.locals.connectDB();
-        await db.collection('admin_chat_messages').insertOne(message);
-      } catch (e) {
-        console.error('Failed to save chat message:', e.message);
-      }
+    // Save to Supabase
+    try {
+      const supabaseService = require('./services/supabaseService');
+      await supabaseService.request('POST', '/rest/v1/admin_chat_messages', {
+        sender: message.sender,
+        sender_name: message.senderName,
+        sender_role: message.senderRole,
+        message_text: message.text,
+        created_at: message.timestamp
+      });
+    } catch (e) {
+      console.error('Failed to save chat message:', e.message || e);
     }
     
     // Broadcast message to all connected admins
@@ -338,22 +342,25 @@ io.on('connection', (socket) => {
   });
 });
 
-// REST endpoint for chat history
+// REST endpoint for chat history (from Supabase)
 app.get('/admin/api/admin/chat/messages', async (req, res) => {
-  if (!app.locals.connectDB) {
-    return res.json([]);
-  }
-  
   try {
-    const db = await app.locals.connectDB();
-    const messages = await db.collection('admin_chat_messages')
-      .find()
-      .sort({ timestamp: -1 })
-      .limit(100)
-      .toArray();
-    res.json(messages.reverse());
+    const supabaseService = require('./services/supabaseService');
+    const messages = await supabaseService.request('GET', '/rest/v1/admin_chat_messages?order=created_at.desc&limit=100');
+    
+    // Map to frontend format
+    const formatted = (Array.isArray(messages) ? messages : []).map(m => ({
+      id: m.id,
+      sender: m.sender,
+      senderName: m.sender_name,
+      senderRole: m.sender_role,
+      text: m.message_text,
+      timestamp: m.created_at
+    })).reverse();
+    
+    res.json(formatted);
   } catch (e) {
-    console.error('Failed to fetch chat history:', e.message);
+    console.error('Failed to fetch chat history:', e.message || e);
     res.json([]);
   }
 });
