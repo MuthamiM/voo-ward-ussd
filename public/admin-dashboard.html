@@ -1009,8 +1009,10 @@
             const res = await api('/lost-ids');
             if (res) {
                 allLostIds = Array.isArray(res) ? res : (res.data || []);
-                renderLostIds(allLostIds);
+            } else {
+                allLostIds = [];
             }
+            renderLostIds(allLostIds);
         }
 
         function renderLostIds(data) {
@@ -1062,8 +1064,10 @@
             const res = await api('/feedback');
             if (res) {
                 allFeedback = Array.isArray(res) ? res : (res.data || []);
-                renderFeedback(allFeedback);
+            } else {
+                allFeedback = [];
             }
+            renderFeedback(allFeedback);
         }
 
         function renderFeedback(data) {
