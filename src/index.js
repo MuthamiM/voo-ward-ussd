@@ -1,4 +1,27 @@
-﻿const express = require("express");
+﻿/**
+ * ============================================================================
+ * VOO Citizen Platform - USSD Dashboard Server
+ * ============================================================================
+ * 
+ * Copyright (C) 2025 Musa Muthami. All Rights Reserved.
+ * 
+ * PROPRIETARY AND CONFIDENTIAL - SOURCE CODE CANNOT BE EDITED BY ANYONE
+ * 
+ * This software is the exclusive property of Musa Muthami and is protected
+ * by copyright law. Unauthorized copying, modification, distribution, or use
+ * of this software or any portion thereof is strictly prohibited and may
+ * result in severe civil and criminal penalties.
+ * 
+ * THE SOURCE CODE CANNOT BE EDITED, MODIFIED, OR ALTERED BY ANYONE except
+ * the original author (Musa Muthami). This is an absolute prohibition.
+ * Any unauthorized editing is ILLEGAL and will result in legal action.
+ * 
+ * For licensing inquiries, contact: musamwange2@gmail.com
+ * See LICENSE file for complete terms and conditions.
+ * ============================================================================
+ */
+
+const express = require("express");
 const morgan = require("morgan");
 const bodyParser = require("body-parser");
 const compression = require("compression");

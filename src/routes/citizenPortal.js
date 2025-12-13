@@ -1068,21 +1068,28 @@ router.delete('/mobile/issues/:issueId', async (req, res) => {
     try {
         const { issueId } = req.params;
         
-        logger.info(`Mobile delete request for issue: ${issueId}`);
+        logger.info(`[DELETE] Mobile delete request for issue: ${issueId}`);
+        console.log(`[DELETE] Issue ID received: "${issueId}", type: ${typeof issueId}, length: ${issueId?.length}`);
+        
+        if (!issueId || issueId === 'undefined' || issueId === 'null' || issueId === '') {
+            logger.warn(`[DELETE] Invalid issue ID: ${issueId}`);
+            return res.status(400).json({ success: false, error: 'Invalid issue ID' });
+        }
         
         // Delete from Supabase (primary storage)
         const result = await supabaseService.deleteIssue(issueId);
         
         if (result.success) {
-            logger.info(`Issue ${issueId} deleted successfully via mobile`);
-            return res.json({ success: true, message: 'Issue deleted successfully' });
+            logger.info(`[DELETE] Issue ${issueId} deleted successfully via mobile`);
+            return res.status(200).json({ success: true, message: 'Issue deleted successfully' });
         } else {
-            logger.warn(`Failed to delete issue ${issueId}:`, result.error);
+            logger.warn(`[DELETE] Failed to delete issue ${issueId}:`, result.error);
             return res.status(400).json({ success: false, error: result.error || 'Delete failed' });
         }
     } catch (err) {
-        logger.error('Delete mobile issue error:', err);
-        res.status(500).json({ success: false, error: 'Failed to delete issue' });
+        logger.error('[DELETE] Delete mobile issue error:', err);
+        console.error('[DELETE] Full error:', err);
+        res.status(500).json({ success: false, error: 'Failed to delete issue: ' + (err.message || 'Unknown error') });
     }
 });
 

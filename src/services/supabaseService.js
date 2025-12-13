@@ -519,15 +519,44 @@ class SupabaseService {
     }
 
     /**
-     * Delete issue
+     * Delete issue - handles both UUID (id) and issue_number formats
      */
     async deleteIssue(issueId) {
         try {
-            await this.request('DELETE', `/rest/v1/issues?id=eq.${issueId}`);
+            console.log(`[Supabase] deleteIssue called with: ${issueId}`);
+            
+            // Determine if issueId is a UUID or an issue_number (like ISS-123456)
+            const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
+            
+            let deletePath;
+            if (isUUID) {
+                // It's a UUID, use id field
+                deletePath = `/rest/v1/issues?id=eq.${issueId}`;
+            } else {
+                // It's an issue_number like ISS-123456
+                deletePath = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}`;
+            }
+            
+            console.log(`[Supabase] Deleting via path: ${deletePath}`);
+            await this.request('DELETE', deletePath);
+            console.log(`[Supabase] Issue ${issueId} deleted successfully`);
             return { success: true };
         } catch (e) {
             console.error('[Supabase] deleteIssue error:', e);
-            return { success: false, error: 'Delete failed' };
+            // Try the other field if first one failed
+            try {
+                const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
+                const fallbackPath = isUUID 
+                    ? `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}`
+                    : `/rest/v1/issues?id=eq.${issueId}`;
+                console.log(`[Supabase] Trying fallback delete path: ${fallbackPath}`);
+                await this.request('DELETE', fallbackPath);
+                console.log(`[Supabase] Issue ${issueId} deleted via fallback`);
+                return { success: true };
+            } catch (e2) {
+                console.error('[Supabase] Fallback delete also failed:', e2);
+                return { success: false, error: e.error?.message || 'Delete failed' };
+            }
         }
     }
 
