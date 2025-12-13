@@ -120,10 +120,13 @@ router.patch('/:id', requireAuth, async (req, res) => {
       // Auto-create announcement when issue is resolved
       if (status === 'Resolved') {
         try {
-          const issueTitle = issue.title || issue.category || 'Community Issue';
+          const ticketNumber = issue.issue_number || `ISS-${String(issue.id).slice(-6)}`;
+          const category = issue.category || 'Community';
+          const issueTitle = issue.title || issue.description || 'issue';
+          
           const announcementResult = await supabaseService.createAnnouncement({
-            title: `🎉 MBUA NENE DELIVERS: ${issueTitle} RESOLVED!`,
-            body: `Great news! The issue "${issueTitle}" has been successfully resolved by MCA Mbua Nene's office. ${action_note ? `Details: ${action_note}` : 'Thank you for your patience.'}`,
+            title: `MBUA NENE DELIVERS: ${ticketNumber}`,
+            body: `${category} issue "${issueTitle}" was resolved. Thank you for your patience!`,
             priority: 'high',
             target_audience: 'all'
           });
