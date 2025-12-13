@@ -1060,6 +1060,33 @@ router.get('/mobile/issues/:userId', async (req, res) => {
 });
 
 /**
+ * Delete Issue (for mobile app)
+ * DELETE /api/citizen/mobile/issues/:issueId
+ * Allows users to delete their resolved issues
+ */
+router.delete('/mobile/issues/:issueId', async (req, res) => {
+    try {
+        const { issueId } = req.params;
+        
+        logger.info(`Mobile delete request for issue: ${issueId}`);
+        
+        // Delete from Supabase (primary storage)
+        const result = await supabaseService.deleteIssue(issueId);
+        
+        if (result.success) {
+            logger.info(`Issue ${issueId} deleted successfully via mobile`);
+            return res.json({ success: true, message: 'Issue deleted successfully' });
+        } else {
+            logger.warn(`Failed to delete issue ${issueId}:`, result.error);
+            return res.status(400).json({ success: false, error: result.error || 'Delete failed' });
+        }
+    } catch (err) {
+        logger.error('Delete mobile issue error:', err);
+        res.status(500).json({ success: false, error: 'Failed to delete issue' });
+    }
+});
+
+/**
  * Get User Bursaries by userId
  * GET /api/citizen/mobile/bursaries/:userId
  */
