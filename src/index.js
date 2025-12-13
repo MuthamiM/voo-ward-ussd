@@ -290,14 +290,49 @@ io.on('connection', (socket) => {
     const sender = onlineUsers.get(socket.id);
     if (!sender) return;
     
+    let imageUrl = null;
+    let voiceUrl = null;
+    
+    // Upload image to Cloudinary if present
+    if (data.image && data.image.startsWith('data:')) {
+      try {
+        const cloudinary = require('cloudinary').v2;
+        const result = await cloudinary.uploader.upload(data.image, {
+          folder: 'voo-ward/chat',
+          resource_type: 'auto'
+        });
+        imageUrl = result.secure_url;
+        console.log('📷 Chat image uploaded to Cloudinary');
+      } catch (e) {
+        console.error('Failed to upload chat image:', e.message);
+        imageUrl = data.image; // fallback to base64 if upload fails
+      }
+    }
+    
+    // Upload voice to Cloudinary if present
+    if (data.voice && data.voice.startsWith('data:')) {
+      try {
+        const cloudinary = require('cloudinary').v2;
+        const result = await cloudinary.uploader.upload(data.voice, {
+          folder: 'voo-ward/chat',
+          resource_type: 'video' // audio uses video resource type
+        });
+        voiceUrl = result.secure_url;
+        console.log('🎤 Chat voice uploaded to Cloudinary');
+      } catch (e) {
+        console.error('Failed to upload chat voice:', e.message);
+        voiceUrl = data.voice; // fallback to base64 if upload fails
+      }
+    }
+    
     const message = {
       id: Date.now().toString(),
       sender: sender.username,
       senderName: sender.fullName,
       senderRole: sender.role,
       text: data.text || '',
-      image: data.image || null,  // base64 image
-      voice: data.voice || null,  // base64 audio
+      image: imageUrl,
+      voice: voiceUrl,
       timestamp: new Date().toISOString()
     };
     

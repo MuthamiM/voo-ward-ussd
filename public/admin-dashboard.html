@@ -133,11 +133,73 @@
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .debug-info { position: fixed; bottom: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; font-size: 11px; color: #888; max-width: 300px; z-index: 9999; }
         @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .charts-row-2 { grid-template-columns: 1fr; } }
-        @media (max-width: 768px) { .sidebar { display: none; } .main-content { margin-left: 0; } .stats-grid { grid-template-columns: 1fr; } }
+        
+        /* Mobile Responsive */
+        @media (max-width: 768px) { 
+            .sidebar { 
+                position: fixed; 
+                left: -250px; 
+                top: 0;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+            .sidebar.open { left: 0; }
+            .main-content { margin-left: 0; padding: 16px; }
+            .stats-grid { grid-template-columns: 1fr; gap: 12px; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+            .page-header h1 { font-size: 20px; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .filter-select, .search-input { width: 100%; }
+            .data-table { overflow-x: auto; }
+            .data-table table { min-width: 600px; }
+            .charts-row, .charts-row-2 { grid-template-columns: 1fr; }
+            .user-card { padding: 12px; }
+            #chat .page-header + div { flex-direction: column; height: auto; }
+            #chat .page-header + div > div:first-child { width: 100%; max-height: 150px; overflow-y: auto; }
+        }
+        
+        /* Hamburger menu button */
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1001;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        @media (max-width: 768px) { .mobile-menu-btn { display: block; } }
+        
+        /* Overlay for mobile menu */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+        .sidebar-overlay.show { display: block; }
+        
+        /* Blink animation for recording */
+        @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
     </style>
 </head>
 <body>
     <div class="app-container">
+        <!-- Mobile menu button -->
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
+        <div class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
+        
         <aside class="sidebar">
             <div style="padding: 10px 12px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;">
                 <img src="/images/voo_logo.png" alt="VOO Ward" style="width: 40px; height: 40px; border-radius: 8px;" onerror="this.style.display='none'">
@@ -428,6 +490,32 @@
             console.log('[Dashboard]', msg);
             const d = document.getElementById('debugInfo');
             if (d) d.innerHTML = msg + '<br>' + d.innerHTML.substring(0, 500);
+        }
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            document.querySelector('.sidebar').classList.toggle('open');
+            document.querySelector('.sidebar-overlay').classList.toggle('show');
+        }
+        
+        // Close mobile menu when nav item clicked
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        document.querySelector('.sidebar').classList.remove('open');
+                        document.querySelector('.sidebar-overlay').classList.remove('show');
+                    }
+                });
+            });
+        });
+        
+        // Download image for opening in native app
+        function downloadImage(dataUrl, filename = 'chat_image.png') {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = filename;
+            link.click();
         }
 
         // XSS Protection - escape HTML in user data
@@ -981,14 +1069,27 @@
                 if (s === 'rejected') return '<span class="badge badge-rejected">Rejected</span>';
                 return '<span class="badge badge-pending">Pending</span>';
             };
+            
+            // Check if user is MCA (only MCA can approve/reject)
+            const isMCA = currentUser?.role?.toUpperCase() === 'MCA';
+            
             let html = '<table><thead><tr><th>Applicant</th><th>Institution</th><th>Course</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
             burses.forEach(b => {
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : '--';
                 const statusLower = (b.status || 'pending').toLowerCase();
-                const actions = statusLower === 'pending' ? `
-                    <button class="action-btn approve" onclick="updateBursary('${b.id}', 'approved')" title="Approve"><i class="fas fa-check"></i></button>
-                    <button class="action-btn reject" onclick="updateBursary('${b.id}', 'rejected')" title="Reject"><i class="fas fa-times"></i></button>
-                ` : '--';
+                
+                // Only MCA can take actions on pending applications
+                let actions = '--';
+                if (statusLower === 'pending') {
+                    if (isMCA) {
+                        actions = `
+                            <button class="action-btn approve" onclick="updateBursary('${b.id}', 'approved')" title="Approve"><i class="fas fa-check"></i></button>
+                            <button class="action-btn reject" onclick="updateBursary('${b.id}', 'rejected')" title="Reject"><i class="fas fa-times"></i></button>
+                        `;
+                    } else {
+                        actions = '<span style="color:var(--text-muted);font-size:11px;">View Only</span>';
+                    }
+                }
                 
                 html += `<tr>
                     <td>${escapeHtml(b.full_name || b.applicant_name || 'Unknown')}</td>
