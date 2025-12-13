@@ -289,14 +289,14 @@ class SupabaseService {
     async updateIssue(issueId, updates) {
         try {
             // Build update payload with only columns that exist in Supabase issues table
+            // NOTE: issues table only has: status, updated_at (no action_note, no resolved_at)
             const payload = {
                 updated_at: new Date().toISOString(),
             };
             
             // Only include fields that exist in Supabase schema
             if (updates.status) payload.status = updates.status;
-            if (updates.resolved_at) payload.resolved_at = updates.resolved_at;
-            // Note: action_note column doesn't exist in issues table - skip it
+            // resolved_at and action_note columns don't exist - skip them
             
             console.log(`[Supabase] Updating issue ${issueId} with:`, JSON.stringify(payload));
             
