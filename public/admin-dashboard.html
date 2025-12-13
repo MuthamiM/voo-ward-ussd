@@ -764,6 +764,7 @@
                                 <option value="In Progress" ${(issue.status || '').toLowerCase() === 'in progress' ? 'disabled' : ''}>In Progress</option>
                                 <option value="Resolved" ${(issue.status || '').toLowerCase() === 'resolved' ? 'disabled' : ''}>Resolved</option>
                             </select>
+                            ${(issue.status || '').toLowerCase() === 'resolved' ? `<button class="action-btn" style="background:var(--error);color:white;" onclick="deleteIssue('${escapeHtml(issue._id || issue.id)}')" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
                         </td>
                     </tr>`;
 
@@ -878,6 +879,21 @@
                 loadDashboard();
             } else {
                 showToast(res?.error || 'Failed to update status', 'error');
+            }
+        }
+
+        // Delete Issue
+        async function deleteIssue(issueId) {
+            if (!confirm('Are you sure you want to delete this resolved issue?')) return;
+            
+            const res = await api(`/api/admin/issues/${issueId}`, { method: 'DELETE' });
+            
+            if (res && res.success) {
+                showToast('Issue deleted successfully');
+                loadIssues();
+                loadDashboard();
+            } else {
+                showToast(res?.error || 'Failed to delete issue', 'error');
             }
         }
 
