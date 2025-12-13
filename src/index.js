@@ -202,11 +202,15 @@ if (!chosenPath) {
   console.log('[DEBUG] Requiring admin-dashboard from chosen path:', chosenPath);
   try {
     adminDashboard = require(chosenPath);
+    console.log('[DEBUG] adminDashboard type:', typeof adminDashboard);
+    console.log('[DEBUG] adminDashboard.handle:', typeof adminDashboard?.handle);
+    
+    // Mount at root since admin-dashboard's internal routes already have /api/admin prefix
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
-      app.use('/admin', adminDashboard);
-      console.log('[DEBUG] admin-dashboard mounted successfully at /admin from', chosenPath);
+      app.use('/', adminDashboard);
+      console.log('[DEBUG] admin-dashboard mounted at / (root) from', chosenPath);
     } else {
-      console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server or routes. Skipping mount.');
+      console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server. Skipping mount.');
     }
     if (adminDashboard && adminDashboard.connectDB) {
       app.locals.connectDB = adminDashboard.connectDB;
