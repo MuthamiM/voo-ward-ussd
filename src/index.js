@@ -295,6 +295,22 @@ const io = new Server(server, {
 // Store online users
 const onlineUsers = new Map();
 
+const webpush = require('web-push');
+
+// Configure Web Push
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    'mailto:admin@voo-ward.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY
+  );
+  console.log('✅ Web Push configured');
+} else {
+  console.warn('⚠️ Web Push NOT configured (Missing VAPID keys)');
+}
+
+// ... (Socket setup code remains same) ...
+
 // Socket.IO event handlers for admin chat
 io.on('connection', (socket) => {
   console.log('🔌 Socket connected:', socket.id);
@@ -377,8 +393,45 @@ io.on('connection', (socket) => {
         voice_url: message.voice,
         created_at: message.timestamp
       });
+
+      // SEND PUSH NOTIFICATIONS
+      if (process.env.VAPID_PUBLIC_KEY) {
+        // Get all subscriptions EXCEPT sender
+        // Note: In a real app we might filter by user_id, but here simple filter by username
+        const subs = await supabaseService.request('GET', '/rest/v1/push_subscriptions?select=*');
+        
+        if (Array.isArray(subs)) {
+            const notifications = subs
+                .filter(sub => sub.username !== sender.username) // Don't notify sender
+                .map(sub => {
+                    const pushConfig = {
+                        endpoint: sub.endpoint,
+                        keys: { auth: sub.auth, p256dh: sub.p256dh }
+                    };
+                    
+                    const payload = JSON.stringify({
+                        title: `New Message from ${sender.fullName}`,
+                        body: message.text || (message.image ? '📷 Sent an image' : '🎤 Sent a voice message'),
+                        url: '/admin-dashboard.html',
+                        image: message.image
+                    });
+
+                    return webpush.sendNotification(pushConfig, payload)
+                        .catch(err => {
+                            if (err.statusCode === 410 || err.statusCode === 404) {
+                                // Subscription expired, delete it
+                                supabaseService.request('DELETE', `/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(sub.endpoint)}`);
+                            }
+                            console.error('Push failed:', err.statusCode);
+                        });
+                });
+                
+            Promise.all(notifications); // Send in parallel
+        }
+      }
+
     } catch (e) {
-      console.error('Failed to save chat message:', e.message || e);
+      console.error('Failed to save chat message or send push:', e.message || e);
     }
     
     // Broadcast message to all connected admins

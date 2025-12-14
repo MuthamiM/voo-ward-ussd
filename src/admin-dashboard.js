@@ -3910,6 +3910,43 @@ app.get('/uploads/avatars/default-avatar.png', (req, res) => {
   res.send(svgAvatar);
 });
 
+// ============================================
+// PUSH NOTIFICATIONS
+// ============================================
+app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
+  try {
+    const subscription = req.body;
+    const { id: userId, username } = req.user;
+    
+    const { endpoint, keys } = subscription;
+    
+    if (!endpoint || !keys) {
+      return res.status(400).json({ error: 'Invalid subscription object' });
+    }
+
+    const supabaseService = require('./services/supabaseService');
+
+    // Upsert subscription to Supabase `push_subscriptions`
+    // Using `updated_at` to refresh active status
+    await supabaseService.request('POST', '/rest/v1/push_subscriptions', {
+        user_id: userId,
+        username: username,
+        endpoint: endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        user_agent: req.headers['user-agent'],
+        updated_at: new Date().toISOString()
+    }, {
+        headers: { 'Prefer': 'resolution=merge-duplicates' } 
+    });
+
+    res.status(201).json({ success: true, message: 'Subscribed to notifications' });
+  } catch (err) {
+    console.warn("Notification subscription error:", err.message);
+    res.status(200).json({ success: false, error: 'Failed to save subscription' }); 
+  }
+});
+
 // Start server when run directly. When required as a module, export the app so
 // a parent process (e.g. src/index.js) can mount it as middleware.
 const PORT = process.env.ADMIN_PORT || 5000;
