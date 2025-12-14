@@ -543,6 +543,67 @@ router.post('/mobile/issues', async (req, res) => {
 });
 
 /**
+ * Delete issue from mobile app
+ * DELETE /api/citizen/mobile/issues/:issueId
+ * Deletes from Supabase (primary) with MongoDB fallback
+ */
+router.delete('/mobile/issues/:issueId', async (req, res) => {
+    try {
+        const { issueId } = req.params;
+        
+        if (!issueId) {
+            return res.status(400).json({ success: false, error: 'Issue ID required' });
+        }
+        
+        logger.info(`Delete request for issue: ${issueId}`);
+        
+        // Try Supabase first
+        try {
+            const supabaseService = require('../services/supabaseService');
+            const result = await supabaseService.deleteIssue(issueId);
+            
+            if (result.success) {
+                logger.info(`Issue ${issueId} deleted from Supabase`);
+                return res.json({ success: true, message: 'Issue deleted successfully' });
+            } else {
+                logger.warn(`Supabase delete failed for ${issueId}:`, result.error);
+            }
+        } catch (supaErr) {
+            logger.warn('Supabase delete error, trying MongoDB:', supaErr.message);
+        }
+        
+        // MongoDB fallback
+        const db = await getDb();
+        const { ObjectId } = require('mongodb');
+        
+        // Try to delete by ticket first, then by ObjectId
+        let deleted = await db.collection('issues').deleteOne({ ticket: issueId });
+        
+        if (deleted.deletedCount === 0) {
+            // Try by ObjectId if ticket didn't match
+            try {
+                deleted = await db.collection('issues').deleteOne({ _id: new ObjectId(issueId) });
+            } catch (oidErr) {
+                // Not a valid ObjectId, try issue_number
+                deleted = await db.collection('issues').deleteOne({ issue_number: issueId });
+            }
+        }
+        
+        if (deleted.deletedCount > 0) {
+            logger.info(`Issue ${issueId} deleted from MongoDB`);
+            return res.json({ success: true, message: 'Issue deleted successfully' });
+        }
+        
+        // Issue not found in either database
+        logger.warn(`Issue ${issueId} not found in any database`);
+        res.status(404).json({ success: false, error: 'Issue not found' });
+    } catch (err) {
+        logger.error('Delete issue error:', err);
+        res.status(500).json({ success: false, error: 'Failed to delete issue' });
+    }
+});
+
+/**
  * Submit bursary application from mobile app (PUBLIC with user info)
  * POST /api/citizen/mobile/bursaries
  * Stores directly to Supabase so dashboard can see it

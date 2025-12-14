@@ -481,7 +481,7 @@
 
     <script>
         // Config - IMPORTANT: Use /admin prefix as per the backend routing
-        const API_BASE = window.location.origin + '/admin';
+        const API_BASE = window.location.origin;
         let authToken = localStorage.getItem('authToken');
         let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
         let allIssues = [];

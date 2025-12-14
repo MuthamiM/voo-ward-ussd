@@ -1,1064 +1,1266 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
+  <head>
     <script>
-        if (!window.location.search.includes('v=') && window.performance) {
-            const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
-            if (navEntry && navEntry.type === 'back_forward') {
-                window.location.href = window.location.pathname + '?v=' + Date.now();
-            }
+      if (!window.location.search.includes("v=") && window.performance) {
+        const navEntry =
+          performance.getEntriesByType &&
+          performance.getEntriesByType("navigation")[0];
+        if (navEntry && navEntry.type === "back_forward") {
+          window.location.href = window.location.pathname + "?v=" + Date.now();
         }
+      }
     </script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Cache-Control"
+      content="no-cache, no-store, must-revalidate"
+    />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Login - VOO Ward</title>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #ff8c00 0%, #1a1a1a 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Background with overlay */
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url("https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80")
+          no-repeat center center;
+        background-size: cover;
+        z-index: 0;
+      }
+
+      body::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 140, 0, 0.4) 0%,
+          rgba(26, 26, 26, 0.4) 100%
+        );
+        z-index: 1;
+      }
+
+      /* Animated gradient orbs */
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.6;
+        z-index: 2;
+        animation: float 20s infinite ease-in-out;
+      }
+
+      .orb1 {
+        width: 400px;
+        height: 400px;
+        background: rgba(255, 140, 0, 0.4);
+        top: -100px;
+        left: -100px;
+        animation-delay: 0s;
+      }
+
+      .orb2 {
+        width: 350px;
+        height: 350px;
+        background: rgba(255, 107, 0, 0.4);
+        bottom: -100px;
+        right: -100px;
+        animation-delay: 5s;
+      }
+
+      .orb3 {
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 179, 71, 0.3);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation-delay: 10s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
         }
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #FF8C00 0%, #1a1a1a 100%);
-            position: relative;
-            overflow: hidden;
+        33% {
+          transform: translate(50px, -50px) scale(1.1);
         }
 
-        /* Background with overlay */
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80') no-repeat center center;
-            background-size: cover;
-            z-index: 0;
+        66% {
+          transform: translate(-50px, 50px) scale(0.9);
+        }
+      }
+
+      .login-wrapper {
+        position: relative;
+        z-index: 10;
+        text-align: center;
+        animation: fadeInUp 0.8s ease-out;
+      }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
         }
 
-        body::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255, 140, 0, 0.4) 0%, rgba(26, 26, 26, 0.4) 100%);
-            z-index: 1;
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .login-title {
+        color: white;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.5px;
+      }
+
+      .login-subtitle {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 16px;
+        font-weight: 400;
+        margin-bottom: 32px;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .login-box {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 40px;
+        border-radius: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+        width: 420px;
+        max-width: 92vw;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .login-box::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1) 0%,
+          rgba(255, 255, 255, 0.05) 100%
+        );
+        pointer-events: none;
+      }
+
+      .message {
+        padding: 14px 16px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        display: none;
+        position: relative;
+        z-index: 2;
+        animation: slideDown 0.3s ease-out;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
         }
 
-        /* Animated gradient orbs */
-        .orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.6;
-            z-index: 2;
-            animation: float 20s infinite ease-in-out;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        .orb1 {
-            width: 400px;
-            height: 400px;
-            background: rgba(255, 140, 0, 0.4);
-            top: -100px;
-            left: -100px;
-            animation-delay: 0s;
+      .message.show {
+        display: block;
+      }
+
+      .error {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.4);
+        color: #fff;
+        backdrop-filter: blur(10px);
+      }
+
+      .success {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #fff;
+        backdrop-filter: blur(10px);
+      }
+
+      .input-field {
+        width: 100%;
+        padding: 16px 18px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 12px;
+        font-size: 15px;
+        font-family: "Inter", sans-serif;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        color: white;
+        position: relative;
+        z-index: 2;
+      }
+
+      .input-field::placeholder {
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .input-field:focus {
+        outline: none;
+        border-color: rgba(255, 255, 255, 0.5);
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1),
+          0 8px 24px rgba(0, 0, 0, 0.15);
+        transform: translateY(-2px);
+      }
+
+      .remember-forgot {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        font-size: 14px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .remember-label {
+        display: flex;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.9);
+        cursor: pointer;
+        user-select: none;
+        transition: color 0.3s ease;
+      }
+
+      .remember-label:hover {
+        color: white;
+      }
+
+      .remember-label input {
+        margin-right: 8px;
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        accent-color: rgba(255, 255, 255, 0.8);
+      }
+
+      .forgot-link {
+        color: rgba(255, 255, 255, 0.9);
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .forgot-link::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: white;
+        transition: width 0.3s ease;
+      }
+
+      .forgot-link:hover {
+        color: white;
+      }
+
+      .forgot-link:hover::after {
+        width: 100%;
+      }
+
+      .sign-in-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.95) 0%,
+          rgba(255, 255, 255, 0.85) 100%
+        );
+        border: none;
+        border-radius: 12px;
+        color: #ff8c00;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-bottom: 24px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        position: relative;
+        z-index: 2;
+        overflow: hidden;
+      }
+
+      .sign-in-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(255, 255, 255, 0.95) 100%
+        );
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .sign-in-btn:hover::before {
+        opacity: 1;
+      }
+
+      .sign-in-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+      }
+
+      .sign-in-btn:active {
+        transform: translateY(0);
+      }
+
+      .sign-in-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .sign-in-btn span {
+        position: relative;
+        z-index: 1;
+      }
+
+      .or-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 14px;
+        margin: 24px 0;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .or-text::before,
+      .or-text::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .social-buttons {
+        display: flex;
+        gap: 12px;
+        position: relative;
+        z-index: 2;
+      }
+
+      .social-btn {
+        flex: 1;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 12px;
+        color: white;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+      }
+
+      .social-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      }
+
+      .social-btn i {
+        font-size: 16px;
+      }
+
+      .facebook-btn:hover {
+        background: rgba(59, 89, 152, 0.3);
+        border-color: rgba(59, 89, 152, 0.5);
+      }
+
+      .twitter-btn:hover {
+        background: rgba(29, 161, 242, 0.3);
+        border-color: rgba(29, 161, 242, 0.5);
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 140, 0, 0.3);
+        border-radius: 50%;
+        border-top-color: #ff8c00;
+        animation: spin 0.8s linear infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
         }
+      }
 
-        .orb2 {
-            width: 350px;
-            height: 350px;
-            background: rgba(255, 107, 0, 0.4);
-            bottom: -100px;
-            right: -100px;
-            animation-delay: 5s;
-        }
-
-        .orb3 {
-            width: 300px;
-            height: 300px;
-            background: rgba(255, 179, 71, 0.3);
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: 10s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            33% {
-                transform: translate(50px, -50px) scale(1.1);
-            }
-
-            66% {
-                transform: translate(-50px, 50px) scale(0.9);
-            }
-        }
-
-        .login-wrapper {
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            animation: fadeInUp 0.8s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+      @media (max-width: 480px) {
+        .login-box {
+          padding: 32px 24px;
         }
 
         .login-title {
-            color: white;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            letter-spacing: -0.5px;
-        }
-
-        .login-subtitle {
-            color: rgba(255, 255, 255, 0.95);
-            font-size: 16px;
-            font-weight: 400;
-            margin-bottom: 32px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        }
-
-        .login-box {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 40px;
-            border-radius: 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-                0 0 0 1px rgba(255, 255, 255, 0.1) inset;
-            width: 420px;
-            max-width: 92vw;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            pointer-events: none;
-        }
-
-        .message {
-            padding: 14px 16px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            font-weight: 500;
-            display: none;
-            position: relative;
-            z-index: 2;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message.show {
-            display: block;
-        }
-
-        .error {
-            background: rgba(239, 68, 68, 0.2);
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            color: #fff;
-            backdrop-filter: blur(10px);
-        }
-
-        .success {
-            background: rgba(16, 185, 129, 0.2);
-            border: 1px solid rgba(16, 185, 129, 0.4);
-            color: #fff;
-            backdrop-filter: blur(10px);
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 16px 18px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 12px;
-            font-size: 15px;
-            font-family: 'Inter', sans-serif;
-            margin-bottom: 16px;
-            transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            color: white;
-            position: relative;
-            z-index: 2;
-        }
-
-        .input-field::placeholder {
-            color: rgba(255, 255, 255, 0.65);
-        }
-
-        .input-field:focus {
-            outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1),
-                0 8px 24px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            font-size: 14px;
-            position: relative;
-            z-index: 2;
-        }
-
-        .remember-label {
-            display: flex;
-            align-items: center;
-            color: rgba(255, 255, 255, 0.9);
-            cursor: pointer;
-            user-select: none;
-            transition: color 0.3s ease;
-        }
-
-        .remember-label:hover {
-            color: white;
-        }
-
-        .remember-label input {
-            margin-right: 8px;
-            cursor: pointer;
-            width: 18px;
-            height: 18px;
-            accent-color: rgba(255, 255, 255, 0.8);
-        }
-
-        .forgot-link {
-            color: rgba(255, 255, 255, 0.9);
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .forgot-link::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: white;
-            transition: width 0.3s ease;
-        }
-
-        .forgot-link:hover {
-            color: white;
-        }
-
-        .forgot-link:hover::after {
-            width: 100%;
-        }
-
-        .sign-in-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.85) 100%);
-            border: none;
-            border-radius: 12px;
-            color: #FF8C00;
-            font-size: 15px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            margin-bottom: 24px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            position: relative;
-            z-index: 2;
-            overflow: hidden;
-        }
-
-        .sign-in-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.95) 100%);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .sign-in-btn:hover::before {
-            opacity: 1;
-        }
-
-        .sign-in-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-        }
-
-        .sign-in-btn:active {
-            transform: translateY(0);
-        }
-
-        .sign-in-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .sign-in-btn span {
-            position: relative;
-            z-index: 1;
-        }
-
-        .or-text {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: 14px;
-            margin: 24px 0;
-            position: relative;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .or-text::before,
-        .or-text::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: rgba(255, 255, 255, 0.25);
+          font-size: 24px;
         }
 
         .social-buttons {
-            display: flex;
-            gap: 12px;
-            position: relative;
-            z-index: 2;
+          flex-direction: column;
         }
 
-        .social-btn {
-            flex: 1;
-            padding: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            border-radius: 12px;
-            color: white;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+        .or-text {
+          margin: 20px 0;
         }
+      }
 
-        .social-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        }
+      /* Enhanced focus states for accessibility */
+      input:focus-visible,
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid rgba(255, 255, 255, 0.8);
+        outline-offset: 2px;
+      }
 
-        .social-btn i {
-            font-size: 16px;
-        }
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 100;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(5px);
+        align-items: center;
+        justify-content: center;
+      }
 
-        .facebook-btn:hover {
-            background: rgba(59, 89, 152, 0.3);
-            border-color: rgba(59, 89, 152, 0.5);
-        }
+      .modal-content {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        padding: 30px;
+        border-radius: 20px;
+        width: 90%;
+        max-width: 400px;
+        position: relative;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        text-align: center;
+        color: white;
+        animation: slideDown 0.3s ease-out;
+      }
 
-        .twitter-btn:hover {
-            background: rgba(29, 161, 242, 0.3);
-            border-color: rgba(29, 161, 242, 0.5);
-        }
+      .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.3s;
+      }
 
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 140, 0, 0.3);
-            border-radius: 50%;
-            border-top-color: #FF8C00;
-            animation: spin 0.8s linear infinite;
-            margin-right: 8px;
-        }
+      .close-modal:hover {
+        color: white;
+      }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
+      .modal h2 {
+        font-family: "Space Grotesk", sans-serif;
+        margin-bottom: 10px;
+      }
 
-        @media (max-width: 480px) {
-            .login-box {
-                padding: 32px 24px;
-            }
-
-            .login-title {
-                font-size: 24px;
-            }
-
-            .social-buttons {
-                flex-direction: column;
-            }
-
-            .or-text {
-                margin: 20px 0;
-            }
-        }
-
-        /* Enhanced focus states for accessibility */
-        input:focus-visible,
-        button:focus-visible,
-        a:focus-visible {
-            outline: 2px solid rgba(255, 255, 255, 0.8);
-            outline-offset: 2px;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 100;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(5px);
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 400px;
-            position: relative;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            text-align: center;
-            color: white;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .close-modal:hover {
-            color: white;
-        }
-
-        .modal h2 {
-            font-family: 'Space Grotesk', sans-serif;
-            margin-bottom: 10px;
-        }
-
-        .modal p {
-            font-size: 14px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.8);
-        }
+      .modal p {
+        font-size: 14px;
+        margin-bottom: 20px;
+        color: rgba(255, 255, 255, 0.8);
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <!-- Animated background orbs -->
     <div class="orb orb1"></div>
     <div class="orb orb2"></div>
     <div class="orb orb3"></div>
 
     <div class="login-wrapper">
-        <h1 class="login-title">Welcome Back</h1>
-        <p class="login-subtitle">Sign in to continue</p>
+      <h1 class="login-title">Welcome Back</h1>
+      <p class="login-subtitle">Sign in to continue</p>
 
-        <div class="login-box">
-            <div id="errorMsg" class="message error"></div>
-            <div id="successMsg" class="message success"></div>
+      <div class="login-box">
+        <div id="errorMsg" class="message error"></div>
+        <div id="successMsg" class="message success"></div>
 
-            <form id="loginForm">
-                <input type="text" id="username" class="input-field" placeholder="Username" required
-                    autocomplete="username">
+        <form id="loginForm">
+          <input
+            type="text"
+            id="username"
+            class="input-field"
+            placeholder="Username"
+            required
+            autocomplete="username"
+          />
 
-                <input type="password" id="password" class="input-field" placeholder="Password (digits only)" required
-                    autocomplete="current-password" inputmode="numeric">
+          <input
+            type="password"
+            id="password"
+            class="input-field"
+            placeholder="Password (digits only)"
+            required
+            autocomplete="current-password"
+            inputmode="numeric"
+          />
 
-                <div class="remember-forgot">
-                    <label class="remember-label">
-                        <input type="checkbox" id="rememberMe">
-                        <span>Remember Me</span>
-                    </label>
-                    <a href="#" class="forgot-link" id="forgotPasswordLink">Forgot Password?</a>
-                </div>
+          <div class="remember-forgot">
+            <label class="remember-label">
+              <input type="checkbox" id="rememberMe" />
+              <span>Remember Me</span>
+            </label>
+            <a href="#" class="forgot-link" id="forgotPasswordLink"
+              >Forgot Password?</a
+            >
+          </div>
 
-                <button type="submit" class="sign-in-btn" id="loginBtn">
-                    <span>SIGN IN</span>
-                </button>
+          <button type="submit" class="sign-in-btn" id="loginBtn">
+            <span>SIGN IN</span>
+          </button>
 
+          <div
+            style="
+              text-align: center;
+              margin-top: 20px;
+              position: relative;
+              z-index: 2;
+            "
+          >
+            <span style="color: rgba(255, 255, 255, 0.7); font-size: 14px"
+              >New here?</span
+            >
+            <a
+              href="signup.html"
+              style="
+                color: white;
+                font-weight: 600;
+                text-decoration: none;
+                margin-left: 5px;
+              "
+              >Create Account</a
+            >
+          </div>
+        </form>
+      </div>
 
-                <div style="text-align: center; margin-top: 20px; position: relative; z-index: 2;">
-                    <span style="color: rgba(255,255,255,0.7); font-size: 14px;">New here?</span>
-                    <a href="signup.html"
-                        style="color: white; font-weight: 600; text-decoration: none; margin-left: 5px;">Create
-                        Account</a>
-                </div>
-            </form>
-        </div>
+      <!-- Registration Modal - Simple Form -->
+      <div id="registrationModal" class="modal">
+        <div class="modal-content" style="max-width: 450px">
+          <span class="close-modal" onclick="hideRegistrationModal()"
+            >&times;</span
+          >
+          <h2 style="color: #10b981; margin-bottom: 10px">
+            <i class="fas fa-user-plus"></i> Register as User
+          </h2>
+          <p
+            style="
+              color: rgba(255, 255, 255, 0.7);
+              margin-bottom: 20px;
+              font-size: 14px;
+            "
+          >
+            Fill in your details. An admin will review your application and
+            provide your login PIN.
+          </p>
 
-        <!-- Registration Modal - Simple Form -->
-        <div id="registrationModal" class="modal">
-            <div class="modal-content" style="max-width: 450px;">
-                <span class="close-modal" onclick="hideRegistrationModal()">&times;</span>
-                <h2 style="color: #10b981; margin-bottom: 10px;"><i class="fas fa-user-plus"></i> Register as User</h2>
-                <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px; font-size: 14px;">
-                    Fill in your details. An admin will review your application and provide your login PIN.
-                </p>
+          <form id="registrationForm">
+            <input
+              type="text"
+              id="regFullName"
+              class="input-field"
+              placeholder="Full Name"
+              required
+            />
+            <input
+              type="text"
+              id="regIdNumber"
+              class="input-field"
+              placeholder="ID Number"
+              required
+            />
+            <input
+              type="tel"
+              id="regPhone"
+              class="input-field"
+              placeholder="Phone (e.g. 0712345678)"
+              required
+            />
+            <input
+              type="text"
+              id="regUsername"
+              class="input-field"
+              placeholder="Desired Username"
+              required
+            />
+            <select
+              id="regRole"
+              class="input-field"
+              style="background: rgba(255, 255, 255, 0.1); color: white"
+              required
+            >
+              <option value="" disabled selected style="color: black">
+                Select Role
+              </option>
+              <option value="clerk" style="color: black">Clerk</option>
+              <option value="pa" style="color: black">PA</option>
+            </select>
 
-                <form id="registrationForm">
-                    <input type="text" id="regFullName" class="input-field" placeholder="Full Name" required>
-                    <input type="text" id="regIdNumber" class="input-field" placeholder="ID Number" required>
-                    <input type="tel" id="regPhone" class="input-field" placeholder="Phone (e.g. 0712345678)" required>
-                    <input type="text" id="regUsername" class="input-field" placeholder="Desired Username" required>
-                    <select id="regRole" class="input-field" style="background: rgba(255, 255, 255, 0.1); color: white;"
-                        required>
-                        <option value="" disabled selected style="color: black;">Select Role</option>
-                        <option value="clerk" style="color: black;">Clerk</option>
-                        <option value="pa" style="color: black;">PA</option>
-                    </select>
-
-                    <div style="display: flex; align-items: flex-start; gap: 10px; margin: 15px 0;">
-                        <input type="checkbox" id="regTerms" required
-                            style="margin-top: 4px; width: 18px; height: 18px; cursor: pointer;">
-                        <label for="regTerms" style="color: rgba(255,255,255,0.8); font-size: 13px; cursor: pointer;">
-                            I accept the <a href="#" onclick="showTermsModal(); return false;"
-                                style="color: #10b981; text-decoration: underline;">Terms and Services</a> and agree to
-                            the privacy policy.
-                        </label>
-                    </div>
-
-                    <button type="button" class="sign-in-btn" id="regSubmitBtn" onclick="handleRegistrationSubmit()">
-                        <span>SUBMIT APPLICATION</span>
-                    </button>
-                </form>
-
-                <div id="regMsg" class="message"></div>
+            <div
+              style="
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                margin: 15px 0;
+              "
+            >
+              <input
+                type="checkbox"
+                id="regTerms"
+                required
+                style="
+                  margin-top: 4px;
+                  width: 18px;
+                  height: 18px;
+                  cursor: pointer;
+                "
+              />
+              <label
+                for="regTerms"
+                style="
+                  color: rgba(255, 255, 255, 0.8);
+                  font-size: 13px;
+                  cursor: pointer;
+                "
+              >
+                I accept the
+                <a
+                  href="#"
+                  onclick="showTermsModal(); return false;"
+                  style="color: #10b981; text-decoration: underline"
+                  >Terms and Services</a
+                >
+                and agree to the privacy policy.
+              </label>
             </div>
+
+            <button
+              type="button"
+              class="sign-in-btn"
+              id="regSubmitBtn"
+              onclick="handleRegistrationSubmit()"
+            >
+              <span>SUBMIT APPLICATION</span>
+            </button>
+          </form>
+
+          <div id="regMsg" class="message"></div>
         </div>
+      </div>
     </div>
 
     <!-- Forgot Password Modal -->
     <div id="forgotModal" class="modal">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <h2>Reset Password</h2>
-            <p>Enter your username or phone number to receive a reset code.</p>
-            <form id="forgotForm">
-                <input type="text" id="forgotIdentifier" class="input-field" placeholder="Username or Phone" required>
-                <button type="submit" class="sign-in-btn" id="forgotBtn">
-                    <span>SEND RESET CODE</span>
-                </button>
-            </form>
-            <div id="forgotMsg" class="message"></div>
-        </div>
+      <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h2>Reset Password</h2>
+        <p>Enter your username or phone number to receive a reset code.</p>
+        <form id="forgotForm">
+          <input
+            type="text"
+            id="forgotIdentifier"
+            class="input-field"
+            placeholder="Username or Phone"
+            required
+          />
+          <button type="submit" class="sign-in-btn" id="forgotBtn">
+            <span>SEND RESET CODE</span>
+          </button>
+        </form>
+        <div id="forgotMsg" class="message"></div>
+      </div>
     </div>
 
     <!-- Terms and Services Modal -->
     <div id="termsModal" class="modal">
-        <div class="modal-content" style="max-width: 550px; max-height: 80vh; overflow-y: auto;">
-            <span class="close-modal" onclick="hideTermsModal()">&times;</span>
-            <h2 style="color: #10b981; margin-bottom: 15px;"><i class="fas fa-file-contract"></i> Terms and Services
-            </h2>
+      <div
+        class="modal-content"
+        style="max-width: 550px; max-height: 80vh; overflow-y: auto"
+      >
+        <span class="close-modal" onclick="hideTermsModal()">&times;</span>
+        <h2 style="color: #10b981; margin-bottom: 15px">
+          <i class="fas fa-file-contract"></i> Terms and Services
+        </h2>
 
-            <div style="text-align: left; font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.6;">
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">1. Acceptance of Terms</h3>
-                <p>By registering for and using the VOO Ward platform, you agree to these terms and conditions.</p>
+        <div
+          style="
+            text-align: left;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.85);
+            line-height: 1.6;
+          "
+        >
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            1. Acceptance of Terms
+          </h3>
+          <p>
+            By registering for and using the VOO Ward platform, you agree to
+            these terms and conditions.
+          </p>
 
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">2. User Responsibilities</h3>
-                <p>You agree to provide accurate information during registration and to use the platform responsibly for
-                    ward administration purposes only.</p>
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            2. User Responsibilities
+          </h3>
+          <p>
+            You agree to provide accurate information during registration and to
+            use the platform responsibly for ward administration purposes only.
+          </p>
 
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">3. Data Privacy</h3>
-                <p>We collect and store your personal information (name, ID, phone) for authentication and communication
-                    purposes. Your data is encrypted and protected.</p>
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            3. Data Privacy
+          </h3>
+          <p>
+            We collect and store your personal information (name, ID, phone) for
+            authentication and communication purposes. Your data is encrypted
+            and protected.
+          </p>
 
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">4. Account Security</h3>
-                <p>You are responsible for keeping your login credentials (username and PIN) secure. Do not share your
-                    PIN with others.</p>
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            4. Account Security
+          </h3>
+          <p>
+            You are responsible for keeping your login credentials (username and
+            PIN) secure. Do not share your PIN with others.
+          </p>
 
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">5. Acceptable Use</h3>
-                <p>The platform is for official ward administration only. Misuse of the system may result in account
-                    suspension.</p>
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            5. Acceptable Use
+          </h3>
+          <p>
+            The platform is for official ward administration only. Misuse of the
+            system may result in account suspension.
+          </p>
 
-                <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px;">6. Service Availability</h3>
-                <p>We strive to maintain 99% uptime but do not guarantee uninterrupted service. Maintenance may occur
-                    periodically.</p>
-            </div>
-
-            <button type="button" onclick="hideTermsModal()"
-                style="width: 100%; margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                <i class="fas fa-check"></i> I Understand
-            </button>
+          <h3 style="color: #10b981; font-size: 14px; margin: 15px 0 8px">
+            6. Service Availability
+          </h3>
+          <p>
+            We strive to maintain 99% uptime but do not guarantee uninterrupted
+            service. Maintenance may occur periodically.
+          </p>
         </div>
+
+        <button
+          type="button"
+          onclick="hideTermsModal()"
+          style="
+            width: 100%;
+            margin-top: 20px;
+            padding: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+          "
+        >
+          <i class="fas fa-check"></i> I Understand
+        </button>
+      </div>
     </div>
 
     <script>
-        const API_BASE = window.location.origin + '/admin';
-        const loginForm = document.getElementById('loginForm');
-        const loginBtn = document.getElementById('loginBtn');
-        const errorMsg = document.getElementById('errorMsg');
-        const successMsg = document.getElementById('successMsg');
+      const API_BASE = window.location.origin;
+      const loginForm = document.getElementById("loginForm");
+      const loginBtn = document.getElementById("loginBtn");
+      const errorMsg = document.getElementById("errorMsg");
+      const successMsg = document.getElementById("successMsg");
 
-        // Pre-fill username from query parameter (after registration redirect)
-        (function () {
-            const params = new URLSearchParams(window.location.search);
-            const username = params.get('username');
-            if (username) {
-                document.getElementById('username').value = username;
-                document.getElementById('password').focus();
-                // Show welcome message for new registrations
-                successMsg.textContent = '✓ Account created! Enter your password to login.';
-                successMsg.classList.add('show');
+      // Pre-fill username from query parameter (after registration redirect)
+      (function () {
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get("username");
+        if (username) {
+          document.getElementById("username").value = username;
+          document.getElementById("password").focus();
+          // Show welcome message for new registrations
+          successMsg.textContent =
+            "✓ Account created! Enter your password to login.";
+          successMsg.classList.add("show");
+        }
+      })();
+
+      function showError(message) {
+        errorMsg.textContent = message;
+        errorMsg.classList.add("show");
+        successMsg.classList.remove("show");
+        setTimeout(() => errorMsg.classList.remove("show"), 5000);
+      }
+
+      function showSuccess(message) {
+        successMsg.textContent = message;
+        successMsg.classList.add("show");
+        errorMsg.classList.remove("show");
+      }
+
+      function showTermsModal() {
+        document.getElementById("termsModal").style.display = "flex";
+      }
+
+      function hideTermsModal() {
+        document.getElementById("termsModal").style.display = "none";
+      }
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById("username").value.trim();
+        const pin = document.getElementById("password").value;
+
+        if (!username || !pin) {
+          showError("Please enter both username and password");
+          return;
+        }
+
+        // Support both PIN (digits only) and password (alphanumeric)
+        // No restriction needed - backend will validate
+
+        loginBtn.disabled = true;
+        loginBtn.innerHTML =
+          '<span class="spinner"></span><span>SIGNING IN...</span>';
+
+        try {
+          const response = await fetch(`${API_BASE}/api/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, pin }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok && data.token) {
+            localStorage.setItem("authToken", data.token);
+            localStorage.setItem("currentUser", JSON.stringify(data.user));
+
+            if (document.getElementById("rememberMe").checked) {
+              localStorage.setItem("rememberMe", "true");
             }
-        })();
 
-        function showError(message) {
-            errorMsg.textContent = message;
-            errorMsg.classList.add('show');
-            successMsg.classList.remove('show');
-            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+            showSuccess("✓ Login successful! Redirecting...");
+            setTimeout(
+              () => (window.location.href = "/admin-dashboard.html"),
+              1000
+            );
+          } else {
+            showError(data.error || "Invalid username or PIN");
+            loginBtn.disabled = false;
+            loginBtn.innerHTML = "<span>SIGN IN</span>";
+          }
+        } catch (error) {
+          showError("Network error. Please try again.");
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = "<span>SIGN IN</span>";
         }
+      });
 
-        function showSuccess(message) {
-            successMsg.textContent = message;
-            successMsg.classList.add('show');
-            errorMsg.classList.remove('show');
+      // Forgot Password Logic
+      const modal = document.getElementById("forgotModal");
+      const forgotLink = document.getElementById("forgotPasswordLink");
+      const closeModal = document.querySelector(".close-modal");
+      const forgotForm = document.getElementById("forgotForm");
+      const forgotMsg = document.getElementById("forgotMsg");
+      const forgotBtn = document.getElementById("forgotBtn");
+
+      forgotLink.onclick = (e) => {
+        e.preventDefault();
+        modal.style.display = "flex";
+      };
+
+      // Close modal logic - handles both modals
+      document.querySelectorAll(".close-modal").forEach((btn) => {
+        btn.onclick = () => {
+          modal.style.display = "none";
+          document.getElementById("registrationModal").style.display = "none";
+          forgotMsg.style.display = "none";
+          forgotForm.reset();
+          document.getElementById("registrationForm").reset();
+        };
+      });
+
+      window.onclick = (e) => {
+        if (e.target == modal) modal.style.display = "none";
+        if (e.target == document.getElementById("registrationModal"))
+          hideRegistrationModal();
+      };
+
+      forgotForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const identifier = document
+          .getElementById("forgotIdentifier")
+          .value.trim();
+
+        forgotBtn.disabled = true;
+        forgotBtn.innerHTML =
+          '<span class="spinner"></span><span>SENDING...</span>';
+        forgotMsg.style.display = "none";
+
+        try {
+          const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier }),
+          });
+          const data = await response.json();
+
+          forgotMsg.textContent =
+            data.message ||
+            (data.success ? "Reset code sent!" : "Error occurred");
+          forgotMsg.className = `message ${
+            data.success ? "success" : "error"
+          } show`;
+          forgotMsg.style.display = "block";
+
+          if (data.success) {
+            setTimeout(() => {
+              modal.style.display = "none";
+              forgotForm.reset();
+              forgotMsg.style.display = "none";
+            }, 3000);
+          }
+        } catch (error) {
+          forgotMsg.textContent = "Network error. Try again.";
+          forgotMsg.className = "message error show";
+          forgotMsg.style.display = "block";
+        } finally {
+          forgotBtn.disabled = false;
+          forgotBtn.innerHTML = "<span>SEND RESET CODE</span>";
         }
+      });
 
-        function showTermsModal() {
-            document.getElementById('termsModal').style.display = 'flex';
+      // Registration Logic
+      const regModal = document.getElementById("registrationModal");
+      const regForm = document.getElementById("registrationForm");
+      const regMsg = document.getElementById("regMsg");
+      const regBtn = document.getElementById("registerBtn");
+      const regSubmitBtn = document.getElementById("regSubmitBtn");
+
+      function showRegistrationModal() {
+        if (regBtn.disabled) return;
+        regModal.style.display = "flex";
+      }
+
+      function hideRegistrationModal() {
+        regModal.style.display = "none";
+        regMsg.style.display = "none";
+        regForm.reset();
+      }
+
+      async function checkRegistrationStatus() {
+        try {
+          const response = await fetch(API_BASE + "/api/auth/can-register");
+          const data = await response.json();
+          if (!data.canRegister) {
+            regBtn.disabled = true;
+            regBtn.innerHTML =
+              '<i class="fas fa-lock"></i> Registration Closed';
+            regBtn.style.opacity = "0.5";
+            regBtn.style.cursor = "not-allowed";
+          } else {
+            regBtn.innerHTML = "Other";
+          }
+        } catch (err) {
+          console.error("Error checking registration status:", err);
         }
+      }
 
-        function hideTermsModal() {
-            document.getElementById('termsModal').style.display = 'none';
-        }
+      // Check status on load
+      checkRegistrationStatus();
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+      // Registration handler moved to second script block for better organization
 
-            const username = document.getElementById('username').value.trim();
-            const pin = document.getElementById('password').value;
-
-            if (!username || !pin) {
-                showError('Please enter both username and password');
-                return;
-            }
-
-            // Support both PIN (digits only) and password (alphanumeric)
-            // No restriction needed - backend will validate
-
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<span class="spinner"></span><span>SIGNING IN...</span>';
-
-            try {
-                const response = await fetch(`${API_BASE}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, pin })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.token) {
-                    localStorage.setItem('authToken', data.token);
-                    localStorage.setItem('currentUser', JSON.stringify(data.user));
-
-                    if (document.getElementById('rememberMe').checked) {
-                        localStorage.setItem('rememberMe', 'true');
-                    }
-
-                    showSuccess('✓ Login successful! Redirecting...');
-                    setTimeout(() => window.location.href = '/admin-dashboard.html', 1000);
-                } else {
-                    showError(data.error || 'Invalid username or PIN');
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = '<span>SIGN IN</span>';
-                }
-            } catch (error) {
-                showError('Network error. Please try again.');
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<span>SIGN IN</span>';
-            }
+      // Social Login Logic
+      function handleSocialLogin(provider) {
+        window.location.href = API_BASE + "/api/auth/" + provider;
+      }
+      // Check if already logged in
+      const authToken = localStorage.getItem("authToken");
+      if (authToken) {
+        fetch(`${API_BASE}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${authToken}` },
+        }).then((response) => {
+          if (response.ok) window.location.href = "/admin-dashboard.html";
+          else {
+            localStorage.removeItem("authToken");
+            localStorage.removeItem("currentUser");
+          }
         });
-
-        // Forgot Password Logic
-        const modal = document.getElementById("forgotModal");
-        const forgotLink = document.getElementById("forgotPasswordLink");
-        const closeModal = document.querySelector(".close-modal");
-        const forgotForm = document.getElementById("forgotForm");
-        const forgotMsg = document.getElementById("forgotMsg");
-        const forgotBtn = document.getElementById("forgotBtn");
-
-        forgotLink.onclick = (e) => {
-            e.preventDefault();
-            modal.style.display = "flex";
-        }
-
-        // Close modal logic - handles both modals
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            btn.onclick = () => {
-                modal.style.display = "none";
-                document.getElementById('registrationModal').style.display = "none";
-                forgotMsg.style.display = "none";
-                forgotForm.reset();
-                document.getElementById('registrationForm').reset();
-            }
-        });
-
-        window.onclick = (e) => {
-            if (e.target == modal) modal.style.display = "none";
-            if (e.target == document.getElementById('registrationModal')) hideRegistrationModal();
-        }
-
-        forgotForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const identifier = document.getElementById("forgotIdentifier").value.trim();
-
-            forgotBtn.disabled = true;
-            forgotBtn.innerHTML = '<span class="spinner"></span><span>SENDING...</span>';
-            forgotMsg.style.display = "none";
-
-            try {
-                const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier })
-                });
-                const data = await response.json();
-
-                forgotMsg.textContent = data.message || (data.success ? 'Reset code sent!' : 'Error occurred');
-                forgotMsg.className = `message ${data.success ? 'success' : 'error'} show`;
-                forgotMsg.style.display = "block";
-
-                if (data.success) {
-                    setTimeout(() => {
-                        modal.style.display = "none";
-                        forgotForm.reset();
-                        forgotMsg.style.display = "none";
-                    }, 3000);
-                }
-            } catch (error) {
-                forgotMsg.textContent = "Network error. Try again.";
-                forgotMsg.className = "message error show";
-                forgotMsg.style.display = "block";
-            } finally {
-                forgotBtn.disabled = false;
-                forgotBtn.innerHTML = '<span>SEND RESET CODE</span>';
-            }
-        });
-
-        // Registration Logic
-        const regModal = document.getElementById('registrationModal');
-        const regForm = document.getElementById('registrationForm');
-        const regMsg = document.getElementById('regMsg');
-        const regBtn = document.getElementById('registerBtn');
-        const regSubmitBtn = document.getElementById('regSubmitBtn');
-
-        function showRegistrationModal() {
-            if (regBtn.disabled) return;
-            regModal.style.display = 'flex';
-        }
-
-        function hideRegistrationModal() {
-            regModal.style.display = 'none';
-            regMsg.style.display = 'none';
-            regForm.reset();
-        }
-
-        async function checkRegistrationStatus() {
-            try {
-                const response = await fetch(API_BASE + '/api/auth/can-register');
-                const data = await response.json();
-                if (!data.canRegister) {
-                    regBtn.disabled = true;
-                    regBtn.innerHTML = '<i class="fas fa-lock"></i> Registration Closed';
-                    regBtn.style.opacity = '0.5';
-                    regBtn.style.cursor = 'not-allowed';
-                } else {
-                    regBtn.innerHTML = 'Other';
-                }
-            } catch (err) { console.error('Error checking registration status:', err); }
-        }
-
-        // Check status on load
-        checkRegistrationStatus();
-
-        // Registration handler moved to second script block for better organization
-
-        // Social Login Logic
-        function handleSocialLogin(provider) { window.location.href = API_BASE + '/api/auth/' + provider; }
-        // Check if already logged in
-        const authToken = localStorage.getItem('authToken');
-        if (authToken) {
-            fetch(`${API_BASE}/api/auth/me`, {
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            }).then(response => {
-                if (response.ok) window.location.href = '/admin-dashboard.html';
-                else {
-                    localStorage.removeItem('authToken');
-                    localStorage.removeItem('currentUser');
-                }
-            });
-        }
+      }
     </script>
 
     <!-- Simple Registration Handler (no Firebase) -->
     <script>
-        // Show registration message
-        function showRegMsg(msg, type) {
-            const regMsg = document.getElementById('regMsg');
-            if (!regMsg) return;
-            regMsg.textContent = msg;
-            regMsg.style.display = 'block';
-            regMsg.style.color = type === 'error' ? '#ef4444' : '#10b981';
-            regMsg.style.background = type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)';
-            regMsg.style.padding = '10px';
-            regMsg.style.borderRadius = '8px';
-            regMsg.style.marginTop = '15px';
-        }
+      // Show registration message
+      function showRegMsg(msg, type) {
+          const regMsg = document.getElementById('regMsg');
+          if (!regMsg) return;
+          regMsg.textContent = msg;
+          regMsg.style.display = 'block';
+          regMsg.style.color = type === 'error' ? '#ef4444' : '#10b981';
+          regMsg.style.background = type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)';
+          regMsg.style.padding = '10px';
+          regMsg.style.borderRadius = '8px';
+          regMsg.style.marginTop = '15px';
+      }
 
-        // Copy PIN to clipboard
-        function copyPin(pin) {
-            navigator.clipboard.writeText(pin).then(() => {
-                const btn = event.target.closest('button');
-                if (btn) {
-                    const originalText = btn.innerHTML;
-                    btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                    btn.style.background = '#059669';
-                    setTimeout(() => {
-                        btn.innerHTML = originalText;
-                        btn.style.background = '#10b981';
-                    }, 2000);
-                }
-            }).catch(() => {
-                alert('PIN copied: ' + pin);
-            });
-        }
+      // Copy PIN to clipboard
+      function copyPin(pin) {
+          navigator.clipboard.writeText(pin).then(() => {
+              const btn = event.target.closest('button');
+              if (btn) {
+                  const originalText = btn.innerHTML;
+                  btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                  btn.style.background = '#059669';
+                  setTimeout(() => {
+                      btn.innerHTML = originalText;
+                      btn.style.background = '#10b981';
+                  }, 2000);
+              }
+          }).catch(() => {
+              alert('PIN copied: ' + pin);
+          });
+      }
 
-        // Explicit registration handler to avoid form submit issues
-        async function handleRegistrationSubmit() {
-            const form = document.getElementById('registrationForm');
+      // Explicit registration handler to avoid form submit issues
+      async function handleRegistrationSubmit() {
+          const form = document.getElementById('registrationForm');
 
-            // Manual validation
-            if (!form.checkValidity()) {
-                form.reportValidity();
-                return;
-            }
+          // Manual validation
+          if (!form.checkValidity()) {
+              form.reportValidity();
+              return;
+          }
 
-            const fullName = document.getElementById('regFullName').value.trim();
-            const idNumber = document.getElementById('regIdNumber').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
-            const role = document.getElementById('regRole').value;
-            const regSubmitBtn = document.getElementById('regSubmitBtn');
+          const fullName = document.getElementById('regFullName').value.trim();
+          const idNumber = document.getElementById('regIdNumber').value.trim();
+          const phone = document.getElementById('regPhone').value.trim();
+          const username = document.getElementById('regUsername').value.trim();
+          const role = document.getElementById('regRole').value;
+          const regSubmitBtn = document.getElementById('regSubmitBtn');
 
-            if (!fullName || !idNumber || !phone || !username || !role) {
-                showRegMsg('Please fill in all fields', 'error');
-                return;
-            }
+          if (!fullName || !idNumber || !phone || !username || !role) {
+              showRegMsg('Please fill in all fields', 'error');
+              return;
+          }
 
-            regSubmitBtn.disabled = true;
-            regSubmitBtn.innerHTML = '<span class="spinner"></span><span>SUBMITTING...</span>';
+          regSubmitBtn.disabled = true;
+          regSubmitBtn.innerHTML = '<span class="spinner"></span><span>SUBMITTING...</span>';
 
-            try {
-                const response = await fetch(API_BASE + '/api/auth/register-request', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        fullName,
-                        idNumber,
-                        phone,
-                        role,
-                        username
-                    })
-                });
+          try {
+              const response = await fetch(API_BASE + '/api/auth/register-request', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      fullName,
+                      idNumber,
+                      phone,
+                      role,
+                      username
+                  })
+              });
 
-                const data = await response.json();
+              const data = await response.json();
 
-                if (response.ok && data.success) {
-                    // Show WAITING screen
-                    const regMsg = document.getElementById('regMsg');
-                    const appId = data.applicationId || 'pending';
+              if (response.ok && data.success) {
+                  // Show WAITING screen
+                  const regMsg = document.getElementById('regMsg');
+                  const appId = data.applicationId || 'pending';
 
-                    // Hide the form, show waiting screen
-                    document.getElementById('registrationForm').style.display = 'none';
+                  // Hide the form, show waiting screen
+                  document.getElementById('registrationForm').style.display = 'none';
 
-                    regMsg.innerHTML = `
-                        <div id="waitingScreen" style="text-align: center; padding: 20px; background: rgba(59,130,246,0.15); border-radius: 12px; border: 2px solid #3b82f6;">
-                            <div style="width: 60px; height: 60px; border: 4px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
-                            <p style="color: #3b82f6; margin-bottom: 10px; font-weight: bold; font-size: 18px;"><i class="fas fa-hourglass-half"></i> Waiting for Admin Approval...</p>
-                            <p style="color: rgba(255,255,255,0.8); font-size: 14px;">Please wait here. Your credentials will appear once approved.</p>
-                            <p id="waitingStatus" style="color: #fbbf24; font-size: 12px; margin-top: 15px;">Checking status...</p>
-                        </div>
-                        <style>
-                            @keyframes spin { to { transform: rotate(360deg); } }
-                        </style>
-                    `;
-                    regMsg.style.display = 'block';
-                    regMsg.style.background = 'transparent';
-                    regMsg.style.padding = '0';
+                  regMsg.innerHTML = `
+                      <div id="waitingScreen" style="text-align: center; padding: 20px; background: rgba(59,130,246,0.15); border-radius: 12px; border: 2px solid #3b82f6;">
+                          <div style="width: 60px; height: 60px; border: 4px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
+                          <p style="color: #3b82f6; margin-bottom: 10px; font-weight: bold; font-size: 18px;"><i class="fas fa-hourglass-half"></i> Waiting for Admin Approval...</p>
+                          <p style="color: rgba(255,255,255,0.8); font-size: 14px;">Please wait here. Your credentials will appear once approved.</p>
+                          <p id="waitingStatus" style="color: #fbbf24; font-size: 12px; margin-top: 15px;">Checking status...</p>
+                      </div>
+                      <style>
+                          @keyframes spin { to { transform: rotate(360deg); } }
+                      </style>
+                  `;
+                  regMsg.style.display = 'block';
+                  regMsg.style.background = 'transparent';
+                  regMsg.style.padding = '0';
 
-                    // Only start polling if we have an applicationId
-                    if (data.applicationId) {
-                        // Start polling for approval
-                        let pollCount = 0;
-                        const maxPolls = 360; // 30 minutes max (5s * 360)
+                  // Only start polling if we have an applicationId
+                  if (data.applicationId) {
+                      // Start polling for approval
+                      let pollCount = 0;
+                      const maxPolls = 360; // 30 minutes max (5s * 360)
 
-                        const pollInterval = setInterval(async () => {
-                            pollCount++;
-                            const statusEl = document.getElementById('waitingStatus');
-                            if (statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
+                      const pollInterval = setInterval(async () => {
+                          pollCount++;
+                          const statusEl = document.getElementById('waitingStatus');
+                          if (statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
 
-                            try {
-                                const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
-                                const statusData = await statusRes.json();
+                          try {
+                              const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
+                              const statusData = await statusRes.json();
 
-                                if (statusData.status === 'approved' && statusData.credentials) {
-                                    clearInterval(pollInterval);
-                                    // Show credentials!
-                                    const ws = document.getElementById('waitingScreen');
-                                    if (ws) {
-                                        ws.innerHTML = \`
-                                    <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
-                                    
-                                    <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
-                                        <p style="color: #fbbf24; font-size: 14px; margin-bottom: 10px;"><strong>Your Role:</strong> \${statusData.role.toUpperCase()}</p>
-                                        
-                                        <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Username:</strong></p>
-                                        <p style="color: #10b981; font-family: monospace; font-size: 22px;">\${statusData.credentials.username}</p>
-                                        
-                                        <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Your PIN:</strong></p>
-                                        <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                                            <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">\${statusData.credentials.pin}</span>
-                                            <button type="button" onclick="copyPin('\${statusData.credentials.pin}')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
-                                                <i class="fas fa-copy"></i> Copy
-                                            </button>
-                                        </div>
-                                    </div>
-                                    
-                                    <p style="color: #ef4444; margin: 15px 0; font-size: 14px; font-weight: bold;"><i class="fas fa-exclamation-triangle"></i> SAVE YOUR PIN NOW!</p>
-                                    
-                                    <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 14px 35px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
-                                        <i class="fas fa-sign-in-alt"></i> Close & Login
-                                    </button>
-                                \`;
-                                        ws.style.background = 'rgba(16,185,129,0.15)';
-                                        ws.style.borderColor = '#10b981';
-                                    }
-                                } else if (statusData.status === 'rejected') {
-                                    clearInterval(pollInterval);
-                                    const ws = document.getElementById('waitingScreen');
-                                    if(ws) {
-                                        ws.innerHTML = \`
-                                        <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
-                                        <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">\${statusData.reason || 'Please contact admin for more information.'}</p>
-                                        <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
-                                    \`;
-                                        ws.style.background = 'rgba(239,68,68,0.15)';
-                                        ws.style.borderColor = '#ef4444';
-                                    }
-                                }
-                            } catch (err) {
-                                console.log('Poll error:', err);
-                            }
-                            
-                            if (pollCount >= maxPolls) {
-                                clearInterval(pollInterval);
-                                const statusEl = document.getElementById('waitingStatus');
-                                if(statusEl) statusEl.textContent = 'Timeout. Please close and try again later.';
-                            }
-                        }, 5000); // Poll every 5 seconds
-                    } // End if (data.applicationId)
-                    
-                } else if (!response.ok) {
-                    showRegMsg(data.error || 'Registration failed', 'error');
-                }
-            } catch (err) {
-                showRegMsg('Network error. Please try again.', 'error');
-            } finally {
-                regSubmitBtn.disabled = false;
-                regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
-            }
-        }
+                              if (statusData.status === 'approved' && statusData.credentials) {
+                                  clearInterval(pollInterval);
+                                  // Show credentials!
+                                  const ws = document.getElementById('waitingScreen');
+                                  if (ws) {
+                                      ws.innerHTML = \`
+                                  <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
+
+                                  <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
+                                      <p style="color: #fbbf24; font-size: 14px; margin-bottom: 10px;"><strong>Your Role:</strong> \${statusData.role.toUpperCase()}</p>
+
+                                      <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Username:</strong></p>
+                                      <p style="color: #10b981; font-family: monospace; font-size: 22px;">\${statusData.credentials.username}</p>
+
+                                      <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Your PIN:</strong></p>
+                                      <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
+                                          <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">\${statusData.credentials.pin}</span>
+                                          <button type="button" onclick="copyPin('\${statusData.credentials.pin}')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                                              <i class="fas fa-copy"></i> Copy
+                                          </button>
+                                      </div>
+                                  </div>
+
+                                  <p style="color: #ef4444; margin: 15px 0; font-size: 14px; font-weight: bold;"><i class="fas fa-exclamation-triangle"></i> SAVE YOUR PIN NOW!</p>
+
+                                  <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 14px 35px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
+                                      <i class="fas fa-sign-in-alt"></i> Close & Login
+                                  </button>
+                              \`;
+                                      ws.style.background = 'rgba(16,185,129,0.15)';
+                                      ws.style.borderColor = '#10b981';
+                                  }
+                              } else if (statusData.status === 'rejected') {
+                                  clearInterval(pollInterval);
+                                  const ws = document.getElementById('waitingScreen');
+                                  if(ws) {
+                                      ws.innerHTML = \`
+                                      <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
+                                      <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">\${statusData.reason || 'Please contact admin for more information.'}</p>
+                                      <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
+                                  \`;
+                                      ws.style.background = 'rgba(239,68,68,0.15)';
+                                      ws.style.borderColor = '#ef4444';
+                                  }
+                              }
+                          } catch (err) {
+                              console.log('Poll error:', err);
+                          }
+
+                          if (pollCount >= maxPolls) {
+                              clearInterval(pollInterval);
+                              const statusEl = document.getElementById('waitingStatus');
+                              if(statusEl) statusEl.textContent = 'Timeout. Please close and try again later.';
+                          }
+                      }, 5000); // Poll every 5 seconds
+                  } // End if (data.applicationId)
+
+              } else if (!response.ok) {
+                  showRegMsg(data.error || 'Registration failed', 'error');
+              }
+          } catch (err) {
+              showRegMsg('Network error. Please try again.', 'error');
+          } finally {
+              regSubmitBtn.disabled = false;
+              regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
+          }
+      }
     </script>
-</body>
-
+  </body>
 </html>

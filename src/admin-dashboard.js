@@ -11,6 +11,14 @@ const bcrypt = require('bcryptjs');
 
 // Load environment variables
 require("dotenv").config();
+
+// Verify critical Supabase configuration
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('⚠️  CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing!');
+  console.warn('   The mobile app and dashboard require this key to bypass Row-Level Security (RLS).');
+  console.warn('   Please add it to your .env file or deployment environment variables.');
+}
+
 const session = require('express-session');
 const chatbotSvc = require('./chatbot');
 
@@ -247,19 +255,12 @@ const sessions = require('./services/adminSessionStore');
 console.log('✅ Admin session store initialized (Redis + fallback)');
 
 // Session cleanup: The Redis session store handles its own cleanup
+// Use the cleanupFallback method for the in-memory fallback sessions
 const SESSION_TIMEOUT = parseInt(process.env.SESSION_TIMEOUT_MS) || 1800000; // 30 minutes default
 setInterval(() => {
-  const now = new Date();
-  let cleanedCount = 0;
-  for (const [token, sess] of sessions.entries()) {
-    if (sess.createdAt && (now - sess.createdAt > SESSION_TIMEOUT)) {
-      sessions.delete(token);
-      cleanedCount++;
-    }
-  }
-  if (cleanedCount > 0) {
-    console.log(`🧹 Cleaned ${cleanedCount} expired sessions (total: ${sessions.size})`);
-  }
+  // The adminSessionStore handles its own cleanup internally
+  // This is a safety cleanup for the fallback Map
+  sessions.cleanupFallback();
 }, 900000); // 15 minutes
 
 // Issue cleanup: Remove resolved issues older than 4 hours
@@ -2945,26 +2946,49 @@ app.post('/api/admin/issues/bulk-resolve', requireAuth, requireMCA, async (req, 
 // If you need a safe administrative endpoint in the future, re-add intentionally with appropriate access controls.
 
 // Update bursary status (MCA only) - uses Supabase
+// Update bursary status (MCA only) - SUPABASE & MONGODB
 app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, admin_notes } = req.body;
+    let success = false;
 
-    const supabaseService = require('./services/supabaseService');
-    
     // Capitalize status for consistency
     const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
     
-    const result = await supabaseService.updateBursary(id, {
-      status: normalizedStatus,
-      admin_notes: admin_notes || null
-    });
+    // 1. Try Supabase
+    try {
+        const supabaseService = require('./services/supabaseService');
+        const result = await supabaseService.updateBursary(id, {
+          status: normalizedStatus,
+          admin_notes: admin_notes || null
+        });
+        if (result.success) success = true;
+    } catch(e) { console.warn('Supabase update failed:', e.message); }
 
-    if (!result.success) {
-      return res.status(404).json({ error: "Bursary application not found or update failed" });
+    // 2. Try MongoDB
+    try {
+        const database = await connectDB();
+        const { ObjectId } = require('mongodb');
+        let query;
+        try { query = { _id: new ObjectId(id) }; }
+        catch(e) { query = { ref_code: id }; }
+
+        const result = await database.collection('bursaries').updateOne(query, {
+            $set: {
+                status: normalizedStatus,
+                admin_notes: admin_notes || null,
+                updated_at: new Date()
+            }
+        });
+        if (result.matchedCount > 0) success = true;
+    } catch (e) { console.warn('MongoDB update failed:', e.message); }
+
+    if (success) {
+      res.json({ success: true, message: `Bursary ${id} updated to ${normalizedStatus}` });
+    } else {
+      res.status(404).json({ error: "Bursary application not found or update failed in both sources" });
     }
-
-    res.json({ success: true, message: `Bursary ${id} updated to ${normalizedStatus}` });
   } catch (err) {
     console.error("Error updating bursary:", err);
     res.status(500).json({ error: err.message });
@@ -3255,13 +3279,17 @@ app.post('/api/admin/profile', requireAuth, upload.single('photo'), async (req, 
       settings: user.settings || {}
     };
 
-    // update any active sessions for this username
+    // Update session entries - REMOVED for Redis compatibility
+    // In a distributed store we can't easily iterate all sessions to update them.
+    // The user's session will update on next login.
+    /*
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.username === user.username) {
         sess.user = { ...sess.user, ...userResp };
         sessions.set(token, sess);
       }
     }
+    */
 
     res.json({ success: true, user: userResp });
   } catch (e) {
@@ -3319,7 +3347,10 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
     photoFields.forEach(k => unset[k] = '');
     await database.collection('admin_users').updateOne({ _id: userId }, { $unset: { photo_url: '', photo_thumb: '', photo_webp: '', photo_thumb_webp: '' } });
 
-    // Update session entries
+    // Update session entries - REMOVED for Redis compatibility
+    // In a distributed store we can't easily iterate all sessions to update them.
+    // The user's other sessions will update on next login.
+    /* 
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.username === user.username) {
         sess.user.photo_url = null;
@@ -3329,6 +3360,7 @@ app.delete('/api/admin/profile/photo', requireAuth, async (req, res) => {
         sessions.set(token, sess);
       }
     }
+    */
 
     res.json({ success: true, message: 'Avatar removed' });
   } catch (e) {
@@ -3382,13 +3414,17 @@ app.post('/api/admin/profile/upload', requireAuth, upload.single('profilePicture
       { $set: { profilePicture: finalPath, updatedAt: new Date() } }
     );
 
-    // Update session
+    // Update session - REMOVED for Redis compatibility
+    // In a distributed store we can't easily iterate all sessions to update them.
+    // The user's session will update on next login.
+    /*
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.id === req.user.id) {
         sess.user.profilePicture = finalPath;
         sessions.set(token, sess);
       }
     }
+    */
 
     res.json({
       success: true,
@@ -3442,13 +3478,16 @@ app.put('/api/admin/profile', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Update session
+    // Update session - REMOVED for Redis compatibility
+    // In a distributed store we can't easily iterate all sessions to update them.
+    /*
     for (const [token, sess] of sessions.entries()) {
       if (sess.user && sess.user.id === req.user.id) {
         Object.assign(sess.user, updateData);
         sessions.set(token, sess);
       }
     }
+    */
 
     res.json({
       success: true,

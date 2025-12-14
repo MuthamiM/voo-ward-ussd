@@ -415,26 +415,22 @@ class SupabaseService {
 
     /**
      * Create new bursary application (from mobile app)
+     * Supabase columns: user_id, institution_name, course, year_of_study, institution_type, reason, status, amount_requested, amount_approved, admin_notes, created_at, updated_at
      */
     async createBursaryApplication(data) {
         try {
             const result = await this.request('POST', '/rest/v1/bursary_applications', {
-                ref_code: data.ref_code,
-                user_id: data.user_id,
-                applicant_name: data.applicant_name || data.full_name || 'Unknown',
-                full_name: data.full_name || data.applicant_name || 'Unknown',
-                phone: data.phone || '',
-                id_number: data.id_number || '',
-                school_name: data.school_name || data.institution_name,
-                institution: data.institution_name || data.school_name,
-                admission_number: data.admission_number || '',
-                year_of_study: data.year_of_study,
-                requested_amount: data.amount_requested,
-                amount_requested: data.amount_requested,
+                user_id: data.user_id || null,
+                institution_name: data.institution_name || data.school_name || data.institutionName,
+                course: data.course || '',
+                year_of_study: data.year_of_study || data.yearOfStudy || '',
+                institution_type: data.institution_type || data.institutionType || 'university',
                 reason: data.reason || '',
-                purpose: data.reason || '',
-                status: data.status || 'Pending',
-                created_at: new Date().toISOString()
+                status: (data.status || 'pending').toLowerCase(),
+                amount_requested: data.amount_requested || data.amountRequested || 0,
+                amount_approved: 0,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
             });
             
             return { success: true, data: result };
@@ -568,13 +564,12 @@ class SupabaseService {
             // Format timestamp for Supabase (ISO string)
             const isoTime = typeof timestamp === 'string' ? timestamp : timestamp.toISOString();
             
-            // Query: status=Resolved AND resolved_at < timestamp
-            // Note: Use 'eq.Resolved' or 'eq.resolved' depending on your case convention. 
-            // The dashboard uses 'Resolved' (Title Case) but let's try to capture both if possible or stick to one.
-            // Since dashboard sets it to 'Resolved', we use that.
+            // Query: status=Resolved AND updated_at < timestamp
+            // Note: 'resolved_at' column does not exist, so we use 'updated_at' 
+            // assuming the status change to 'Resolved' was the last update.
             
             // Delete requests with filters
-            await this.request('DELETE', `/rest/v1/issues?status=eq.Resolved&resolved_at=lt.${isoTime}`);
+            await this.request('DELETE', `/rest/v1/issues?status=eq.Resolved&updated_at=lt.${isoTime}`);
             
             return { success: true };
         } catch (e) {

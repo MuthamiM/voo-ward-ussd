@@ -208,7 +208,9 @@ if (!chosenPath) {
     // Mount at root since admin-dashboard's internal routes already have /api/admin prefix
     if (typeof adminDashboard === 'function' || (adminDashboard && adminDashboard.handle)) {
       app.use('/', adminDashboard);
-      console.log('[DEBUG] admin-dashboard mounted at / (root) from', chosenPath);
+      // Also mount at /admin to support /admin/api requests if frontend expects that (as seen in logs)
+      app.use('/admin', adminDashboard);
+      console.log('[DEBUG] admin-dashboard mounted at / (root) and /admin from', chosenPath);
     } else {
       console.log('ℹ️ admin-dashboard did not export a router; assuming it manages its own server. Skipping mount.');
     }
