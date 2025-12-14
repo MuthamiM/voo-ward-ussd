@@ -276,7 +276,47 @@ app.get('/favicon.ico', (req, res) => {
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.send(svgIcon);
 });
+// Status API
+app.get('/api/admin/system-status', async (req, res) => {
+    try {
+        const uptime = process.uptime();
+        const memory = process.memoryUsage();
+        
+        // Check Supabase
+        let supabaseStatus = 'disconnected';
+        try {
+            const { data, error } = await supabase.from('issues').select('count', { count: 'exact', head: true });
+            if (!error) supabaseStatus = 'connected';
+        } catch(e) { supabaseStatus = 'error'; }
 
+        // Check MongoDB (Admin Session Store)
+        const mongoStatus = req.session ? 'connected' : 'unknown';
+
+        res.json({
+            status: 'online',
+            uptime: uptime,
+            timestamp: new Date().toISOString(),
+            system: {
+                memory: {
+                    used: Math.round(memory.heapUsed / 1024 / 1024),
+                    total: Math.round(memory.heapTotal / 1024 / 1024)
+                },
+                platform: process.platform,
+                node_version: process.version
+            },
+            services: {
+                api: 'operational',
+                supabase: supabaseStatus,
+                admin_session: mongoStatus,
+                push_notifications: process.env.VAPID_PUBLIC_KEY ? 'enabled' : 'disabled'
+            }
+        });
+    } catch (e) {
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
+// Start Server
 const PORT = process.env.PORT || 4000;
 
 // Create HTTP server for Socket.IO

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOO Ward - System Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-card: rgba(30, 30, 30, 0.6);
+            --primary: #FF8C00; 
+            --success: #10b981;
+            --error: #ef4444;
+            --text: #ffffff;
+            --text-muted: rgba(255, 255, 255, 0.6);
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 100%);
+            color: var(--text);
+            margin: 0;
+            padding: 40px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .status-container {
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 { font-size: 32px; margin-bottom: 10px; }
+        .header p { color: var(--text-muted); }
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 140, 0, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+        }
+        .card-icon {
+            font-size: 32px;
+            margin-bottom: 16px;
+            color: var(--primary);
+        }
+        .card-label { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+        .card-value { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-ok { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .status-err { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        
+        .refresh-bar {
+            grid-column: 1 / -1;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .refresh-progress {
+            height: 100%;
+            background: var(--primary);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        /* Full width for log */
+        .log-card {
+            grid-column: 1 / -1;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="status-container">
+        <div class="header">
+            <h1>System Status</h1>
+            <p>Real-time Operational Metrics</p>
+        </div>
+
+        <div class="card">
+            <i class="fas fa-server card-icon"></i>
+            <div class="card-label">API Server</div>
+            <div class="card-value" id="apiStatus">Checking...</div>
+            <span class="status-badge status-ok" id="apiBadge">ONLINE</span>
+        </div>
+
+        <div class="card">
+            <i class="fas fa-database card-icon"></i>
+            <div class="card-label">Supabase Database</div>
+            <div class="card-value" id="dbStatus">Checking...</div>
+            <span class="status-badge" id="dbBadge">--</span>
+        </div>
+
+        <div class="card">
+            <i class="fas fa-microchip card-icon"></i>
+            <div class="card-label">Memory Usage</div>
+            <div class="card-value" id="memValue">-- MB</div>
+            <div class="card-label" style="font-size:11px;">Heap Used</div>
+        </div>
+
+        <div class="card">
+            <i class="fas fa-clock card-icon"></i>
+            <div class="card-label">Uptime</div>
+            <div class="card-value" id="uptimeValue">--</div>
+            <div class="card-label" style="font-size:11px;">Since Restart</div>
+        </div>
+        
+        <div class="refresh-bar">
+            <div class="refresh-progress" id="progressBar"></div>
+        </div>
+        
+        <div class="card log-card" id="logCard">
+            > Initializing monitor...<br>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/admin/system-status';
+        let progress = 0;
+        
+        function log(msg) {
+            const el = document.getElementById('logCard');
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML += `> [${time}] ${msg}<br>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        async function fetchStatus() {
+            try {
+                log('Fetching telemetry...');
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                // Update UI
+                if(data.status === 'online') {
+                    document.getElementById('apiStatus').textContent = 'Operational';
+                    document.getElementById('apiBadge').className = 'status-badge status-ok';
+                    document.getElementById('apiBadge').textContent = 'ONLINE';
+                }
+                
+                const dbOk = data.services.supabase === 'connected';
+                document.getElementById('dbStatus').textContent = dbOk ? 'Connected' : 'Error';
+                document.getElementById('dbBadge').className = dbOk ? 'status-badge status-ok' : 'status-badge status-err';
+                document.getElementById('dbBadge').textContent = dbOk ? 'HEALTHY' : 'DOWN';
+                
+                document.getElementById('memValue').textContent = data.system.memory.used + ' MB';
+                
+                // Format Uptime
+                const sec = Math.floor(data.uptime);
+                const h = Math.floor(sec / 3600);
+                const m = Math.floor((sec % 3600) / 60);
+                document.getElementById('uptimeValue').textContent = `${h}h ${m}m`;
+                
+                log('System nominal.');
+            } catch (e) {
+                log('Error fetching status: ' + e.message);
+                document.getElementById('apiStatus').textContent = 'Unreachable';
+                document.getElementById('apiBadge').className = 'status-badge status-err';
+                document.getElementById('apiBadge').textContent = 'OFFLINE';
+            }
+        }
+
+        // Auto Refresh Logic
+        setInterval(() => {
+            progress += 2;
+            if(progress >= 100) {
+                progress = 0;
+                fetchStatus();
+            }
+            document.getElementById('progressBar').style.width = progress + '%';
+        }, 100);
+
+        fetchStatus();
+    </script>
+</body>
+</html>
