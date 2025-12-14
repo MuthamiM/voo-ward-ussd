@@ -13,8 +13,8 @@ const bcrypt = require('bcryptjs');
 require("dotenv").config();
 
 // Verify critical Supabase configuration
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('⚠️  CRITICAL: SUPABASE_SERVICE_ROLE_KEY is missing!');
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY && !process.env.SUPABASE_SERVICE_KEY) {
+  console.warn('⚠️  CRITICAL: SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_SERVICE_KEY) is missing!');
   console.warn('   The mobile app and dashboard require this key to bypass Row-Level Security (RLS).');
   console.warn('   Please add it to your .env file or deployment environment variables.');
 }
