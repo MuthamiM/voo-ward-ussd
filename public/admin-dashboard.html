@@ -1402,31 +1402,72 @@
             }
         }
         
+        // Generate consistent color for user
+        function getUserColor(username) {
+            const colors = [
+                '#FF8C00', // Orange (Default)
+                '#9b59b6', // Purple
+                '#2ecc71', // Green
+                '#e74c3c', // Red
+                '#1abc9c', // Teal
+                '#f39c12', // Yellow/Orange
+                '#d35400', // Dark Orange
+                '#3498db', // Light Blue
+                '#e67e22', // Carrot
+                '#8e44ad'  // Dark Purple
+            ];
+            let hash = 0;
+            for (let i = 0; i < username.length; i++) {
+                hash = username.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
         function appendChatMessage(msg, scroll = true) {
             const container = document.getElementById('chatMessages');
             const isMe = msg.sender === (currentUser?.username || 'admin');
             
+            // Duplicate Check (by ID if available, or timestamp overlap)
+            // Simple check: if last message has same ID, skip
+            if (msg.id) {
+                const existing = document.getElementById(`msg-${msg.id}`);
+                if (existing) return;
+            }
+            
             const msgEl = document.createElement('div');
+            msgEl.id = msg.id ? `msg-${msg.id}` : `temp-${Date.now()}`; // Add ID for duplicate check
+            msgEl.className = 'message-bubble';
+            
+            // Determine background color
+            // Me = Fixed Blue
+            // Others = Varying based on username
+            const bg = isMe ? '#007bff' : getUserColor(msg.sender || 'unknown');
+            
             msgEl.style.cssText = `
                 max-width: 70%;
-                padding: 10px 14px;
+                padding: 12px 16px;
                 border-radius: 12px;
-                ${isMe ? 'align-self: flex-end; background: var(--primary); color: white;' : 'align-self: flex-start; background: var(--border); color: var(--text);'}
+                margin-bottom: 10px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                align-self: ${isMe ? 'flex-end' : 'flex-start'};
+                background: ${bg};
+                color: white;
+                border-bottom-${isMe ? 'right' : 'left'}-radius: 2px;
             `;
             
-            const time = new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            const time = new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
             // Highlight @mentions
             let textHtml = escapeHtml(msg.text || '');
-            textHtml = textHtml.replace(/@(\w+(?:\s+\w+)?)/g, '<span style="background:rgba(255,140,0,0.3);padding:2px 4px;border-radius:4px;font-weight:600;">@$1</span>');
+            textHtml = textHtml.replace(/@(\w+(?:\s+\w+)?)/g, '<span style="background:rgba(255,255,255,0.2);padding:2px 4px;border-radius:4px;font-weight:700;">@$1</span>');
             
             // Build content
             let content = '';
             if (!isMe) {
-                content += `<div style="font-size:11px;font-weight:600;margin-bottom:4px;opacity:0.8;">${escapeHtml(msg.senderName)} (${msg.senderRole || 'Admin'})</div>`;
+                content += `<div style="font-size:11px;font-weight:700;margin-bottom:4px;opacity:0.9;">${escapeHtml(msg.senderName)} (${msg.senderRole || 'Admin'})</div>`;
             }
             if (msg.text) {
-                content += `<div>${textHtml}</div>`;
+                content += `<div style="line-height:1.4;">${textHtml}</div>`;
             }
             if (msg.image) {
                 const imgId = msg.id ? msg.id.slice(-6) : Date.now().toString().slice(-6);
@@ -1438,14 +1479,22 @@
                 `;
             }
             if (msg.voice) {
-                content += `<audio controls style="margin-top:8px;max-width:100%;"><source src="${msg.voice}" type="audio/webm"></audio>`;
+                 content += `
+                    <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+                        <audio controls src="${msg.voice}" style="height:32px; max-width:200px;"></audio>
+                        <div style="font-size:10px;opacity:0.7;">🎤 Voice</div>
+                    </div>
+                `;
             }
-            content += `<div style="font-size:10px;opacity:0.7;text-align:right;margin-top:4px;">${time}</div>`;
+
+            content += `<div style="font-size:10px;text-align:right;margin-top:4px;opacity:0.7;">${time}</div>`;
             
             msgEl.innerHTML = content;
             container.appendChild(msgEl);
             
-            if (scroll) container.scrollTop = container.scrollHeight;
+            if (scroll) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
         
         function renderOnlineUsers(users) {
@@ -1455,15 +1504,16 @@
                 return;
             }
             container.innerHTML = users.map(u => `
-                <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--border);border-radius:8px;">
-                    <div style="width:8px;height:8px;background:var(--success);border-radius:50%;"></div>
+                <div style="display:flex;align-items:center;gap:8px;padding:10px;margin-bottom:6px;background:rgba(255, 255, 255, 0.05);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:10px;transition:all 0.2s;">
+                    <div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 5px var(--success);"></div>
                     <div>
-                        <div style="font-size:13px;font-weight:500;">${escapeHtml(u.fullName)}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">${u.role || 'Admin'}</div>
+                        <div style="font-size:13px;font-weight:600;color:white;">${escapeHtml(u.fullName)}</div>
+                        <div style="font-size:11px;color:rgba(255,255,255,0.6);">${u.role || 'Admin'}</div>
                     </div>
                 </div>
             `).join('');
         }
+
         
         // ============ CHAT MEDIA & MENTIONS ============
         let chatImageData = null;
@@ -1639,6 +1689,17 @@
                 messageData.voice = chatVoiceData;
                 chatVoiceData = null;
             }
+            
+            // OPTIMISTIC UPDATE: Show message immediately
+            const pendingMsg = {
+                id: Date.now().toString(), // Temp ID
+                sender: currentUser?.username || 'admin',
+                senderName: currentUser?.fullName || 'Me',
+                senderRole: currentUser?.role || 'Admin',
+                ...messageData,
+                timestamp: new Date().toISOString()
+            };
+            appendChatMessage(pendingMsg); 
             
             chatSocket.emit('chat:message', messageData);
             input.value = '';
