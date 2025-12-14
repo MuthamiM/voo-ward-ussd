@@ -24,8 +24,8 @@
             --text-muted: rgba(255, 255, 255, 0.6);
             --border: rgba(255, 140, 0, 0.2);
         }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%); min-height: 100vh; color: var(--text); }
-        .app-container { display: flex; min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-dark); min-height: 100vh; color: var(--text); overflow-x: hidden; }
+        .app-container { display: flex; min-height: 100vh; background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%); background-attachment: fixed; }
         .sidebar { width: 240px; background: var(--bg-card); backdrop-filter: blur(20px); border-right: 1px solid var(--border); padding: 20px 14px; display: flex; flex-direction: column; position: fixed; height: 100vh; z-index: 100; }
         .user-profile { display: flex; align-items: center; gap: 12px; padding: 12px; margin-bottom: 24px; }
         .user-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
@@ -37,7 +37,7 @@
         .nav-icon { width: 18px; font-size: 16px; }
         .logout-btn { margin-top: auto; padding: 12px 14px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; color: #ef4444; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; transition: all 0.2s; }
         .logout-btn:hover { background: rgba(239, 68, 68, 0.2); }
-        .main-content { flex: 1; margin-left: 240px; padding: 24px 28px; overflow-y: auto; min-height: 100vh; display: flex; flex-direction: column; align-items: stretch; }
+        .main-content { flex: 1; margin-left: 240px; padding: 24px 28px; overflow-y: auto; Min-height: 100vh; display: flex; flex-direction: column; align-items: stretch; background: transparent; }
         .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
         .page-title { font-size: 26px; font-weight: 700; }
         .page { display: none; }
@@ -1653,13 +1653,87 @@
             if (chatSocket) {
                 chatSocket.off('chat:users');
                 chatSocket.on('chat:users', renderOnlineUsersWithCache);
+                
+                // Add Sound Listener
+                chatSocket.off('chat:message'); // Remove old listener to avoid doubles
+                chatSocket.on('chat:message', (msg) => {
+                   appendMessage(msg);
+                   // Play sound if message is not from me
+                   try {
+                       const currentUser = document.getElementById('adminUsername').textContent.replace('@','');
+                       if (msg.sender !== currentUser) {
+                           playNotificationSound();
+                       }
+                   } catch(e) { console.error(e); }
+                });
             }
         };
+
+        // NOTIFICATION SOUND (iPhone 'Note' style)
+        const notifSound = new Audio("data:audio/mp3;base64,SUQzBAAAAAABAFRYVFgAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFRYAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFRYAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADTGF2ZjU3LjU2LjEwMAAAAAAAAAAAAAAA//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWgAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAABhgLVu08AIAAAAA0gAAABP4Fv8s4AAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAv/7kGQADH/AAABAAAAAABAAQAAACAAeAs/2qgACAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAACfsDAAAAAAIAAAA0gAAABXUA8esbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAACtsDLesbQAAgAAAA0gAAABhYDcesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAAC8MDM+sbQAAgAAAA0gAAABjwMxesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAADSMDM+sbQAAgAAAA0gAAABmwMyesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAADeMDM+sbQAAgAAAA0gAAABqAMyesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAADiMDMesbQAAgAAAA0gAAABtQMxesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAADmMDM+sbQAAgAAAA0gAAABwwMxesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//uQZAAADpMDMesbQAAgAAAA0gAAAB0QMyesbQAAgAAAA0gAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+        
+        function playNotificationSound() {
+            notifSound.currentTime = 0; // Reset to start
+            notifSound.volume = 1.0;
+            notifSound.play().catch(e => console.warn('Audio play blocked:', e));
+        }
+        
+        // Expose function for the new button
+        // window.triggerTestNotification removed per user request for clean prod code
+
 
         // Initialize
         debug('Initializing dashboard...');
         loadUserInfo();
         loadDashboard();
+        
+        // Push Notifications
+        const VAPID_PUBLIC_KEY = 'BP7y19LgF44ujdMW01ByyX8pZ6sCFbvZvIDtmjsoCWyVBZIdMQlTb4e5oDroRQayBVvH4yyoLbBHKa_kyl4uKUs';
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        async function registerServiceWorker() {
+            if ('serviceWorker' in navigator && 'PushManager' in window) {
+                try {
+                    const registration = await navigator.serviceWorker.register('/sw.js');
+                    console.log('SW Registered:', registration);
+                    
+                    const subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                    
+                    console.log('Push Subscription:', subscription);
+                    
+                    // Send subscription to server
+                    await fetch('/api/notifications/subscribe', {
+                        method: 'POST',
+                        body: JSON.stringify(subscription),
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('token')}` // Ensure auth
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Service Worker Error:', error);
+                }
+            } else {
+                console.warn('Push messaging is not supported');
+            }
+        }
+        
+        // Register SW after small delay
+        setTimeout(registerServiceWorker, 3000);
     </script>
 </body>
 </html>
