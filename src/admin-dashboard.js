@@ -729,6 +729,69 @@ app.get("/api/admin/health", requireAuth, async (req, res) => {
 // AUTHENTICATION ROUTES
 // ============================================
 
+// Verify Session / Get Current User
+app.get("/api/admin/me", requireAuth, async (req, res) => {
+    try {
+        const user = req.user;
+        res.json({
+            id: user._id || user.id,
+            username: user.username,
+            fullName: user.full_name || user.username,
+            role: user.role,
+            photo_url: user.photo_url,
+            settings: user.settings || {}
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Dashboard Stats
+app.get("/api/admin/stats", requireAuth, async (req, res) => {
+    try {
+        const database = await connectDB();
+        if (!database) return res.status(503).json({ error: "DB not connected" });
+        
+        // Parallel queries
+        const [issuesCount, usersCount, feedbackCount, issuesList] = await Promise.all([
+            database.collection('issues').countDocuments({}),
+            database.collection('app_users').countDocuments({}), // Citizen users
+            database.collection('feedback').countDocuments({}),
+            database.collection('issues').find({}, { projection: { created_at: 1 } }).toArray()
+        ]);
+        
+        // Calculate Trends (Last 7 Days)
+        const labels = [];
+        const data = [];
+        const now = new Date();
+        for(let i=6; i>=0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
+            
+            // Count issues for this day
+            const count = issuesList.filter(i => i.created_at && i.created_at.toISOString().startsWith(dateStr)).length;
+            data.push(count);
+        }
+
+        res.json({
+            counts: {
+                issues: issuesCount,
+                users: usersCount,
+                feedback: feedbackCount
+            },
+            trends: {
+                labels: labels,
+                data: data
+            }
+        });
+    } catch (e) {
+        console.error('Stats error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 // Login
 app.post("/api/auth/login", loginLimiter, async (req, res) => {
   console.log('🔐 Login attempt received:', req.body ? 'with body' : 'no body');
