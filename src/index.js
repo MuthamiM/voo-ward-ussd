@@ -62,6 +62,14 @@ const path = require('path');
 // Serve static files from public directory
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Initialize Supabase Client (for Status Page & Push)
+const { createClient } = require('@supabase/supabase-js');
+const SUPABASE_URL = 'https://xzhmdxtzpuxycvsatjoe.supabase.co';
+// Use Service Role Key if available to bypass RLS for admin checks
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh6aG1keHR6cHV4eWN2c2F0am9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUxNTYwNzAsImV4cCI6MjA4MDczMjA3MH0.2tZ7eu6DtBg2mSOitpRa4RNvgCGg3nvMWeDmn9fPJY0';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // Redirect root to login page
 app.get('/', (req, res) => {
   res.redirect('/login.html');
@@ -282,11 +290,26 @@ app.get('/api/admin/system-status', async (req, res) => {
         const uptime = process.uptime();
         const memory = process.memoryUsage();
         
-        // Check Supabase
+        // Check Supabase & Get Counts
         let supabaseStatus = 'disconnected';
+        let dbCounts = { users: 0, issues: 0, feedback: 0 };
+        
         try {
-            const { data, error } = await supabase.from('issues').select('count', { count: 'exact', head: true });
-            if (!error) supabaseStatus = 'connected';
+            // Parallel fetch for performance
+            const [users, issues, feedback] = await Promise.all([
+                supabase.from('app_users').select('count', { count: 'exact', head: true }),
+                supabase.from('issues').select('count', { count: 'exact', head: true }),
+                supabase.from('feedback').select('count', { count: 'exact', head: true })
+            ]);
+
+            if (!users.error) {
+                supabaseStatus = 'connected';
+                dbCounts = {
+                    users: users.count || 0,
+                    issues: issues.count || 0,
+                    feedback: feedback.count || 0
+                };
+            }
         } catch(e) { supabaseStatus = 'error'; }
 
         // Check MongoDB (Admin Session Store)
@@ -303,6 +326,10 @@ app.get('/api/admin/system-status', async (req, res) => {
                 },
                 platform: process.platform,
                 node_version: process.version
+            },
+            database: {
+                status: supabaseStatus,
+                counts: dbCounts
             },
             services: {
                 api: 'operational',
