@@ -2756,6 +2756,45 @@ app.get("/api/ussd/news/:page", async (req, res) => {
   }
 });
 
+// Get single issue details (PA and MCA) - SUPABASE
+app.get("/api/admin/issues/:id", requireAuth, async (req, res) => {
+  try {
+    const supabaseService = require('./services/supabaseService');
+    const issue = await supabaseService.getIssue(req.params.id);
+    
+    if (issue) {
+      res.json(issue);
+    } else {
+      res.status(404).json({ error: "Issue not found" });
+    }
+  } catch (err) {
+    console.error("Error fetching issue:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete issue (Admin/MCA only) - SUPABASE
+app.delete("/api/admin/issues/:id", requireAuth, async (req, res) => {
+  try {
+    // Only MCA or PA can delete
+    if (!['MCA', 'PA', 'admin'].includes(req.user.role)) {
+       return res.status(403).json({ error: "Unauthorized to delete issues" });
+    }
+
+    const supabaseService = require('./services/supabaseService');
+    const result = await supabaseService.deleteIssue(req.params.id);
+
+    if (result.success) {
+      res.json({ success: true, message: "Issue deleted successfully" });
+    } else {
+      res.status(400).json({ error: result.error || "Delete failed" });
+    }
+  } catch (err) {
+    console.error("Error deleting issue:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update issue status and action note (PA and MCA can access)
 app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {

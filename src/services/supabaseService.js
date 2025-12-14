@@ -271,6 +271,29 @@ class SupabaseService {
     }
 
     /**
+     * Get single issue by ID or Ticket Number
+     */
+    async getIssue(issueId) {
+        try {
+            // Determine if issueId is a UUID or an issue_number
+            const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
+            
+            let path;
+            if (isUUID) {
+                path = `/rest/v1/issues?id=eq.${issueId}&select=*`;
+            } else {
+                path = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`;
+            }
+            
+            const result = await this.request('GET', path);
+            return Array.isArray(result) && result.length > 0 ? result[0] : null;
+        } catch (e) {
+            console.error('[Supabase] getIssue error:', e);
+            return null;
+        }
+    }
+
+    /**
      * Get all issues
      */
     async getAllIssues() {
