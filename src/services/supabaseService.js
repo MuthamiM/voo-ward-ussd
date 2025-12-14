@@ -550,28 +550,41 @@ class SupabaseService {
             let deletePath;
             if (isUUID) {
                 // It's a UUID, use id field
-                deletePath = `/rest/v1/issues?id=eq.${issueId}`;
+                deletePath = `/rest/v1/issues?id=eq.${issueId}&select=*`;
             } else {
                 // It's an issue_number like ISS-123456
-                deletePath = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}`;
+                deletePath = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`;
             }
             
             console.log(`[Supabase] Deleting via path: ${deletePath}`);
-            await this.request('DELETE', deletePath);
-            console.log(`[Supabase] Issue ${issueId} deleted successfully`);
-            return { success: true };
+            const result = await this.request('DELETE', deletePath);
+            
+            // Check if any rows were deleted
+            if (Array.isArray(result) && result.length > 0) {
+                console.log(`[Supabase] Issue ${issueId} deleted successfully (Rows: ${result.length})`);
+                return { success: true, count: result.length };
+            } else {
+                console.warn(`[Supabase] Delete returned success but 0 rows deleted. RLS or ID mismatch.`);
+                // Throw error to trigger fallback or return failure
+                throw new Error('No rows deleted (Issue not found or Access Denied)');
+            }
         } catch (e) {
-            console.error('[Supabase] deleteIssue error:', e);
+            console.error('[Supabase] deleteIssue error:', e.message || e);
             // Try the other field if first one failed
             try {
                 const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
                 const fallbackPath = isUUID 
-                    ? `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}`
-                    : `/rest/v1/issues?id=eq.${issueId}`;
+                    ? `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`
+                    : `/rest/v1/issues?id=eq.${issueId}&select=*`;
                 console.log(`[Supabase] Trying fallback delete path: ${fallbackPath}`);
-                await this.request('DELETE', fallbackPath);
-                console.log(`[Supabase] Issue ${issueId} deleted via fallback`);
-                return { success: true };
+                const result2 = await this.request('DELETE', fallbackPath);
+                
+                if (Array.isArray(result2) && result2.length > 0) {
+                    console.log(`[Supabase] Issue ${issueId} deleted via fallback`);
+                    return { success: true, count: result2.length };
+                } else {
+                    return { success: false, error: 'Issue not found or Access Denied (Check RLS/Key)' };
+                }
             } catch (e2) {
                 console.error('[Supabase] Fallback delete also failed:', e2);
                 return { success: false, error: e.error?.message || 'Delete failed' };
