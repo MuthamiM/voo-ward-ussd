@@ -1142,15 +1142,20 @@
             burses.forEach(b => {
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : '--';
                 const statusLower = (b.status || 'pending').toLowerCase();
+                const id = b.id || b._id || b.application_id; // Robust ID check
                 
+                if (!id) console.warn('Bursary record missing ID:', b);
+
                 // Only authorized users can take actions on pending applications
                 let actions = '--';
                 if (statusLower === 'pending') {
-                    if (canAct) {
-                        actions = `
-                            <button class="action-btn approve" onclick="updateBursary('${b.id}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
-                            <button class="action-btn reject" onclick="updateBursary('${b.id}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
+                    if (canAct && id) {
+                         actions = `
+                            <button class="action-btn approve" onclick="updateBursary('${id}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
+                            <button class="action-btn reject" onclick="updateBursary('${id}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
                         `;
+                    } else if (!id) {
+                        actions = '<span style="color:red;font-size:11px;">Error: No ID</span>';
                     } else {
                         actions = '<span style="color:var(--text-muted);font-size:11px;">View Only</span>';
                     }
@@ -1171,6 +1176,12 @@
         }
 
         async function updateBursary(id, action) {
+             if (!id || id === 'undefined') {
+                showToast('Error: Invalid Application ID', 'error');
+                console.error('Attempted to update bursary with undefined ID');
+                return;
+            }
+
             let body = {};
             let endpoint = '';
             
@@ -1201,6 +1212,14 @@
                 showToast(res?.error || 'Action failed', 'error');
             }
         }
+    
+        // ... (previous code)
+
+        // Subscription Logic (Suppressed)
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+             // ...
+        }
+
 
         // Change Password
         async function changePassword() {
