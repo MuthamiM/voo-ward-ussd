@@ -3455,6 +3455,69 @@ app.post('/api/admin/bursaries/:id/reject', requireAuth, async (req, res) => {
     }
 });
 
+// Update Lost ID Status (and announce if found)
+app.patch('/api/admin/lost-ids/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        console.log(`[Admin] Updating Lost ID ${id} to ${status}`);
+        
+        const result = await supabaseService.updateLostIdStatus(id, status);
+        
+        if (result.success) {
+            // If found, create an announcement
+            if (status === 'found') {
+                // Fetch details to make a specific announcement
+                // We might need to fetch the item first or return it from update
+                const lostId = result.result?.[0] || {};
+                const name = lostId.id_owner_name || 'an ID';
+                const location = lostId.last_seen_location || 'VOO Ward';
+                
+                await supabaseService.createAnnouncement({
+                    title: 'Lost ID Found!',
+                    body: `Good News! The ID belonging to ${name}, reported lost at ${location}, has been found. Please contact the office or the reporter to claim it.`,
+                    priority: 'high',
+                    target_audience: 'all'
+                });
+            }
+            res.json({ success: true, message: 'Status updated' });
+        } else {
+            res.status(400).json({ error: result.error || 'Update failed' });
+        }
+    } catch (e) {
+        console.error('Lost ID update error:', e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Respond to Feedback (and announce)
+app.patch('/api/admin/feedback/:id', requireAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { admin_response, status } = req.body;
+        console.log(`[Admin] Responding to feedback ${id}`);
+        
+        const result = await supabaseService.respondToFeedback(id, admin_response);
+        
+        if (result.success) {
+            // Create announcement for the response
+             await supabaseService.createAnnouncement({
+                title: 'Feedback Response',
+                body: `Regarding your feedback: "${admin_response}". We appreciate your input and have taken action.`,
+                priority: 'normal',
+                target_audience: 'all' // Ideally this would be targeted if we had push notifs, for now public
+            });
+            
+            res.json({ success: true, message: 'Response sent' });
+        } else {
+            res.status(400).json({ error: result.error || 'Failed to respond' });
+        }
+    } catch (e) {
+        console.error('Feedback response error:', e);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Delete issue (Supabase)
 app.delete('/api/admin/issues/:id', requireAuth, async (req, res) => {
     try {
