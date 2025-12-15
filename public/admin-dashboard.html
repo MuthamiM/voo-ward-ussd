@@ -1468,7 +1468,9 @@
 
         function appendChatMessage(msg, scroll = true) {
             const container = document.getElementById('chatMessages');
-            const isMe = msg.sender === (currentUser?.username || 'admin');
+            const myUsername = currentUser?.username || 'admin';
+            console.log('[Chat Debug] msg.sender:', msg.sender, '| myUsername:', myUsername, '| isMe:', msg.sender === myUsername);
+            const isMe = msg.sender === myUsername;
             
             // Duplicate Check
             if (msg.id) {
