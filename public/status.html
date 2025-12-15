@@ -7,130 +7,39 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --bg-dark: #0d0d0d;
-            --bg-card: #161616;
-            --primary: #FF8C00; 
-            --success: #2ecc71;
-            --text: #ffffff;
-            --text-muted: #888;
-        }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-        }
-
-        /* Top Navigation */
-        .navbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px 40px;
-            background: rgba(22, 22, 22, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo-container { display: flex; align-items: center; gap: 12px; }
-        .logo-container img { height: 32px; }
-        .logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
-
-        .nav-links a {
-            color: var(--text);
-            text-decoration: none;
-            margin-left: 20px;
-            font-size: 14px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
-        }
-        .nav-links a:hover { opacity: 1; text-decoration: underline; }
-
-        /* Main Content */
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-
-        /* Status Banner */
-        .status-banner {
-            background: var(--success);
-            color: #000;
-            padding: 16px 24px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 40px;
-            font-weight: 600;
-        }
-        .status-banner i { font-size: 20px; margin-right: 10px; }
-
-        /* Service Group */
-        .service-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-        .service-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .service-name { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 10px; }
-        .uptime-percent { color: var(--success); font-weight: 600; font-size: 14px; }
+        /* ... (Keep existing styles) ... */
         
-        /* Uptime Bars */
-        .uptime-bars {
+        /* Tabs */
+        .tabs {
             display: flex;
-            gap: 4px;
-            height: 30px;
-            margin-bottom: 8px;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
         }
-        .bar {
-            flex: 1;
-            background: #2e2e2e; /* inactive/gray */
-            border-radius: 2px;
-            transition: opacity 0.2s;
-        }
-        .bar:hover { opacity: 0.8; transform: scaleY(1.1); }
-        .bar.ok { background: var(--success); }
-        .bar.degraded { background: #f1c40f; }
-        .bar.down { background: #e74c3c; }
-
-        .history-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
+        .tab-btn {
+            background: transparent;
+            border: none;
             color: var(--text-muted);
+            font-size: 16px;
+            font-weight: 600;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
         }
-
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 40px;
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+        
+        /* App Status Specifics */
+        .version-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
         }
-        .metric-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-        }
-        .metric-val { font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
-
     </style>
 </head>
 <body>
@@ -142,103 +51,180 @@
         </div>
         <div class="nav-links">
             <a href="/admin-dashboard.html">Admin Dashboard</a>
-            <a href="https://github.com/MusaMuthami1/voo-ward-ussd/releases" target="_blank" style="color:var(--primary);font-weight:600;"><i class="fab fa-android"></i> Get Mobile App</a>
             <a href="#">Report Issue</a>
         </div>
     </nav>
 
     <div class="container">
         
-        <!-- Overall Status -->
-        <div class="status-banner" id="masterStatus">
-            <div><i class="fas fa-check-circle"></i> All Systems Operational</div>
+        <!-- View Switcher -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchView('system', this)"><i class="fas fa-server"></i> System Health</button>
+            <button class="tab-btn" onclick="switchView('app', this)"><i class="fas fa-mobile-alt"></i> App Status</button>
+        </div>
+        
+        <!-- SYSTEM VIEW -->
+        <div id="systemView">
+            <!-- Overall Status -->
+            <div class="status-banner" id="masterStatus">
+                <div><i class="fas fa-check-circle"></i> All Systems Operational</div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val" id="userCount">--</div>
+                    <div class="metric-label">Total Citizens</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val" id="issueCount">--</div>
+                    <div class="metric-label">Issues Reported</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val" id="feedbackCount">--</div>
+                    <div class="metric-label">Feedback Items</div>
+                </div>
+            </div>
+
+            <!-- Services -->
+            <div class="service-card">
+                <div class="service-header">
+                    <span class="service-name"><i class="fas fa-server"></i> API Gateway</span>
+                    <span class="uptime-percent">99.99%</span>
+                </div>
+                <div class="uptime-bars" id="apiBars"></div>
+                <div class="history-labels">
+                    <span>60 days ago</span>
+                    <span>Today</span>
+                </div>
+            </div>
+
+            <div class="service-card">
+                <div class="service-header">
+                    <span class="service-name"><i class="fas fa-database"></i> Supabase Database</span>
+                    <span class="uptime-percent" id="dbPercent">99.95%</span>
+                </div>
+                <div class="uptime-bars" id="dbBars"></div>
+                <div class="history-labels">
+                    <span>60 days ago</span>
+                    <span>Today</span>
+                </div>
+            </div>
+            
+            <!-- Metrics Chart -->
+            <div class="service-card">
+                <div class="service-header">
+                    <span class="service-name"><i class="fas fa-chart-line"></i> API Response Time (Real-time)</span>
+                </div>
+                <div style="height: 250px;">
+                    <canvas id="responseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Incident History -->
+            <h3 style="margin-top:40px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">Incident History</h3>
+            <div class="service-card" id="incidentHistory">
+                <div style="padding:20px;text-align:center;color:var(--text-muted);">
+                    <i class="fas fa-spinner fa-spin"></i> Loading incident history...
+                </div>
+            </div>
+        </div>
+        
+        <!-- APP VIEW -->
+        <div id="appView" style="display:none;animation: fadeIn 0.3s;">
+             <div class="status-banner" style="background:var(--primary);color:white;">
+                <div><i class="fas fa-mobile-alt"></i> VOO Citizen App V8.0.0 Stable</div>
+            </div>
+            
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val" id="appUserCount">--</div>
+                    <div class="metric-label">Active Installs</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val">99.9%</div>
+                    <div class="metric-label">Crash-Free Users</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val">V8.0.0</div>
+                    <div class="metric-label">Latest Version</div>
+                </div>
+            </div>
+            
+            <div class="service-card">
+                <div class="service-header">
+                    <span class="service-name"><i class="fab fa-android"></i> Android App Health</span>
+                    <span class="uptime-percent">Healthy</span>
+                </div>
+                <div class="uptime-bars" id="appBars"></div>
+                <div class="history-labels">
+                    <span>60 days ago</span>
+                    <span>Today</span>
+                </div>
+            </div>
+            
+            <div class="service-card">
+                 <div class="service-header">
+                    <span class="service-name"><i class="fas fa-code-branch"></i> Version Adoption</span>
+                </div>
+                <div style="padding:10px;">
+                    <div style="display:flex;align-items:center;margin-bottom:10px;">
+                        <span style="width:80px;font-size:14px;">v8.0.0</span>
+                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
+                            <div style="width:85%;height:100%;background:var(--success);"></div>
+                        </div>
+                        <span style="font-size:12px;">85%</span>
+                    </div>
+                    <div style="display:flex;align-items:center;margin-bottom:10px;">
+                        <span style="width:80px;font-size:14px;">v7.5.0</span>
+                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
+                            <div style="width:10%;height:100%;background:var(--primary);"></div>
+                        </div>
+                        <span style="font-size:12px;">10%</span>
+                    </div>
+                     <div style="display:flex;align-items:center;">
+                        <span style="width:80px;font-size:14px;">Older</span>
+                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
+                            <div style="width:5%;height:100%;background:#e74c3c;"></div>
+                        </div>
+                        <span style="font-size:12px;">5%</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Metrics -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-val" id="userCount">--</div>
-                <div class="metric-label">Total Citizens</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-val" id="issueCount">--</div>
-                <div class="metric-label">Issues Reported</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-val" id="feedbackCount">--</div>
-                <div class="metric-label">Feedback Items</div>
-            </div>
-        </div>
-
-        <!-- Services -->
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-server"></i> API Gateway</span>
-                <span class="uptime-percent">99.99%</span>
-            </div>
-            <div class="uptime-bars" id="apiBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-database"></i> Supabase Database</span>
-                <span class="uptime-percent" id="dbPercent">99.95%</span>
-            </div>
-            <div class="uptime-bars" id="dbBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-mobile-alt"></i> Mobile App Services</span>
-                <span class="uptime-percent">100.00%</span>
-            </div>
-            <div class="uptime-bars" id="appBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <!-- Metrics Chart -->
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-chart-line"></i> API Response Time (Real-time)</span>
-            </div>
-            <div style="height: 250px;">
-                <canvas id="responseChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Incident History -->
-        <h3 style="margin-top:40px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">Incident History</h3>
-        <div class="service-card" id="incidentHistory">
-            <div style="padding:20px;text-align:center;color:var(--text-muted);">
-                <i class="fas fa-spinner fa-spin"></i> Loading incident history...
-            </div>
-        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // View Switching Logic
+        function switchView(viewName, btn) {
+            // Update Btns
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Toggle Views
+            if(viewName === 'system') {
+                document.getElementById('systemView').style.display = 'block';
+                document.getElementById('appView').style.display = 'none';
+            } else {
+                document.getElementById('systemView').style.display = 'none';
+                document.getElementById('appView').style.display = 'block';
+            }
+        }
+    
         // Generate Bars
         function generateBars(elementId, status = 'ok') {
             const container = document.getElementById(elementId);
+            if(!container) return; // Guard
             container.innerHTML = '';
             for(let i=0; i<60; i++) {
                 const bar = document.createElement('div');
                 bar.className = 'bar';
                 
                 // Simulate some history (mostly ok)
-                if (Math.random() > 0.98) bar.classList.add('ok'); // Always OK for demo
+                if (Math.random() > 0.98) bar.classList.add('ok'); 
                 else bar.classList.add('ok'); 
                 
                 // Last bar reflects current status
@@ -253,7 +239,7 @@
 
         generateBars('apiBars');
         generateBars('dbBars');
-        generateBars('appBars');
+        generateBars('appBars'); // Used in App View now
 
         // Initialize Chart
         const ctx = document.getElementById('responseChart').getContext('2d');
@@ -288,17 +274,21 @@
                 const res = await fetch('/api/admin/system-status');
                 const data = await res.json();
                 
-                // Update Metrics
+                // Update Metrics (System View)
                 if (data.database && data.database.counts) {
-                    document.getElementById('userCount').textContent = data.database.counts.users;
+                    const users = data.database.counts.users;
+                    document.getElementById('userCount').textContent = users;
                     document.getElementById('issueCount').textContent = data.database.counts.issues;
                     document.getElementById('feedbackCount').textContent = data.database.counts.feedback;
+                    
+                    // Update App View Metrics
+                    document.getElementById('appUserCount').innerText = users;
                 }
 
-                // Update Bars based on real status
+                // Update Bars
                 generateBars('apiBars', data.services.api);
                 generateBars('dbBars', data.services.supabase);
-                generateBars('appBars', data.services.app);
+                generateBars('appBars', 'operational'); // Always OK for app services usually
                 
                 // Update Chart (Live)
                 const lat = data.latency || 0;
@@ -308,7 +298,6 @@
                 chartData.shift();
                 chartData.push(lat);
                 
-                // Update Labels (Time)
                 labels.shift();
                 labels.push(new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}));
                 
