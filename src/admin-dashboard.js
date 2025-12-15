@@ -2580,6 +2580,59 @@ app.get("/api/admin/chat/messages", requireAuth, async (req, res) => {
     console.error("Error fetching chat messages:", err);
     res.json([]); // Return empty array on error
   }
+// ============ SYSTEM STATUS (PUBLIC) ============
+app.get('/api/admin/system-status', async (req, res) => {
+  const start = Date.now();
+  try {
+    const supabaseService = require('./services/supabaseService');
+    
+    // Fetch counts for dashboard (Parallel for speed)
+    // Using getAll* methods internally calls requests. We'll use request direct for lightweight ID select
+    const [issues, users, feedback] = await Promise.all([
+         supabaseService.request('GET', '/rest/v1/issues?select=id'),
+         supabaseService.request('GET', '/rest/v1/app_users?select=id'),
+         supabaseService.request('GET', '/rest/v1/feedback?select=id')
+    ]);
+    
+    const latency = Date.now() - start;
+    
+    // Determine status based on fetch success
+    const dbStatus = 'connected';
+    
+    res.json({
+      services: {
+        api: 'operational',
+        supabase: dbStatus,
+        push_notifications: process.env.VAPID_PUBLIC_KEY ? 'enabled' : 'disabled',
+        app: 'operational'
+      },
+      database: {
+        counts: {
+          users: Array.isArray(users) ? users.length : 0,
+          issues: Array.isArray(issues) ? issues.length : 0,
+          feedback: Array.isArray(feedback) ? feedback.length : 0
+        }
+      },
+      latency: latency, // Real measured latency
+      incidents: [] // Still empty for now, but dynamic structure allows future addition
+    });
+    
+  } catch (err) {
+    console.error("Status check failed:", err);
+    res.json({
+      services: {
+        api: 'degraded',
+        supabase: 'disconnected',
+        app: 'unknown'
+      },
+      latency: Date.now() - start,
+      incidents: [{
+         title: 'System Partial Outage',
+         status: 'Investigating',
+         date: new Date().toISOString()
+      }]
+    });
+  }
 });
 
 // ============ LOST IDs ============
