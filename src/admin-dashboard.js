@@ -2474,6 +2474,9 @@ app.post("/api/admin/bursaries/:id/approve", requireAuth, requireMCA, async (req
     const { amount, notes } = req.body;
     const supabaseService = require('./services/supabaseService');
     
+    // Fetch bursary first to get user details for notification
+    const existingBursary = await supabaseService.getBursaryById(req.params.id);
+
     const result = await supabaseService.approveBursary(
       req.params.id,
       amount,
@@ -2483,6 +2486,17 @@ app.post("/api/admin/bursaries/:id/approve", requireAuth, requireMCA, async (req
     
     if (result.success) {
       res.json({ success: true, message: 'Bursary application approved' });
+      
+      // Notify User via SMS
+      if (existingBursary && existingBursary.user_id) {
+          try {
+              const user = await supabaseService.getUserById(existingBursary.user_id);
+              if (user && user.phone) {
+                  const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been APPROVED. Amount: KES ${amount}. Check app for details.`;
+                  sendSMS(user.phone, msg).catch(console.error);
+              }
+          } catch(e) { console.error('Failed to notify user:', e); }
+      }
     } else {
       res.status(400).json({ error: result.error || 'Approval failed' });
     }
@@ -2498,6 +2512,9 @@ app.post("/api/admin/bursaries/:id/reject", requireAuth, requireMCA, async (req,
     const { reason } = req.body;
     const supabaseService = require('./services/supabaseService');
     
+    // Fetch bursary first to get user details for notification
+    const existingBursary = await supabaseService.getBursaryById(req.params.id);
+
     const result = await supabaseService.rejectBursary(
       req.params.id,
       reason,
@@ -2506,6 +2523,17 @@ app.post("/api/admin/bursaries/:id/reject", requireAuth, requireMCA, async (req,
     
     if (result.success) {
       res.json({ success: true, message: 'Bursary application rejected' });
+      
+      // Notify User via SMS
+      if (existingBursary && existingBursary.user_id) {
+          try {
+              const user = await supabaseService.getUserById(existingBursary.user_id);
+              if (user && user.phone) {
+                  const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been REJECTED. Reason: ${reason}. Check app for details.`;
+                  sendSMS(user.phone, msg).catch(console.error);
+              }
+          } catch(e) { console.error('Failed to notify user:', e); }
+      }
     } else {
       res.status(400).json({ error: result.error || 'Rejection failed' });
     }

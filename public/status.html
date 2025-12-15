@@ -643,6 +643,26 @@
                 }
             }
         });
+        });
+
+        // Tab Switcher
+        function switchView(viewName, btn) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Update Views
+            if (viewName === 'system') {
+                document.getElementById('systemView').style.display = 'block';
+                document.getElementById('appView').style.display = 'none';
+            } else {
+                document.getElementById('systemView').style.display = 'none';
+                document.getElementById('appView').style.display = 'block';
+                // Trigger animation
+                document.getElementById('appView').style.animation = 'none';
+                setTimeout(() => document.getElementById('appView').style.animation = 'fadeIn 0.3s', 10);
+            }
+        }
     </script>
 </body>
 </html>
