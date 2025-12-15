@@ -1134,21 +1134,22 @@
                 return '<span class="badge badge-pending">Pending</span>';
             };
             
-            // Check if user is MCA (only MCA can approve/reject)
-            const isMCA = currentUser?.role?.toUpperCase() === 'MCA';
+            // Check if user is MCA or ADMIN
+            const role = currentUser?.role?.toUpperCase();
+            const canAct = role === 'MCA' || role === 'ADMIN';
             
             let html = '<table><thead><tr><th>Applicant</th><th>Institution</th><th>Course</th><th>Amount</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead><tbody>';
             burses.forEach(b => {
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : '--';
                 const statusLower = (b.status || 'pending').toLowerCase();
                 
-                // Only MCA can take actions on pending applications
+                // Only authorized users can take actions on pending applications
                 let actions = '--';
                 if (statusLower === 'pending') {
-                    if (isMCA) {
+                    if (canAct) {
                         actions = `
-                            <button class="action-btn approve" onclick="updateBursary('${b.id}', 'approved')" title="Approve"><i class="fas fa-check"></i></button>
-                            <button class="action-btn reject" onclick="updateBursary('${b.id}', 'rejected')" title="Reject"><i class="fas fa-times"></i></button>
+                            <button class="action-btn approve" onclick="updateBursary('${b.id}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
+                            <button class="action-btn reject" onclick="updateBursary('${b.id}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
                         `;
                     } else {
                         actions = '<span style="color:var(--text-muted);font-size:11px;">View Only</span>';
@@ -1169,20 +1170,35 @@
             document.getElementById('bursaryTable').innerHTML = html;
         }
 
-        async function updateBursary(id, status) {
-            if (!confirm(`Mark bursary application as ${status}?`)) return;
+        async function updateBursary(id, action) {
+            let body = {};
+            let endpoint = '';
             
-            const res = await api(`/api/admin/bursaries/${id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ status })
+            if (action === 'approve') {
+                const amount = prompt("Enter Approved Amount (KES):", "");
+                if (!amount) return; // Cancelled
+                body = { amount: Number(amount), notes: 'Approved via Dashboard' };
+                endpoint = `/api/admin/bursaries/${id}/approve`;
+            } else if (action === 'reject') {
+                const reason = prompt("Enter Rejection Reason:", "Does not meet criteria");
+                if (!reason) return; // Cancelled
+                body = { reason: reason };
+                endpoint = `/api/admin/bursaries/${id}/reject`;
+            } else {
+                return;
+            }
+            
+            const res = await api(endpoint, {
+                method: 'POST',
+                body: JSON.stringify(body)
             });
             
             if (res && res.success) {
-                showToast(`Bursary ${status}`);
+                showToast(`Application ${action}d successfully`);
                 loadBursaries();
                 loadDashboard();
             } else {
-                showToast(res?.error || 'Failed to update', 'error');
+                showToast(res?.error || 'Action failed', 'error');
             }
         }
 

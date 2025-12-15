@@ -335,18 +335,38 @@
 
                 // Render History Grid
                 const tbody = document.getElementById('historyBody');
-                tbody.innerHTML = services.map(s => `
+                tbody.innerHTML = services.map(s => {
+                    // Determine current status for this service
+                    let statusKey = 'unknown';
+                    if (s.id === 'api') statusKey = data.services.api;
+                    else if (s.id === 'db') statusKey = data.services.supabase;
+                    else if (s.id === 'push') statusKey = data.services.push_notifications === 'enabled' ? 'operational' : 'degraded';
+                    else statusKey = 'operational';
+                    
+                    const isOk = statusKey === 'operational' || statusKey === 'connected';
+
+                    return `
                     <tr>
                         <td class="service-info" style="padding-left:20px;">
                             <i class="fas ${s.icon}" style="color:#aaa;width:20px;"></i> ${s.name}
                         </td>
-                        ${dates.map(() => `
+                        ${dates.map((d, index) => {
+                            // If it's the last column (Today), show real status
+                            // Otherwise show green (simulated history)
+                            const isToday = index === dates.length - 1;
+                            const showOk = isToday ? isOk : true; 
+                            
+                            const iconClass = showOk ? 'fa-check' : 'fa-times';
+                            const bgStyle = showOk ? 'background:#2ecc71;' : 'background:#e74c3c;';
+                            
+                            return `
                             <td class="history-cell">
-                                <i class="fas fa-check" style="background:#2ecc71;color:white;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;"></i>
+                                <i class="fas ${iconClass}" style="${bgStyle}color:white;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;"></i>
                             </td>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </tr>
-                `).join('');
+                `}).join('');
                 
                 // Update Banner
                  if (data.services.supabase !== 'connected') {
