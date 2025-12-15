@@ -466,6 +466,20 @@ class SupabaseService {
             return { success: false, error: 'Insert failed' };
         }
     }
+    
+    /**
+     * Get bursaries for specific user
+     */
+    async getUserBursaries(userId) {
+        try {
+            if (!userId) return [];
+            const result = await this.request('GET', `/rest/v1/bursary_applications?user_id=eq.${userId}&select=*&order=created_at.desc`);
+            return Array.isArray(result) ? result : [];
+        } catch (e) {
+            console.error('[Supabase] getUserBursaries error:', e);
+            return [];
+        }
+    }
 
     // ============ ANNOUNCEMENTS ============
 

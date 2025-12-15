@@ -731,6 +731,37 @@ router.post('/mobile/bursaries', async (req, res) => {
     }
 });
 
+
+
+/**
+ * Get user's bursary applications
+ * GET /api/citizen/mobile/bursaries/user/:userId
+ */
+router.get('/mobile/bursaries/user/:userId', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const supabaseService = require('../services/supabaseService');
+        
+        const bursaries = await supabaseService.getUserBursaries(userId);
+        
+        // If empty, try MongoDB fallback (legacy)
+        if (bursaries.length === 0) {
+           const db = await getDb();
+           const legacy = await db.collection('bursaries').find({ user_id: userId }).sort({ created_at: -1 }).toArray();
+           
+           // Merge or return legacy if Supabase empty
+           if (legacy.length > 0) {
+               return res.json({ success: true, data: legacy });
+           }
+        }
+        
+        res.json({ success: true, data: bursaries });
+    } catch (err) {
+        logger.error('Get user bursaries error:', err);
+        res.status(500).json({ error: 'Failed to fetch bursaries' });
+    }
+});
+
 /**
  * MOBILE APP ENDPOINTS
  * ==========================================

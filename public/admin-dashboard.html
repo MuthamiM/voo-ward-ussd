@@ -1285,11 +1285,15 @@
             doc.setFont(undefined, 'bold');
             
             // Format: MBUA ENE-{TwoNumbers}{OneLetter}
-            // Generate deterministically from ID
-            const vid = String(b.id || b._id || '').replace(/\D/g, '') || '01';
-            const vlet = String(b.id || b._id || 'A').replace(/[^a-zA-Z]/g, '').toUpperCase() || 'A';
-            const vNum = (vid + '99').slice(-2); // Last 2 digits
-            const vChar = (vlet + 'Z').slice(-1); // Last 1 letter
+            // Generate deterministically from ID to ensure it is unique per application
+            // Extract numbers from ID or ref_code
+            const uniqueStr = (b.id || b._id || b.ref_code || '').toString();
+            // Get last 2 digits, default to random if none
+            const vNum = (uniqueStr.replace(/\D/g, '') + '01').slice(-2);
+            // Get a character based on the ID hash or last char
+            const charCode = uniqueStr.charCodeAt(uniqueStr.length - 1) || 65;
+            const vChar = String.fromCharCode(65 + (charCode % 26)); // A-Z
+            
             doc.text(`MBUA ENE-${vNum}${vChar}`, col2 + 30, startY);
             doc.setFont(undefined, 'normal');
             
