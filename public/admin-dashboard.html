@@ -1858,8 +1858,8 @@
         // Initialize
         debug('Initializing dashboard...');
         
-        // Check auth
-        const token = localStorage.getItem('adminToken');
+        // Check auth - Use 'authToken' which is set by login page
+        const token = localStorage.getItem('authToken');
         if (!token) {
             window.location.href = '/login.html';
         } else {
