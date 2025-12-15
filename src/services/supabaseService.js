@@ -417,10 +417,10 @@ class SupabaseService {
     async approveBursary(bursaryId, amount, notes, approvedBy) {
         return this.updateBursary(bursaryId, {
             status: 'Approved',
-            amount_approved: amount, // Corrected from approved_amount
-            approval_notes: notes,
-            approved_by: approvedBy,
-            approved_at: new Date().toISOString()
+            amount_approved: amount,
+            admin_notes: notes, // Corrected from approval_notes
+            updated_at: new Date().toISOString()
+            // approved_by & approved_at removed as they likely don't exist in schema
         });
     }
 
