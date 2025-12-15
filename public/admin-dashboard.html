@@ -332,7 +332,15 @@
                     <p style="color:var(--text-muted);margin-bottom:16px;font-size:13px;">Log out of your account</p>
                     <button class="btn" onclick="logout()" style="background:var(--error);color:white;"><i class="fas fa-sign-out-alt"></i> Logout</button>
                 </div>
+                <!-- STATUS LINK -->
+                <div style="margin-top:30px;padding:16px;background:linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));border-radius:12px;border:1px solid var(--success);text-align:center;">
+                    <a href="/status.html" target="_blank" style="color:var(--success);text-decoration:underline;font-size:16px;font-weight:600;">
+                        <i class="fas fa-heartbeat"></i> System Status
+                    </a>
+                    <p style="color:var(--text-muted);font-size:12px;margin-top:6px;">Check system health and service uptime</p>
+                </div>
             </div>
+
 
             <!-- Lost IDs -->
             <div id="lostids" class="page">
@@ -442,70 +450,6 @@
                             <button onclick="sendChatMessage()" style="padding:12px 20px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Settings -->
-            <div id="settings" class="page">
-                <div class="page-header"><h1 class="page-title">Settings</h1></div>
-                
-                <!-- STATUS LINK - TOP OF PAGE -->
-                <div style="margin-bottom:20px;padding:16px;background:linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));border-radius:12px;border:1px solid var(--success);text-align:center;">
-                    <a href="/status.html" target="_blank" style="color:var(--success);text-decoration:underline;font-size:16px;font-weight:600;">
-                        <i class="fas fa-heartbeat"></i> System Status
-                    </a>
-                    <p style="color:var(--text-muted);font-size:12px;margin-top:6px;">Check system health and service uptime</p>
-                </div>
-                
-                <!-- Profile Settings -->
-                <div class="chart-card" style="max-width:600px;margin-bottom:20px;">
-                    <h3 style="margin-bottom:16px;">Profile</h3>
-                    <div style="display:grid;gap:16px;">
-                        <div>
-                            <label style="display:block;margin-bottom:4px;color:var(--text-muted);font-size:12px;">Full Name</label>
-                            <input type="text" id="settingsFullName" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" readonly>
-                        </div>
-                        <div>
-                            <label style="display:block;margin-bottom:4px;color:var(--text-muted);font-size:12px;">Role</label>
-                            <input type="text" id="settingsRole" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);" readonly>
-                        </div>
-                        <input type="hidden" id="settingsUsername">
-                    </div>
-                </div>
-                
-                <!-- Change Password -->
-                <div class="chart-card" style="max-width:600px;margin-bottom:20px;">
-                    <h3 style="margin-bottom:16px;">Change Password</h3>
-                    <div style="display:grid;gap:16px;">
-                        <div>
-                            <label style="display:block;margin-bottom:4px;color:var(--text-muted);font-size:12px;">Current Password</label>
-                            <input type="password" id="currentPassword" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
-                        </div>
-                        <div>
-                            <label style="display:block;margin-bottom:4px;color:var(--text-muted);font-size:12px;">New Password</label>
-                            <input type="password" id="newPassword" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);">
-                        </div>
-                        <button onclick="changePassword()" class="btn btn-primary" style="width:fit-content;">
-                            <i class="fas fa-key"></i> Change Password
-                        </button>
-                    </div>
-                </div>
-                
-                <!-- Danger Zone -->
-                <div class="chart-card" style="max-width:600px;margin-bottom:20px;border:1px solid var(--error);">
-                    <h3 style="margin-bottom:16px;color:var(--error);">Danger Zone</h3>
-                    <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;">Log out of your account</p>
-                    <button onclick="logout()" class="btn" style="background:var(--error);color:white;">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </div>
-                
-                <!-- STATUS FOOTER - UNDERLINED -->
-                <div style="margin-top:60px;padding:20px;border-top:2px solid var(--border);text-align:center;background:rgba(255,255,255,0.02);border-radius:8px;">
-                    <a href="/status.html" target="_blank" style="color:var(--success);text-decoration:underline;font-size:16px;font-weight:600;">
-                        <i class="fas fa-heartbeat"></i> System Status
-                    </a>
-                    <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">Check system health and service uptime</p>
                 </div>
             </div>
         </main>
