@@ -417,7 +417,7 @@ class SupabaseService {
     async approveBursary(bursaryId, amount, notes, approvedBy) {
         return this.updateBursary(bursaryId, {
             status: 'Approved',
-            approved_amount: amount,
+            amount_approved: amount, // Corrected from approved_amount
             approval_notes: notes,
             approved_by: approvedBy,
             approved_at: new Date().toISOString()
