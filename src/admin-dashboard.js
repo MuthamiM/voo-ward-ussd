@@ -2378,7 +2378,9 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
     // Use Supabase service to get issues (same as mobile app)
     const supabaseService = require('./services/supabaseService');
+    console.log('[DEBUG] Fetching issues from Supabase...');
     const issues = await supabaseService.getAllIssues();
+    console.log('[DEBUG] Issues fetched:', issues.length, 'items');
     
     // Map to consistent format for dashboard
     const formattedIssues = issues.map(issue => {
