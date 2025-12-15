@@ -2468,9 +2468,15 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   }
 });
 
-// Approve bursary application (MCA only) - SUPABASE
-app.post("/api/admin/bursaries/:id/approve", requireAuth, requireMCA, async (req, res) => {
+// Approve bursary application (MCA or Admin)
+app.post("/api/admin/bursaries/:id/approve", requireAuth, async (req, res) => {
   try {
+    // Role Check
+    const role = (req.user.role || '').toUpperCase();
+    if (role !== 'MCA' && role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can approve' });
+    }
+
     const { amount, notes } = req.body;
     const supabaseService = require('./services/supabaseService');
     
@@ -2506,9 +2512,15 @@ app.post("/api/admin/bursaries/:id/approve", requireAuth, requireMCA, async (req
   }
 });
 
-// Reject bursary application (MCA only) - SUPABASE
-app.post("/api/admin/bursaries/:id/reject", requireAuth, requireMCA, async (req, res) => {
+// Reject bursary application (MCA or Admin)
+app.post("/api/admin/bursaries/:id/reject", requireAuth, async (req, res) => {
   try {
+    // Role Check
+    const role = (req.user.role || '').toUpperCase();
+    if (role !== 'MCA' && role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can reject' });
+    }
+
     const { reason } = req.body;
     const supabaseService = require('./services/supabaseService');
     
