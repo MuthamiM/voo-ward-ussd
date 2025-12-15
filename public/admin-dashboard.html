@@ -1317,7 +1317,8 @@
             
             doc.setFontSize(14);
             doc.setFont(undefined, 'bold');
-            doc.text(`${b.amount_approved || 0}`, 160, startY + 55);
+            const amt = Number(b.amount_approved || 0).toLocaleString();
+            doc.text(`KES ${amt}`, 160, startY + 55);
             
             // Total Line
             doc.line(15, startY + 70, 195, startY + 70); // Line below rect? No, rect is 40 high
