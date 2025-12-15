@@ -642,8 +642,9 @@
                 allIssues = issues;
                 debug('Issues loaded: ' + issues.length);
                 
-                const pending = issues.filter(i => !i.status || i.status === 'Pending').length;
-                const resolved = issues.filter(i => i.status === 'Resolved').length;
+                // Case-insensitive status filtering
+                const pending = issues.filter(i => !i.status || i.status.toLowerCase() === 'pending').length;
+                const resolved = issues.filter(i => i.status && i.status.toLowerCase() === 'resolved').length;
                 
                 document.getElementById('statTotalIssues').textContent = issues.length;
                 document.getElementById('statPending').textContent = pending;

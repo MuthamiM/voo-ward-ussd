@@ -2555,6 +2555,33 @@ app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   }
 });
 
+// ============ CHAT MESSAGES ============
+
+// Get chat history
+app.get("/api/admin/chat/messages", requireAuth, async (req, res) => {
+  try {
+    const supabaseService = require('./services/supabaseService');
+    const messages = await supabaseService.request('GET', '/rest/v1/admin_chat_messages?select=*&order=created_at.desc&limit=100');
+    
+    // Format for frontend
+    const formatted = (messages || []).reverse().map(m => ({
+      id: m.id,
+      sender: m.sender,
+      senderName: m.sender_name,
+      senderRole: m.sender_role,
+      text: m.message_text,
+      image: m.image_url,
+      voice: m.voice_url,
+      timestamp: m.created_at
+    }));
+    
+    res.json(formatted);
+  } catch (err) {
+    console.error("Error fetching chat messages:", err);
+    res.json([]); // Return empty array on error
+  }
+});
+
 // ============ LOST IDs ============
 
 // Get all lost ID reports
