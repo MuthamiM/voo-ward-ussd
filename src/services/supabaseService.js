@@ -452,6 +452,10 @@ class SupabaseService {
                 status: (data.status || 'pending').toLowerCase(),
                 amount_requested: data.amount_requested || data.amountRequested || 0,
                 amount_approved: 0,
+                has_helb: data.has_helb || false,
+                has_scholarship: data.has_scholarship || false,
+                fees_per_semester: data.fees_per_semester || 0,
+                full_name: data.full_name || data.applicant_name || '',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             });

@@ -1127,7 +1127,11 @@
             }
         }
 
+        // Store bursaries globally for modal access
+        let allBursaries = [];
+        
         function renderBursaries(burses) {
+            allBursaries = burses; // Store for detail modal
             const sb = (s) => {
                 if (s === 'approved') return '<span class="badge badge-resolved">Approved</span>';
                 if (s === 'rejected') return '<span class="badge badge-rejected">Rejected</span>';
@@ -1142,26 +1146,27 @@
             burses.forEach(b => {
                 const date = b.created_at ? new Date(b.created_at).toLocaleDateString() : '--';
                 const statusLower = (b.status || 'pending').toLowerCase();
-                const id = b.id || b._id || b.application_id; // Robust ID check
+                const id = b.id || b._id || b.application_id;
                 
                 if (!id) console.warn('Bursary record missing ID:', b);
 
-                // Only authorized users can take actions on pending applications
                 let actions = '--';
                 if (statusLower === 'pending') {
                     if (canAct && id) {
                          actions = `
-                            <button class="action-btn approve" onclick="updateBursary('${id}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
-                            <button class="action-btn reject" onclick="updateBursary('${id}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
+                            <button class="action-btn approve" onclick="event.stopPropagation(); updateBursary('${id}', 'approve')" title="Approve"><i class="fas fa-check"></i></button>
+                            <button class="action-btn reject" onclick="event.stopPropagation(); updateBursary('${id}', 'reject')" title="Reject"><i class="fas fa-times"></i></button>
                         `;
                     } else if (!id) {
                         actions = '<span style="color:red;font-size:11px;">Error: No ID</span>';
                     } else {
                         actions = '<span style="color:var(--text-muted);font-size:11px;">View Only</span>';
                     }
+                } else if (statusLower === 'approved') {
+                    actions = `<button class="action-btn" onclick="event.stopPropagation(); downloadReceipt('${id}')" title="Download Receipt"><i class="fas fa-download"></i></button>`;
                 }
                 
-                html += `<tr>
+                html += `<tr onclick="showBursaryDetail('${id}')" style="cursor:pointer;">
                     <td>${escapeHtml(b.full_name || b.applicant_name || 'Unknown')}</td>
                     <td>${escapeHtml(b.institution_name || b.institution) || '--'}</td>
                     <td>${escapeHtml(b.course) || '--'}</td>
@@ -1173,6 +1178,129 @@
             });
             html += '</tbody></table>';
             document.getElementById('bursaryTable').innerHTML = html;
+        }
+        
+        function showBursaryDetail(id) {
+            const b = allBursaries.find(x => (x.id || x._id || x.application_id) === id);
+            if (!b) return showToast('Application not found', 'error');
+            
+            const statusLower = (b.status || 'pending').toLowerCase();
+            const statusColor = statusLower === 'approved' ? 'var(--success)' : statusLower === 'rejected' ? 'var(--error)' : 'var(--warning)';
+            
+            const content = `
+                <div style="display:grid;gap:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <h3 style="margin:0;color:var(--text-light);">${escapeHtml(b.full_name || b.applicant_name || 'Unknown')}</h3>
+                        <span style="background:${statusColor};color:#fff;padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;">${(b.status || 'Pending').toUpperCase()}</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Institution</strong><br>${escapeHtml(b.institution_name || '--')}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Course</strong><br>${escapeHtml(b.course || '--')}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Year of Study</strong><br>${escapeHtml(b.year_of_study || '--')}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Institution Type</strong><br>${escapeHtml(b.institution_type || '--')}</div>
+                    </div>
+                    <hr style="border-color:var(--border);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Has HELB?</strong><br>${b.has_helb ? '✅ Yes' : '❌ No'}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Has Scholarship?</strong><br>${b.has_scholarship ? '✅ Yes' : '❌ No'}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Fees/Semester</strong><br>KES ${b.fees_per_semester || 0}</div>
+                    </div>
+                    <hr style="border-color:var(--border);">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Amount Requested</strong><br><span style="font-size:18px;font-weight:700;color:var(--primary);">KES ${b.amount_requested || 0}</span></div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Amount Approved</strong><br><span style="font-size:18px;font-weight:700;color:var(--success);">KES ${b.amount_approved || 0}</span></div>
+                    </div>
+                    ${b.reason ? `<div><strong style="color:var(--text-muted);font-size:12px;">Reason for Application</strong><br><p style="margin-top:4px;color:var(--text-light);">${escapeHtml(b.reason)}</p></div>` : ''}
+                    ${b.admin_notes ? `<div style="background:rgba(255,140,0,0.1);padding:12px;border-radius:8px;"><strong style="color:var(--primary);font-size:12px;">Admin Notes</strong><br>${escapeHtml(b.admin_notes)}</div>` : ''}
+                    ${statusLower === 'approved' ? `<button onclick="downloadReceipt('${id}')" style="background:var(--primary);color:#fff;border:none;padding:12px 24px;border-radius:8px;cursor:pointer;font-weight:600;margin-top:12px;"><i class="fas fa-download" style="margin-right:8px;"></i>Download Receipt (PDF)</button>` : ''}
+                </div>
+            `;
+            
+            showModal('Bursary Application Details', content);
+        }
+        
+        function downloadReceipt(id) {
+            const b = allBursaries.find(x => (x.id || x._id || x.application_id) === id);
+            if (!b) return showToast('Application not found', 'error');
+            if ((b.status || '').toLowerCase() !== 'approved') return showToast('Only approved applications can have receipts', 'error');
+            
+            // Load jsPDF dynamically if not loaded
+            if (typeof jspdf === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                script.onload = () => generatePDF(b);
+                document.head.appendChild(script);
+            } else {
+                generatePDF(b);
+            }
+        }
+        
+        function generatePDF(b) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFillColor(255, 140, 0);
+            doc.rect(0, 0, 210, 35, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text('KYAMATU WARD', 105, 18, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text('Bursary Approval Receipt', 105, 28, { align: 'center' });
+            
+            // Reset colors
+            doc.setTextColor(0, 0, 0);
+            
+            // Applicant Info
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('APPLICANT DETAILS', 14, 50);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(11);
+            doc.text(`Name: ${b.full_name || b.applicant_name || 'N/A'}`, 14, 60);
+            doc.text(`Institution: ${b.institution_name || 'N/A'}`, 14, 68);
+            doc.text(`Course: ${b.course || 'N/A'}`, 14, 76);
+            doc.text(`Year of Study: ${b.year_of_study || 'N/A'}`, 14, 84);
+            
+            // Financial Info
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text('FINANCIAL DETAILS', 14, 100);
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(11);
+            doc.text(`Amount Requested: KES ${b.amount_requested || 0}`, 14, 110);
+            doc.text(`Fees per Semester: KES ${b.fees_per_semester || 0}`, 14, 118);
+            doc.text(`Has HELB: ${b.has_helb ? 'Yes' : 'No'}`, 14, 126);
+            doc.text(`Has Other Scholarship: ${b.has_scholarship ? 'Yes' : 'No'}`, 14, 134);
+            
+            // Approval Box
+            doc.setFillColor(46, 204, 113);
+            doc.roundedRect(14, 145, 180, 35, 3, 3, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.text('AMOUNT APPROVED', 105, 158, { align: 'center' });
+            doc.setFontSize(24);
+            doc.text(`KES ${b.amount_approved || 0}`, 105, 173, { align: 'center' });
+            
+            // Footer
+            doc.setTextColor(100, 100, 100);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            const today = new Date().toLocaleDateString();
+            doc.text(`Date of Approval: ${today}`, 14, 195);
+            doc.text(`Application ID: ${b.id || b._id || 'N/A'}`, 14, 203);
+            doc.text('This is an official receipt from the Kyamatu Ward Bursary Program.', 14, 220);
+            
+            // Signature Line
+            doc.line(14, 250, 80, 250);
+            doc.text('MCA Signature', 14, 258);
+            doc.line(130, 250, 196, 250);
+            doc.text('Ward Official Stamp', 130, 258);
+            
+            // Save
+            doc.save(`Bursary_Receipt_${b.full_name || 'Applicant'}.pdf`);
+            showToast('Receipt downloaded successfully!');
         }
 
         async function updateBursary(id, action) {
