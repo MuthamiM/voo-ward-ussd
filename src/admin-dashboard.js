@@ -2580,6 +2580,8 @@ app.get("/api/admin/chat/messages", requireAuth, async (req, res) => {
     console.error("Error fetching chat messages:", err);
     res.json([]); // Return empty array on error
   }
+});
+
 // ============ SYSTEM STATUS (PUBLIC) ============
 app.get('/api/admin/system-status', async (req, res) => {
   const start = Date.now();

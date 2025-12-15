@@ -7,8 +7,131 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ... (Keep existing styles) ... */
+        :root {
+            --bg-dark: #0d0d0d;
+            --bg-card: #161616;
+            --primary: #FF8C00; 
+            --success: #2ecc71;
+            --text: #ffffff;
+            --text-muted: #888;
+            --error: #e74c3c;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 40px;
+            background: rgba(22, 22, 22, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo-container { display: flex; align-items: center; gap: 12px; }
+        .logo-container img { height: 32px; }
+        .logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            margin-left: 20px;
+            font-size: 14px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .nav-links a:hover { opacity: 1; text-decoration: underline; }
+
+        /* Main Content */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Status Banner */
+        .status-banner {
+            background: var(--success);
+            color: #000;
+            padding: 16px 24px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            font-weight: 600;
+        }
+        .status-banner i { font-size: 20px; margin-right: 10px; }
+
+        /* Service Group */
+        .service-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .service-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .service-name { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 10px; }
+        .uptime-percent { color: var(--success); font-weight: 600; font-size: 14px; }
         
+        /* Uptime Bars */
+        .uptime-bars {
+            display: flex;
+            gap: 4px;
+            height: 30px;
+            margin-bottom: 8px;
+        }
+        .bar {
+            flex: 1;
+            background: #2e2e2e; /* inactive/gray */
+            border-radius: 2px;
+            transition: opacity 0.2s;
+        }
+        .bar:hover { opacity: 0.8; transform: scaleY(1.1); }
+        .bar.ok { background: var(--success); }
+        .bar.degraded { background: #f1c40f; }
+        .bar.down { background: #e74c3c; }
+
+        .history-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        .metric-val { font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+        .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
         /* Tabs */
         .tabs {
             display: flex;
@@ -94,7 +217,7 @@
                 </div>
                 <div class="uptime-bars" id="apiBars"></div>
                 <div class="history-labels">
-                    <span>60 days ago</span>
+                    <span>Uptime History</span>
                     <span>Today</span>
                 </div>
             </div>
@@ -106,7 +229,7 @@
                 </div>
                 <div class="uptime-bars" id="dbBars"></div>
                 <div class="history-labels">
-                    <span>60 days ago</span>
+                    <span>Uptime History</span>
                     <span>Today</span>
                 </div>
             </div>
@@ -158,7 +281,7 @@
                 </div>
                 <div class="uptime-bars" id="appBars"></div>
                 <div class="history-labels">
-                    <span>60 days ago</span>
+                    <span>Uptime History</span>
                     <span>Today</span>
                 </div>
             </div>
