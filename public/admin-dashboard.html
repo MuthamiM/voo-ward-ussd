@@ -1283,7 +1283,14 @@
             
             doc.text('Voucher No:', col2, startY);
             doc.setFont(undefined, 'bold');
-            doc.text(b.id || b.ref_code || b.application_number || 'N/A', col2 + 30, startY);
+            
+            // Format: MBUA ENE-{TwoNumbers}{OneLetter}
+            // Generate deterministically from ID
+            const vid = String(b.id || b._id || '').replace(/\D/g, '') || '01';
+            const vlet = String(b.id || b._id || 'A').replace(/[^a-zA-Z]/g, '').toUpperCase() || 'A';
+            const vNum = (vid + '99').slice(-2); // Last 2 digits
+            const vChar = (vlet + 'Z').slice(-1); // Last 1 letter
+            doc.text(`MBUA ENE-${vNum}${vChar}`, col2 + 30, startY);
             doc.setFont(undefined, 'normal');
             
             // Row 2
