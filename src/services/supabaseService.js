@@ -685,7 +685,7 @@ class SupabaseService {
             return { success: true, result };
         } catch (e) {
             console.error('[Supabase] updateLostIdStatus error:', e);
-            return { success: false, error: 'Update failed' };
+            return { success: false, error: e.message || e || 'Update failed' };
         }
     }
 
