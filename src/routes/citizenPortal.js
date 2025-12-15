@@ -628,7 +628,8 @@ router.post('/mobile/bursaries', async (req, res) => {
             amountRequested,
             hasHelb,
             hasScholarship,
-            feesPerSemester
+            feesPerSemester,
+            admissionNumber
         } = req.body;
 
         // Validation - require all important fields
@@ -663,6 +664,7 @@ router.post('/mobile/bursaries', async (req, res) => {
                 has_helb: hasHelb || false,
                 has_scholarship: hasScholarship || false,
                 fees_per_semester: feesPerSemester || 0,
+                admission_number: admissionNumber || '',
                 status: 'Pending',
                 source: 'Mobile App'
             });
@@ -710,6 +712,8 @@ router.post('/mobile/bursaries', async (req, res) => {
             reason: reason || '',
             amount_requested: amountRequested || 0,
             amountRequested: amountRequested || 0,
+            admission_number: admissionNumber || '',
+            admissionNumber: admissionNumber || '',
             status: 'pending',
             source: 'Mobile App',
             created_at: new Date(),

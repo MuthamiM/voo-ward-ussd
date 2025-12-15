@@ -1196,7 +1196,9 @@
                         <div><strong style="color:var(--text-muted);font-size:12px;">Institution</strong><br>${escapeHtml(b.institution_name || '--')}</div>
                         <div><strong style="color:var(--text-muted);font-size:12px;">Course</strong><br>${escapeHtml(b.course || '--')}</div>
                         <div><strong style="color:var(--text-muted);font-size:12px;">Year of Study</strong><br>${escapeHtml(b.year_of_study || '--')}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Year of Study</strong><br>${escapeHtml(b.year_of_study || '--')}</div>
                         <div><strong style="color:var(--text-muted);font-size:12px;">Institution Type</strong><br>${escapeHtml(b.institution_type || '--')}</div>
+                        <div><strong style="color:var(--text-muted);font-size:12px;">Admission Number</strong><br>${escapeHtml(b.admission_number || b.admissionNumber || '--')}</div>
                     </div>
                     <hr style="border-color:var(--border);">
                     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
@@ -1308,7 +1310,11 @@
             // Row 3
             doc.text('Ref:', col1, startY + 20);
             doc.setFont(undefined, 'bold');
-            doc.text(b.full_name || b.applicant_name || 'Student Name', col1 + 25, startY + 20);
+            doc.text('Ref:', col1, startY + 20);
+            doc.setFont(undefined, 'bold');
+            const studentName = b.full_name || b.applicant_name || 'Student Name';
+            const admInfo = b.admission_number || b.admissionNumber ? ` (Adm: ${b.admission_number || b.admissionNumber})` : '';
+            doc.text(studentName + admInfo, col1 + 25, startY + 20);
             doc.setFont(undefined, 'normal');
             
             // Details Box
@@ -1441,7 +1447,7 @@
         
         async function loadLostIds() {
             debug('Loading lost IDs...');
-            const res = await api('/lost-ids');
+            const res = await api('/api/admin/lost-ids');
             if (res) {
                 allLostIds = Array.isArray(res) ? res : (res.data || []);
             } else {
@@ -1482,7 +1488,7 @@
 
         async function markIdFound(id) {
             if (!confirm('Mark this ID as found?')) return;
-            const res = await api(`/lost-ids/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'found' }) });
+            const res = await api(`/api/admin/lost-ids/${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'found' }) });
             if (res?.success) {
                 showToast('ID marked as found');
                 loadLostIds();
@@ -1496,7 +1502,7 @@
 
         async function loadFeedback() {
             debug('Loading feedback...');
-            const res = await api('/feedback');
+            const res = await api('/api/admin/feedback');
             if (res) {
                 allFeedback = Array.isArray(res) ? res : (res.data || []);
             } else {
@@ -1538,7 +1544,7 @@
         async function respondFeedback(id) {
             const response = prompt('Enter your response to this feedback:');
             if (!response) return;
-            const res = await api(`/feedback/${id}`, { method: 'PATCH', body: JSON.stringify({ admin_response: response, status: 'responded' }) });
+            const res = await api(`/api/admin/feedback/${id}`, { method: 'PATCH', body: JSON.stringify({ admin_response: response, status: 'responded' }) });
             if (res?.success) {
                 showToast('Response sent');
                 loadFeedback();
