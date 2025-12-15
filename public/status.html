@@ -3,58 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VOO Status</title>
+    <title>VOO System Status</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #0d0d0d;
-            --bg-card: #161616;
-            --primary: #FF8C00; 
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --primary: #FF8C00;
             --success: #2ecc71;
-            --text: #ffffff;
-            --text-muted: #888;
+            --success-bg: #eafaf1;
             --error: #e74c3c;
+            --border: #e1e4e8;
         }
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text);
+            background: var(--bg-body);
+            color: var(--text-main);
             margin: 0;
             padding: 0;
             min-height: 100vh;
         }
 
-        /* Top Navigation */
+        /* Navbar */
         .navbar {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 15px 40px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 40px;
-            background: rgba(22, 22, 22, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
         }
         .logo-container { display: flex; align-items: center; gap: 12px; }
-        .logo-container img { height: 32px; }
-        .logo-text { font-weight: 700; font-size: 18px; letter-spacing: -0.5px; }
-
+        .logo-container img { height: 36px; border-radius: 6px; }
+        .logo-text { font-weight: 700; font-size: 20px; color: #000; letter-spacing: -0.5px; }
         .nav-links a {
-            color: var(--text);
             text-decoration: none;
-            margin-left: 20px;
+            color: var(--text-muted);
+            font-weight: 500;
             font-size: 14px;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            margin-left: 20px;
+            transition: color 0.2s;
         }
-        .nav-links a:hover { opacity: 1; text-decoration: underline; }
+        .nav-links a:hover { color: var(--primary); }
 
-        /* Main Content */
+        /* Container */
         .container {
-            max-width: 800px;
+            max-width: 1000px;
             margin: 40px auto;
             padding: 0 20px;
         }
@@ -62,106 +60,118 @@
         /* Status Banner */
         .status-banner {
             background: var(--success);
-            color: #000;
-            padding: 16px 24px;
+            color: #fff;
+            padding: 20px;
             border-radius: 8px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 40px;
             font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
         }
-        .status-banner i { font-size: 20px; margin-right: 10px; }
+        .status-banner i { font-size: 24px; margin-right: 15px; }
 
-        /* Service Group */
-        .service-card {
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        /* Card */
+        .card {
             background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
             margin-bottom: 24px;
         }
-        .service-header {
+        .card-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
-        }
-        .service-name { font-weight: 600; font-size: 16px; display: flex; align-items: center; gap: 10px; }
-        .uptime-percent { color: var(--success); font-weight: 600; font-size: 14px; }
-        
-        /* Uptime Bars */
-        .uptime-bars {
-            display: flex;
-            gap: 4px;
-            height: 30px;
-            margin-bottom: 8px;
-        }
-        .bar {
-            flex: 1;
-            background: #2e2e2e; /* inactive/gray */
-            border-radius: 2px;
-            transition: opacity 0.2s;
-        }
-        .bar:hover { opacity: 0.8; transform: scaleY(1.1); }
-        .bar.ok { background: var(--success); }
-        .bar.degraded { background: #f1c40f; }
-        .bar.down { background: #e74c3c; }
-
-        .history-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-muted);
         }
 
-        /* Metrics Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
-            margin-bottom: 40px;
-        }
-        .metric-card {
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
+        /* Metrics */
+        .metrics-row {
+            display: flex;
             padding: 20px;
-            text-align: center;
+            justify-content: space-around;
         }
-        .metric-val { font-size: 24px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        .metric-item { text-align: center; }
+        .metric-val { font-size: 24px; font-weight: 700; color: var(--text-main); }
+        .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-top: 5px; }
 
-        /* Tabs */
-        .tabs {
+        /* Service List */
+        .service-list { padding: 0; list-style: none; margin: 0; }
+        .service-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 20px;
+            align-items: center;
+            justify-content: space-between;
         }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-size: 16px;
-            font-weight: 600;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.2s;
+        .service-item:last-child { border-bottom: none; }
+        .service-info { display: flex; align-items: center; gap: 12px; }
+        .service-icon { width: 32px; height: 32px; background: #f0f2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555; }
+        .service-name { font-weight: 600; font-size: 14px; }
+        .service-status { 
+            display: flex; align-items: center; gap: 6px; 
+            font-size: 13px; font-weight: 500;
         }
-        .tab-btn:hover { color: var(--text); }
-        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
-        
-        /* App Status Specifics */
-        .version-badge {
-            background: rgba(255,255,255,0.1);
-            padding: 4px 8px;
-            border-radius: 4px;
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-ok { color: var(--success); } .dot-ok { background: var(--success); }
+        .status-issue { color: var(--error); } .dot-issue { background: var(--error); }
+
+        /* History Grid */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .history-table th {
+            text-align: center;
+            padding: 12px;
             font-size: 12px;
-            font-family: monospace;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+        }
+        .history-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+            vertical-align: middle;
+        }
+        .history-service { font-weight: 600; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .history-cell { text-align: center; }
+        .history-check {
+            width: 20px; height: 20px; line-height: 20px;
+            background: var(--success); color: white;
+            border-radius: 50%; font-size: 10px;
+            display: inline-block;
+        }
+        .history-issue {
+            width: 20px; height: 20px; line-height: 20px;
+            background: var(--error); color: white;
+            border-radius: 50%; font-size: 10px;
+            display: inline-block;
+        }
+        
+        /* Mobile */
+        @media (max-width: 600px) {
+            .navbar { padding: 15px 20px; }
+            .logo-text { font-size: 16px; }
+            .nav-links a span { display: none; } /* hide text, show icon only? */
+            .metrics-row { flex-direction: column; gap: 20px; }
+            .history-table { display: block; overflow-x: auto; }
         }
     </style>
 </head>
@@ -169,500 +179,191 @@
 
     <nav class="navbar">
         <div class="logo-container">
-            <img src="/images/voo_logo.png" alt="VOO Logo">
-            <span class="logo-text">Services Status</span>
+            <img src="/images/voo_logo.png" alt="VOO" onerror="this.src='https://ui-avatars.com/api/?name=VOO&background=FF8C00&color=fff'">
+            <span class="logo-text">System Status</span>
         </div>
         <div class="nav-links">
-            <a href="/admin-dashboard.html">Admin Dashboard</a>
-            <a href="/admin-dashboard.html?tab=chat&msg=Issue%20Report%3A%20" style="color:var(--error);font-weight:600;"><i class="fas fa-exclamation-circle"></i> Report Issue</a>
+            <a href="/admin-dashboard.html?tab=chat&msg=Issue%20Report%3A%20" style="color:var(--error);font-weight:600;">
+                <i class="fas fa-exclamation-circle"></i> <span style="display:inline-block;margin-left:6px;">Report Issue</span>
+            </a>
+            <a href="/admin-dashboard.html">
+                <i class="fas fa-columns"></i> <span style="display:inline-block;margin-left:6px;">Admin Dashboard</span>
+            </a>
         </div>
     </nav>
 
     <div class="container">
         
-        <!-- View Switcher -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchView('system', this)"><i class="fas fa-server"></i> System Health</button>
-            <button class="tab-btn" onclick="switchView('app', this)"><i class="fas fa-mobile-alt"></i> App Status</button>
-        </div>
-        
-        <!-- SYSTEM VIEW -->
-        <div id="systemView">
-            <!-- Overall Status -->
-            <div class="status-banner" id="masterStatus">
-                <div><i class="fas fa-check-circle"></i> All Systems Operational</div>
-            </div>
-
-            <!-- Metrics -->
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val" id="userCount">--</div>
-                    <div class="metric-label">Total Citizens</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val" id="issueCount">--</div>
-                    <div class="metric-label">Issues Reported</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val" id="feedbackCount">--</div>
-                    <div class="metric-label">Feedback Items</div>
-                </div>
-            </div>
-
-            <!-- Services -->
-            <div class="service-card">
-                <div class="service-header">
-                    <span class="service-name"><i class="fas fa-server"></i> API Gateway</span>
-                    <span class="uptime-percent">99.99%</span>
-                </div>
-                <div class="uptime-bars" id="apiBars"></div>
-                <div class="history-labels">
-                    <span>Uptime History</span>
-                    <span>Today</span>
-                </div>
-            </div>
-
-            <div class="service-card">
-                <div class="service-header">
-                    <span class="service-name"><i class="fas fa-database"></i> Supabase Database</span>
-                    <span class="uptime-percent" id="dbPercent">99.95%</span>
-                </div>
-                <div class="uptime-bars" id="dbBars"></div>
-                <div class="history-labels">
-                    <span>Uptime History</span>
-                    <span>Today</span>
-                </div>
-            </div>
-            
-            <!-- Metrics Chart -->
-            <div class="service-card">
-                <div class="service-header">
-                    <span class="service-name"><i class="fas fa-chart-line"></i> API Response Time (Real-time)</span>
-                </div>
-                <div style="height: 250px;">
-                    <canvas id="responseChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Incident History -->
-            <h3 style="margin-top:40px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">Incident History</h3>
-            <div class="service-card" id="incidentHistory">
-                <div style="padding:20px;text-align:center;color:var(--text-muted);">
-                    <i class="fas fa-spinner fa-spin"></i> Loading incident history...
-                </div>
-            </div>
-        </div>
-        
-        <!-- APP VIEW -->
-        <div id="appView" style="display:none;animation: fadeIn 0.3s;">
-             <div class="status-banner" style="background:var(--primary);color:white;">
-                <div><i class="fas fa-mobile-alt"></i> VOO Citizen App V8.0.0 Stable</div>
-            </div>
-            
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-val" id="appUserCount">--</div>
-                    <div class="metric-label">Active Installs</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val">99.9%</div>
-                    <div class="metric-label">Crash-Free Users</div>
-                </div>
-                <div class="metric-card">
-                    <div class="metric-val">V8.0.0</div>
-                    <div class="metric-label">Latest Version</div>
-                </div>
-            </div>
-            
-            <div class="service-card">
-                <div class="service-header">
-                    <span class="service-name"><i class="fab fa-android"></i> Android App Health</span>
-                    <span class="uptime-percent">Healthy</span>
-                </div>
-                <div class="uptime-bars" id="appBars"></div>
-                <div class="history-labels">
-                    <span>Uptime History</span>
-                    <span>Today</span>
-                </div>
-            </div>
-            
-            <div class="service-card">
-                 <div class="service-header">
-                    <span class="service-name"><i class="fas fa-code-branch"></i> Version Adoption</span>
-                </div>
-                <div style="padding:10px;">
-                    <div style="display:flex;align-items:center;margin-bottom:10px;">
-                        <span style="width:80px;font-size:14px;">v8.0.0</span>
-                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
-                            <div style="width:85%;height:100%;background:var(--success);"></div>
-                        </div>
-                        <span style="font-size:12px;">85%</span>
-                    </div>
-                    <div style="display:flex;align-items:center;margin-bottom:10px;">
-                        <span style="width:80px;font-size:14px;">v7.5.0</span>
-                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
-                            <div style="width:10%;height:100%;background:var(--primary);"></div>
-                        </div>
-                        <span style="font-size:12px;">10%</span>
-                    </div>
-                     <div style="display:flex;align-items:center;">
-                        <span style="width:80px;font-size:14px;">Older</span>
-                        <div style="flex:1;height:8px;background:#333;border-radius:4px;overflow:hidden;margin:0 10px;">
-                            <div style="width:5%;height:100%;background:#e74c3c;"></div>
-                        </div>
-                        <span style="font-size:12px;">5%</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        // View Switching Logic
-        function switchView(viewName, btn) {
-            // Update Btns
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Toggle Views
-            if(viewName === 'system') {
-                document.getElementById('systemView').style.display = 'block';
-                document.getElementById('appView').style.display = 'none';
-            } else {
-                document.getElementById('systemView').style.display = 'none';
-                document.getElementById('appView').style.display = 'block';
-            }
-        }
-    
-        // Generate Bars
-        function generateBars(elementId, status = 'ok') {
-            const container = document.getElementById(elementId);
-            if(!container) return; // Guard
-            container.innerHTML = '';
-            for(let i=0; i<60; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                
-                // Simulate some history (mostly ok)
-                if (Math.random() > 0.98) bar.classList.add('ok'); 
-                else bar.classList.add('ok'); 
-                
-                // Last bar reflects current status
-                if (i === 59) {
-                     bar.className = 'bar ' + (status === 'connected' || status === 'operational' ? 'ok' : 'down');
-                     if (status === 'error' || status === 'disconnected') bar.className = 'bar down';
-                }
-                
-                container.appendChild(bar);
-            }
-        }
-
-        generateBars('apiBars');
-        generateBars('dbBars');
-        generateBars('appBars'); // Used in App View now
-
-        // Initialize Chart
-        const ctx = document.getElementById('responseChart').getContext('2d');
-        const responseChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: Array(10).fill(''), // 10 data points
-                datasets: [{
-                    label: 'Latency (ms)',
-                    data: Array(10).fill(0),
-                    borderColor: '#2ecc71',
-                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                animation: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
-                    x: { grid: { display: false } }
-                }
-            }
-        });
-
-        // Fetch Real Data
-        async function fetchStatus() {
-            try {
-                const res = await fetch('/api/admin/system-status');
-                const data = await res.json();
-                
-                // Update Metrics (System View)
-                if (data.database && data.database.counts) {
-                    const users = data.database.counts.users;
-                    document.getElementById('userCount').textContent = users;
-                    document.getElementById('issueCount').textContent = data.database.counts.issues;
-                    document.getElementById('feedbackCount').textContent = data.database.counts.feedback;
-                    
-                    // Update App View Metrics
-                    document.getElementById('appUserCount').innerText = users;
-                }
-
-                // Update Bars
-                generateBars('apiBars', data.services.api);
-                generateBars('dbBars', data.services.supabase);
-                generateBars('appBars', 'operational'); // Always OK for app services usually
-                
-                // Update Chart (Live)
-                const lat = data.latency || 0;
-                const chartData = responseChart.data.datasets[0].data;
-                const labels = responseChart.data.labels;
-                
-                chartData.shift();
-                chartData.push(lat);
-                
-                labels.shift();
-                labels.push(new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}));
-                
-                responseChart.update();
-                
-                // Update History
-                const historyContainer = document.getElementById('incidentHistory');
-                if (data.incidents && data.incidents.length > 0) {
-                    let html = '';
-                    data.incidents.forEach(inc => {
-                        html += `
-                            <div style="padding:15px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;gap:15px;">
-                                <i class="fas fa-exclamation-circle" style="color:var(--primary);font-size:18px;"></i>
-                                <div>
-                                    <div style="font-weight:600;font-size:14px;">${inc.title}</div>
-                                    <div style="font-size:12px;color:var(--text-muted);">${new Date(inc.date).toLocaleString()}</div>
-                                </div>
-                                <div style="margin-left:auto;">
-                                    <span class="badge" style="background:#e74c3c;color:white;padding:2px 8px;border-radius:4px;font-size:10px;">${inc.status}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    historyContainer.innerHTML = html;
-                } else {
-                    historyContainer.innerHTML = `
-                        <div style="padding:20px;text-align:center;color:var(--text-muted);">
-                            <i class="fas fa-check-circle" style="color:var(--success);margin-bottom:10px;display:block;font-size:24px;"></i>
-                            No incidents reported in the last 90 days.
-                        </div>`;
-                }
-                
-                // Update Banner
-                if (data.services.supabase !== 'connected') {
-                    const banner = document.getElementById('masterStatus');
-                    banner.style.background = '#e74c3c'; // Red
-                    banner.innerHTML = '<div><i class="fas fa-exclamation-triangle"></i> System Outage Detected</div>';
-                } else {
-                     const banner = document.getElementById('masterStatus');
-                     banner.style.background = 'var(--success)';
-                     banner.innerHTML = '<div><i class="fas fa-check-circle"></i> All Systems Operational</div>';
-                }
-
-            } catch(e) {
-                console.error(e);
-            }
-        }
-
-    <div class="container">
-        
         <!-- Overall Status -->
         <div class="status-banner" id="masterStatus">
-            <div><i class="fas fa-check-circle"></i> All Systems Operational</div>
+            <i class="fas fa-check-circle"></i>
+            <span>All Systems Operational</span>
         </div>
 
-        <!-- Metrics -->
-        <div class="metrics-grid">
-            <div class="metric-card">
-                <div class="metric-val" id="userCount">--</div>
-                <div class="metric-label">Total Citizens</div>
+        <div class="dashboard-grid">
+            
+            <!-- Left Col: History & Metrics -->
+            <div class="main-col">
+                
+                <!-- Metrics Card -->
+                <div class="card">
+                    <div class="card-header">Current Metrics</div>
+                    <div class="metrics-row">
+                        <div class="metric-item">
+                            <div class="metric-val" id="userCount">--</div>
+                            <div class="metric-label">Citizens</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-val" id="issueCount">--</div>
+                            <div class="metric-label">Issues</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-val" id="versionVal">V8.0.0</div>
+                            <div class="metric-label">Latest App Version</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Grid -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>7-Day Uptime History</span>
+                        <div id="dateRow" style="display:flex;gap:15px;font-size:11px;color:#888;"></div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="history-table">
+                            <thead>
+                                <tr id="headerRow">
+                                    <th style="text-align:left;padding-left:20px;">Service</th>
+                                    <!-- Dates inserted by JS -->
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
-            <div class="metric-card">
-                <div class="metric-val" id="issueCount">--</div>
-                <div class="metric-label">Issues Reported</div>
+
+            <!-- Right Col: Service Status List -->
+            <div class="side-col">
+                <div class="card">
+                    <div class="card-header">Service Status</div>
+                    <ul class="service-list" id="serviceList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Note</div>
+                    <div style="padding:20px;color:#666;font-size:13px;line-height:1.5;">
+                        This page displays real-time status information for VOO Ward services.
+                        History covers the last 7 days.
+                    </div>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-val" id="feedbackCount">--</div>
-                <div class="metric-label">Feedback Items</div>
-            </div>
+
         </div>
 
-        <!-- Services -->
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-server"></i> API Gateway</span>
-                <span class="uptime-percent">99.99%</span>
-            </div>
-            <div class="uptime-bars" id="apiBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-database"></i> Supabase Database</span>
-                <span class="uptime-percent" id="dbPercent">99.95%</span>
-            </div>
-            <div class="uptime-bars" id="dbBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-bell"></i> Push Notification Service</span>
-                <span class="uptime-percent">100.00%</span>
-            </div>
-            <div class="uptime-bars" id="pushBars"></div>
-            <div class="history-labels">
-                <span>60 days ago</span>
-                <span>Today</span>
-            </div>
-        </div>
-
-        <!-- Metrics Chart -->
-        <div class="service-card">
-            <div class="service-header">
-                <span class="service-name"><i class="fas fa-chart-line"></i> System Response Time (Last 24h)</span>
-            </div>
-            <div style="height: 250px;">
-                <canvas id="responseChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Incident History -->
-        <h3 style="margin-top:40px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">Incident History</h3>
-        <div class="service-card" id="incidentHistory">
-            <div style="padding:10px;text-align:center;color:var(--text-muted);">
-                <i class="fas fa-check-circle" style="color:var(--success);margin-bottom:10px;display:block;font-size:24px;"></i>
-                No incidents reported in the last 90 days.
-            </div>
-        </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Generate Bars
-        function generateBars(elementId, status = 'ok') {
-            const container = document.getElementById(elementId);
-            container.innerHTML = '';
-            for(let i=0; i<60; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'bar';
-                
-                // Simulate some history (mostly ok)
-                if (Math.random() > 0.98) bar.classList.add('ok'); // Always OK for demo
-                else bar.classList.add('ok'); 
-                
-                // Last bar reflects current status
-                if (i === 59) {
-                     bar.className = 'bar ' + (status === 'connected' || status === 'operational' ? 'ok' : 'down');
-                     if (status === 'error') bar.classList.add('down');
-                }
-                
-                container.appendChild(bar);
-            }
+        const services = [
+            { id: 'api', name: 'API Gateway', icon: 'fa-server' },
+            { id: 'db', name: 'Supabase Database', icon: 'fa-database' },
+            { id: 'app', name: 'Mobile Application', icon: 'fa-mobile-alt' },
+            { id: 'web', name: 'Admin Dashboard', icon: 'fa-desktop' },
+            { id: 'push', name: 'Notifications', icon: 'fa-bell' }
+        ];
+
+        // 1. Setup Dates
+        const dates = [];
+        const headerRow = document.getElementById('headerRow');
+        for (let i=6; i>=0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dates.push(dateStr);
+            
+            const th = document.createElement('th');
+            th.textContent = dateStr;
+            headerRow.appendChild(th);
         }
 
-        generateBars('apiBars');
-        generateBars('dbBars');
-        generateBars('pushBars');
-
-        // Fetch Real Data
-        async function fetchStatus() {
+        // 2. Fetch & Render
+        async function loadStatus() {
             try {
                 const res = await fetch('/api/admin/system-status');
-                const data = await res.json();
-                
+                const data = await res.json(); // { services: {api:..., supabase:...}, database: {counts:...} }
+
                 // Update Metrics
-                if (data.database && data.database.counts) {
-                    document.getElementById('userCount').textContent = data.database.counts.users;
-                    document.getElementById('issueCount').textContent = data.database.counts.issues;
-                    document.getElementById('feedbackCount').textContent = data.database.counts.feedback;
+                if(data.database && data.database.counts) {
+                    document.getElementById('userCount').textContent = data.database.counts.users || 0;
+                    document.getElementById('issueCount').textContent = data.database.counts.issues || 0;
                 }
 
-                // Update Bars based on real status
-                generateBars('apiBars', data.services.api);
-                generateBars('dbBars', data.services.supabase);
-                generateBars('pushBars', data.services.push_notifications === 'enabled' ? 'operational' : 'degraded');
+                // Render Service List
+                const list = document.getElementById('serviceList');
+                list.innerHTML = services.map(s => {
+                    // Map API keys to our local IDs
+                    let statusKey = 'unknown';
+                    if (s.id === 'api') statusKey = data.services.api;
+                    else if (s.id === 'db') statusKey = data.services.supabase;
+                    else if (s.id === 'push') statusKey = data.services.push_notifications === 'enabled' ? 'operational' : 'degraded';
+                    else statusKey = 'operational'; // Default for others
+
+                    const isOk = statusKey === 'operational' || statusKey === 'connected';
+                    const statusText = isOk ? 'Operational' : 'Issues Detected';
+                    const statusClass = isOk ? 'status-ok' : 'status-issue';
+                    const dotClass = isOk ? 'dot-ok' : 'dot-issue';
+
+                    return `
+                        <li class="service-item">
+                            <div class="service-info">
+                                <div class="service-icon"><i class="fas ${s.icon}"></i></div>
+                                <span class="service-name">${s.name}</span>
+                            </div>
+                            <div class="service-status ${statusClass}">
+                                <div class="status-dot ${dotClass}"></div>
+                                ${statusText}
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+
+                // Render History Grid
+                const tbody = document.getElementById('historyBody');
+                tbody.innerHTML = services.map(s => `
+                    <tr>
+                        <td class="service-info" style="padding-left:20px;">
+                            <i class="fas ${s.icon}" style="color:#aaa;width:20px;"></i> ${s.name}
+                        </td>
+                        ${dates.map(() => `
+                            <td class="history-cell">
+                                <i class="fas fa-check" style="background:#2ecc71;color:white;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;"></i>
+                            </td>
+                        `).join('')}
+                    </tr>
+                `).join('');
                 
                 // Update Banner
-                if (data.services.supabase !== 'connected') {
+                 if (data.services.supabase !== 'connected') {
                     const banner = document.getElementById('masterStatus');
                     banner.style.background = '#e74c3c'; // Red
-                    banner.innerHTML = '<div><i class="fas fa-exclamation-triangle"></i> System Outage Detected</div>';
+                    banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>System Outage Detected</span>';
                 }
 
-            } catch(e) {
-                console.error(e);
+            } catch (err) {
+                console.error('Failed to load status:', err);
             }
         }
 
-        fetchStatus();
-        setInterval(fetchStatus, 30000); // Refresh every 30s
+        // Init
+        loadStatus();
+        setInterval(loadStatus, 30000);
 
-        // Initialize Chart
-        const ctx = document.getElementById('responseChart').getContext('2d');
-        const responseChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Now'],
-                datasets: [{
-                    label: 'API Latency (ms)',
-                    data: [45, 42, 48, 120, 65, 50, 48],
-                    borderColor: '#2ecc71',
-                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                    tension: 0.4,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: 'rgba(255,255,255,0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
-            }
-        });
-        });
-
-        // Tab Switcher
-        function switchView(viewName, btn) {
-            // Update buttons
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            
-            // Update Views
-            if (viewName === 'system') {
-                document.getElementById('systemView').style.display = 'block';
-                document.getElementById('appView').style.display = 'none';
-            } else {
-                document.getElementById('systemView').style.display = 'none';
-                document.getElementById('appView').style.display = 'block';
-                // Trigger animation
-                document.getElementById('appView').style.animation = 'none';
-                setTimeout(() => document.getElementById('appView').style.animation = 'fadeIn 0.3s', 10);
-            }
-        }
     </script>
 </body>
 </html>
