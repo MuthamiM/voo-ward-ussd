@@ -2146,7 +2146,7 @@
                     body: JSON.stringify({ subscription: sub, username: currentUser.username })
                 });
             } catch (e) {
-                console.error('Failed to save subscription', e);
+                // console.warn('Failed to save subscription (Push not configured):', e);
             }
         }
     </script>

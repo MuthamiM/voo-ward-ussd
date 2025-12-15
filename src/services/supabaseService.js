@@ -678,7 +678,7 @@ class SupabaseService {
     async updateLostIdStatus(id, status, adminNotes = null) {
         try {
             const updateData = { status, updated_at: new Date().toISOString() };
-            if (status === 'found') updateData.found_at = new Date().toISOString();
+            // if (status === 'found') updateData.found_at = new Date().toISOString(); // Potentially missing column causing 400
             if (adminNotes) updateData.admin_notes = adminNotes;
             
             const result = await this.request('PATCH', `/rest/v1/lost_ids?id=eq.${id}`, updateData);
