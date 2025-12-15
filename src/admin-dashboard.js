@@ -2633,7 +2633,8 @@ app.get('/api/admin/system-status', async (req, res) => {
       services: {
         api: 'operational',
         supabase: dbStatus,
-        push_notifications: process.env.VAPID_PUBLIC_KEY ? 'enabled' : 'disabled',
+        // Check for EITHER Push (VAPID) OR SMS (Infobip) credentials
+        push_notifications: (process.env.VAPID_PUBLIC_KEY || process.env.INFOBIP_API_KEY) ? 'enabled' : 'disabled',
         app: 'operational'
       },
       database: {
