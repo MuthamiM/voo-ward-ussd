@@ -1805,6 +1805,31 @@
                 });
             }
             
+            // Handle URL Params (Auto-Nav & Prefill)
+            setTimeout(() => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const tab = urlParams.get('tab');
+                const msg = urlParams.get('msg');
+                const prefill = urlParams.get('prefill'); // Alias
+                
+                if (tab) {
+                    const navItem = document.querySelector(`.nav-item[data-page="${tab}"]`);
+                    if (navItem) {
+                        console.log('Auto-switching to tab:', tab);
+                        navItem.click();
+                        
+                        // Handle Chat Prefill
+                        if (tab === 'chat' && (msg || prefill)) {
+                            const input = document.getElementById('chatInput');
+                            if (input) {
+                                input.value = (msg || prefill) + " ";
+                                input.focus();
+                            }
+                        }
+                    }
+                }
+            }, 500); // Slight delay to ensure listeners are bound
+            
             // Register SW for Push
             if ('serviceWorker' in navigator && 'PushManager' in window) {
                 navigator.serviceWorker.register('/sw.js')
