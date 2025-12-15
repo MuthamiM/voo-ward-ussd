@@ -504,6 +504,8 @@
     </div>
 
     <div id="debugInfo" class="debug-info" style="display:none;"></div>
+    
+    <script src="/logo-data.js"></script>
 
     <script>
         // Config - IMPORTANT: Use /admin prefix as per the backend routing
@@ -1236,68 +1238,124 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Header
-            doc.setFillColor(255, 140, 0);
-            doc.rect(0, 0, 210, 35, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(22);
-            doc.text('KYAMATU WARD', 105, 18, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('Bursary Approval Receipt', 105, 28, { align: 'center' });
+            const logoSize = 25;
             
-            // Reset colors
-            doc.setTextColor(0, 0, 0);
+            // Draw Logo if available
+            if (typeof VOO_LOGO_BASE64 !== 'undefined') {
+                doc.addImage(VOO_LOGO_BASE64, 'PNG', 15, 15, logoSize, logoSize);
+            }
             
-            // Applicant Info
-            doc.setFontSize(14);
+            // Header Content
+            doc.setFontSize(18);
             doc.setFont(undefined, 'bold');
-            doc.text('APPLICANT DETAILS', 14, 50);
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(11);
-            doc.text(`Name: ${b.full_name || b.applicant_name || 'N/A'}`, 14, 60);
-            doc.text(`Institution: ${b.institution_name || 'N/A'}`, 14, 68);
-            doc.text(`Course: ${b.course || 'N/A'}`, 14, 76);
-            doc.text(`Year of Study: ${b.year_of_study || 'N/A'}`, 14, 84);
+            doc.text('KYAMATU WARD BURSARY FUND', 45, 22);
             
-            // Financial Info
-            doc.setFontSize(14);
-            doc.setFont(undefined, 'bold');
-            doc.text('FINANCIAL DETAILS', 14, 100);
-            doc.setFont(undefined, 'normal');
-            doc.setFontSize(11);
-            doc.text(`Amount Requested: KES ${b.amount_requested || 0}`, 14, 110);
-            doc.text(`Fees per Semester: KES ${b.fees_per_semester || 0}`, 14, 118);
-            doc.text(`Has HELB: ${b.has_helb ? 'Yes' : 'No'}`, 14, 126);
-            doc.text(`Has Other Scholarship: ${b.has_scholarship ? 'Yes' : 'No'}`, 14, 134);
-            
-            // Approval Box
-            doc.setFillColor(46, 204, 113);
-            doc.roundedRect(14, 145, 180, 35, 3, 3, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.setFont(undefined, 'bold');
-            doc.text('AMOUNT APPROVED', 105, 158, { align: 'center' });
-            doc.setFontSize(24);
-            doc.text(`KES ${b.amount_approved || 0}`, 105, 173, { align: 'center' });
-            
-            // Footer
-            doc.setTextColor(100, 100, 100);
             doc.setFontSize(10);
             doc.setFont(undefined, 'normal');
-            const today = new Date().toLocaleDateString();
-            doc.text(`Date of Approval: ${today}`, 14, 195);
-            doc.text(`Application ID: ${b.id || b._id || 'N/A'}`, 14, 203);
-            doc.text('This is an official receipt from the Kyamatu Ward Bursary Program.', 14, 220);
+            doc.text('P.O. BOX 123 - 90200, KITUI', 45, 28);
+            doc.text('Email: info@vooward.go.ke | Tel: +254 700 000 000', 45, 34);
             
-            // Signature Line
-            doc.line(14, 250, 80, 250);
-            doc.text('MCA Signature', 14, 258);
-            doc.line(130, 250, 196, 250);
-            doc.text('Ward Official Stamp', 130, 258);
+            // Horizontal Line
+            doc.setDrawColor(255, 140, 0); // Orange
+            doc.setLineWidth(1);
+            doc.line(15, 42, 195, 42);
+            
+            // Voucher Title
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(50, 50, 50);
+            doc.text('PAYMENT VOUCHER', 195, 55, { align: 'right' });
+            
+            // Receipt Details (Grid-like)
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            
+            const startY = 65;
+            const col1 = 15;
+            const col2 = 110;
+            
+            // Row 1
+            doc.text('Date:', col1, startY);
+            doc.setFont(undefined, 'bold');
+            doc.text(new Date().toLocaleDateString(), col1 + 25, startY);
+            doc.setFont(undefined, 'normal');
+            
+            doc.text('Voucher No:', col2, startY);
+            doc.setFont(undefined, 'bold');
+            doc.text(b.id || b.ref_code || b.application_number || 'N/A', col2 + 30, startY);
+            doc.setFont(undefined, 'normal');
+            
+            // Row 2
+            doc.text('Payee:', col1, startY + 10);
+            doc.setFontSize(12);
+            doc.setFont(undefined, 'bold');
+            doc.text((b.institution_name || b.institution || 'Unknown School').toUpperCase(), col1 + 25, startY + 10);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            
+            // Row 3
+            doc.text('Ref:', col1, startY + 20);
+            doc.setFont(undefined, 'bold');
+            doc.text(b.full_name || b.applicant_name || 'Student Name', col1 + 25, startY + 20);
+            doc.setFont(undefined, 'normal');
+            
+            // Details Box
+            doc.setDrawColor(200, 200, 200);
+            doc.setFillColor(245, 245, 245);
+            doc.rect(15, startY + 30, 180, 40, 'FD');
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('Description of Payment', 20, startY + 40);
+            doc.text('Amount (KES)', 160, startY + 40);
+            
+            doc.line(15, startY + 45, 195, startY + 45);
+            
+            doc.setFont(undefined, 'normal');
+            doc.text(`Bursary Allocation - ${b.year_of_study || 'General'}`, 20, startY + 55);
+            doc.text(`Course: ${b.course || ''}`, 20, startY + 62);
+            
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text(`${b.amount_approved || 0}`, 160, startY + 55);
+            
+            // Total Line
+            doc.line(15, startY + 70, 195, startY + 70); // Line below rect? No, rect is 40 high
+            
+            // Total Words
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'italic');
+            doc.text('Amount in words: ............................................................................................', 15, startY + 85);
+            
+            // Signature Section
+            const sigY = 170;
+            
+            doc.setFont(undefined, 'normal');
+            doc.text('Prepared by:', 15, sigY);
+            doc.line(45, sigY, 90, sigY);
+            
+            doc.text('Date:', 110, sigY);
+            doc.line(125, sigY, 160, sigY);
+            
+            doc.setFont(undefined, 'bold');
+            doc.text('AUTHORIZED SIGNATURE (MCA):', 15, sigY + 30);
+            doc.line(80, sigY + 30, 140, sigY + 30);
+            doc.text('......................................................', 80, sigY + 30);
+            
+            // Stamp Box
+            doc.setDrawColor(0, 0, 0);
+            doc.rect(150, sigY + 10, 40, 40);
+            doc.setFontSize(9);
+            doc.text('OFFICIAL STAMP', 155, sigY + 35);
+            
+            // Footer
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text('This is a system generated voucher. VOO WARD BURSARY SYSTEM.', 105, 280, { align: 'center' });
             
             // Save
-            doc.save(`Bursary_Receipt_${b.full_name || 'Applicant'}.pdf`);
-            showToast('Receipt downloaded successfully!');
+            doc.save(`Voucher_${b.full_name || 'Bursary'}.pdf`);
+            showToast('Voucher generated successfully!');
         }
 
         async function updateBursary(id, action) {
