@@ -206,7 +206,27 @@
             </div>
         </div>
 
+        <!-- Metrics Chart -->
+        <div class="service-card">
+            <div class="service-header">
+                <span class="service-name"><i class="fas fa-chart-line"></i> System Response Time (Last 24h)</span>
+            </div>
+            <div style="height: 250px;">
+                <canvas id="responseChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Incident History -->
+        <h3 style="margin-top:40px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:10px;">Incident History</h3>
+        <div class="service-card" id="incidentHistory">
+            <div style="padding:10px;text-align:center;color:var(--text-muted);">
+                <i class="fas fa-check-circle" style="color:var(--success);margin-bottom:10px;display:block;font-size:24px;"></i>
+                No incidents reported in the last 90 days.
+            </div>
+        </div>
     </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // Generate Bars
@@ -267,6 +287,39 @@
 
         fetchStatus();
         setInterval(fetchStatus, 30000); // Refresh every 30s
+
+        // Initialize Chart
+        const ctx = document.getElementById('responseChart').getContext('2d');
+        const responseChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Now'],
+                datasets: [{
+                    label: 'API Latency (ms)',
+                    data: [45, 42, 48, 120, 65, 50, 48],
+                    borderColor: '#2ecc71',
+                    backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

@@ -237,7 +237,17 @@
         <main class="main-content">
             <!-- Dashboard -->
             <div id="dashboard" class="page active">
-                <div class="page-header"><h1 class="page-title">Dashboard</h1><span id="lastUpdate" style="font-size:12px;color:var(--text-muted);"></span></div>
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <div style="display:flex;align-items:center;gap:15px;">
+                        <span id="lastUpdate" style="font-size:12px;color:var(--text-muted);"></span>
+                        <!-- APP HEALTH INDICATOR -->
+                        <div id="appHealth" style="display:flex;align-items:center;gap:6px;background:rgba(16,185,129,0.1);padding:6px 12px;border-radius:20px;border:1px solid rgba(16,185,129,0.2);">
+                            <div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 5px var(--success);"></div>
+                            <span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-value" id="statTotalIssues">0</div><div class="stat-label">Total Issues</div></div>
                     <div class="stat-card"><div class="stat-value" id="statPending" style="color:#f59e0b;">0</div><div class="stat-label">Pending</div></div>
@@ -653,6 +663,22 @@
             
             if (announcements && Array.isArray(announcements)) {
                 document.getElementById('statAnnouncements').textContent = announcements.length;
+            }
+            
+            if (issues && Array.isArray(issues)) {
+                // ... (existing code)
+            }
+            
+            // Check App Health (Simulated check or based on data fetch success)
+            const appHealthEl = document.getElementById('appHealth');
+            if (issues && announcements) { // If both fetches succeeded
+                appHealthEl.style.background = 'rgba(16,185,129,0.1)';
+                appHealthEl.style.borderColor = 'rgba(16,185,129,0.2)';
+                appHealthEl.innerHTML = '<div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></div><span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>';
+            } else {
+                 appHealthEl.style.background = 'rgba(239,68,68,0.1)';
+                 appHealthEl.style.borderColor = 'rgba(239,68,68,0.2)';
+                 appHealthEl.innerHTML = '<div style="width:8px;height:8px;background:var(--error);border-radius:50%;"></div><span style="font-size:12px;font-weight:600;color:var(--error);">Issues Detected</span>';
             }
             
             document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
