@@ -3467,8 +3467,6 @@ app.patch('/api/admin/lost-ids/:id', requireAuth, async (req, res) => {
         if (result.success) {
             // If found, create an announcement
             if (status === 'found') {
-                // Fetch details to make a specific announcement
-                // We might need to fetch the item first or return it from update
                 const lostId = result.result?.[0] || {};
                 const name = lostId.id_owner_name || 'an ID';
                 const location = lostId.last_seen_location || 'VOO Ward';
@@ -3482,7 +3480,8 @@ app.patch('/api/admin/lost-ids/:id', requireAuth, async (req, res) => {
             }
             res.json({ success: true, message: 'Status updated' });
         } else {
-            res.status(400).json({ error: result.error || 'Update failed' });
+            console.error('[Admin] Lost ID Update Failed:', JSON.stringify(result));
+            res.status(400).json({ error: result.error?.message || result.error || 'Update failed' });
         }
     } catch (e) {
         console.error('Lost ID update error:', e);

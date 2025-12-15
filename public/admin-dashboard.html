@@ -1464,7 +1464,12 @@
             }
             tbody.innerHTML = data.map(l => `
                 <tr>
-                    <td><strong>${escapeHtml(l.id_owner_name)}</strong><br><small style="color:var(--text-muted)">${l.is_for_self ? 'Self' : 'For other'}</small></td>
+                    <td>
+                        <strong>${escapeHtml(l.id_owner_name)}</strong><br>
+                        ${l.is_for_self 
+                            ? '<span class="badge" style="background:rgba(59,130,246,0.1);color:#3b82f6;font-size:10px;">SELF REPORT</span>' 
+                            : '<span class="badge" style="background:rgba(217,119,6,0.1);color:#d97706;font-size:10px;">ON BEHALF</span>'}
+                    </td>
                     <td>${escapeHtml(l.id_number || '-')}</td>
                     <td>${escapeHtml(l.reporter_name || '-')}<br><small style="color:var(--text-muted)">${escapeHtml(l.reporter_phone || '')}</small></td>
                     <td>${escapeHtml(l.last_seen_location || '-')}</td>
