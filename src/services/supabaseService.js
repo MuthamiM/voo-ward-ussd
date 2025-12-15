@@ -430,9 +430,9 @@ class SupabaseService {
     async rejectBursary(bursaryId, reason, rejectedBy) {
         return this.updateBursary(bursaryId, {
             status: 'Rejected',
-            rejection_reason: reason,
-            rejected_by: rejectedBy,
-            rejected_at: new Date().toISOString()
+            admin_notes: `Rejected: ${reason}`, // Map to existing column
+            updated_at: new Date().toISOString()
+            // rejected_by & rejected_at removed as they likely don't exist
         });
     }
 
