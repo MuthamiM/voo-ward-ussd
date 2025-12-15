@@ -376,7 +376,14 @@ if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
   console.warn('⚠️ Web Push NOT configured (Missing VAPID keys)');
 }
 
-// ... (Socket setup code remains same) ...
+// Helper: Broadcast data refresh to all connected clients (real-time sync)
+function broadcastDataRefresh(type) {
+  io.emit('data:refresh', type);
+  console.log(`📡 Broadcast: data:refresh [${type}]`);
+}
+
+// Expose broadcast function globally for use in routes
+app.locals.broadcastDataRefresh = broadcastDataRefresh;
 
 // Socket.IO event handlers for admin chat
 io.on('connection', (socket) => {

@@ -1547,6 +1547,35 @@
                 loadChatHistory();
             });
             
+            // Real-time data sync listeners
+            chatSocket.on('data:refresh', (type) => {
+                console.log('[Socket] Data refresh triggered:', type);
+                switch(type) {
+                    case 'issues':
+                        loadDashData();
+                        showToast('📊 Issues updated', 'info');
+                        break;
+                    case 'bursaries':
+                        loadBursaries();
+                        showToast('🎓 Bursaries updated', 'info');
+                        break;
+                    case 'announcements':
+                        loadAnnouncements();
+                        showToast('📢 Announcements updated', 'info');
+                        break;
+                    case 'feedback':
+                        loadFeedback();
+                        showToast('💬 Feedback updated', 'info');
+                        break;
+                    case 'lost-ids':
+                        loadLostIds();
+                        showToast('🆔 Lost IDs updated', 'info');
+                        break;
+                    default:
+                        loadDashData();
+                }
+            });
+            
             chatSocket.on('disconnect', () => {
                 document.getElementById('chatStatus').textContent = 'Disconnected';
                 document.getElementById('chatStatus').style.color = 'var(--error)';

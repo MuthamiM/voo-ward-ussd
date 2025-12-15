@@ -490,6 +490,12 @@ router.post('/mobile/issues', async (req, res) => {
 
             if (result.success) {
                 logger.info(`Issue created in Supabase: ${ticket} with ${imageUrls.length} images`);
+                
+                // Real-time broadcast to dashboard
+                if (req.app.locals.broadcastDataRefresh) {
+                    req.app.locals.broadcastDataRefresh('issues');
+                }
+                
                 return res.status(201).json({
                     success: true,
                     ticket,
@@ -663,6 +669,12 @@ router.post('/mobile/bursaries', async (req, res) => {
 
             if (result.success) {
                 logger.info(`Bursary application submitted to Supabase: ${refCode}`);
+                
+                // Real-time broadcast to dashboard
+                if (req.app.locals.broadcastDataRefresh) {
+                    req.app.locals.broadcastDataRefresh('bursaries');
+                }
+                
                 return res.status(201).json({
                     success: true,
                     refCode,
