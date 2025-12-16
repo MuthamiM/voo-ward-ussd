@@ -665,6 +665,24 @@
                         <label for="terms">I agree to the <a href="terms.html" target="_blank">Terms</a> and <a
                                 href="privacy.html" target="_blank">Privacy Policy</a></label>
                     </div>
+                    <script src="https://accounts.google.com/gsi/client" async defer></script>
+                    <div id="g_id_onload"
+                        data-client_id="85568323419-dbjo68160868f766kssq32k9534s32j3.apps.googleusercontent.com"
+                        data-callback="handleCredentialResponse"
+                        data-auto_select="false"
+                        data-itp_support="true">
+                    </div>
+                    <div class="g_id_signin"
+                        data-type="standard"
+                        data-shape="rectangular"
+                        data-theme="filled_black"
+                        data-text="signup_with"
+                        data-size="large"
+                        data-logo_alignment="left"
+                        data-width="420">
+                    </div>
+                    <div style="margin-bottom: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">- OR -</div>
+
                     <button type="submit" id="sendOtpBtn" class="btn btn-primary">
                         <span id="sendOtpText">Send Verification Code</span>
                     </button>
@@ -853,6 +871,16 @@
                 .then(function (res) {
                     if (res.ok && res.data.success) {
                         document.getElementById('maskedPhone').textContent = res.data.phone || phone;
+                        
+                        // FREE SMS SIMULATION: Show OTP to user
+                        if (res.data.debug_otp) {
+                            showSuccess('Code sent! (Simulated: ' + res.data.debug_otp + ')');
+                            // Also alert for visibility if toast is missed
+                            alert('Your verification code is: ' + res.data.debug_otp);
+                        } else {
+                            showSuccess('Verification code sent!');
+                        }
+
                         updateSteps(2);
                         startCountdown();
                         document.querySelector('.otp-input').focus();
@@ -863,6 +891,28 @@
                 .catch(function () { showError('Network error. Please try again.'); })
                 .finally(function () { btn.disabled = false; btnText.textContent = 'Send Verification Code'; });
         });
+
+        // Google Handler for Signup
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            fetch('/api/auth/google', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ credential: response.credential })
+             })
+             .then(r => r.json())
+             .then(data => {
+                 if (data.success) {
+                     localStorage.setItem('user', JSON.stringify(data.user));
+                     window.location.href = 'admin-dashboard.html';
+                 } else {
+                     showError(data.error || 'Google Sign-Up failed');
+                 }
+             })
+             .catch(e => {
+                 showError('Network error');
+             });
+        }
 
         // OTP input handling
         var otpInputs = document.querySelectorAll('.otp-input');

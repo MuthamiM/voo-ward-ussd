@@ -372,7 +372,8 @@ router.post('/lost-ids', async (req, res) => {
             id_number,
             last_seen_location,
             date_lost,
-            additional_info
+            additional_info,
+            status: req.body.status // 'pending' (lost) or 'found'
         });
 
         if (result.success) {

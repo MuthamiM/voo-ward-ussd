@@ -255,6 +255,128 @@ class SupabaseService {
         }
     }
 
+    /**
+     * Find user by Google ID
+     */
+    async findUserByGoogleId(googleId) {
+        try {
+            const result = await this.request('GET', `/rest/v1/app_users?google_id=eq.${googleId}&select=*`);
+            return Array.isArray(result) && result.length > 0 ? result[0] : null;
+        } catch (e) {
+            console.error('[Supabase] findUserByGoogleId error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Register or Update Google User
+     */
+    async registerGoogleUser(profile) {
+        try {
+            // Check if user exists by Google ID
+            let user = await this.findUserByGoogleId(profile.id);
+            
+            if (user) {
+                return { success: true, user };
+            }
+
+            // Check if user exists by email
+            const emailQuery = await this.request('GET', `/rest/v1/app_users?email=eq.${encodeURIComponent(profile.email)}&select=*`);
+            if (Array.isArray(emailQuery) && emailQuery.length > 0) {
+                // Link Google ID to existing user
+                user = emailQuery[0];
+                await this.request('PATCH', `/rest/v1/app_users?id=eq.${user.id}`, {
+                    google_id: profile.id,
+                    avatar_url: profile.picture,
+                    updated_at: new Date().toISOString()
+                });
+                return { success: true, user: { ...user, google_id: profile.id } };
+            }
+
+            // Create new user
+            const result = await this.request('POST', '/rest/v1/app_users', {
+                full_name: profile.name,
+                email: profile.email,
+                google_id: profile.id,
+                avatar_url: profile.picture,
+                phone: null, // Phone is optional in this flow, or collected later
+                username: profile.email.split('@')[0], 
+                created_at: new Date().toISOString()
+            });
+            
+            return { success: true, user: Array.isArray(result) ? result[0] : result };
+
+        } catch (e) {
+            console.error('[Supabase] registerGoogleUser error:', e);
+            return { success: false, error: 'Google registration failed' };
+        }
+    }
+
+    /**
+     * Save OTP to Supabase (Replacing MongoDB)
+     */
+    async saveOTP(phone, otp) {
+        try {
+            const expiresAt = new Date(Date.now() + 5 * 60000).toISOString(); // 5 mins
+            
+            // Upsert (update if exists, insert if not)
+            const result = await this.request('POST', '/rest/v1/mobile_otps', {
+                phone,
+                otp,
+                expires_at: expiresAt,
+                created_at: new Date().toISOString()
+            }, { 'Prefer': 'resolution=merge-duplicates' }); // Ensure Supabase handles upsert if configured, or use standard Insert/Update logic if not.
+            
+            // Basic Insert/Upsert logic via POST usually requires unique constraints handling or explicit UPSERT param.
+            // Simplified: DELETE old, INSERT new
+            await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(phone)}`);
+            await this.request('POST', '/rest/v1/mobile_otps', {
+                phone,
+                otp,
+                expires_at: expiresAt
+            });
+
+            return true;
+        } catch (e) {
+            console.error('[Supabase] saveOTP error:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Verify OTP from Supabase
+     */
+    async verifyOTP(phone, otp) {
+        try {
+            const query = `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(phone)}&select=*`;
+            const result = await this.request('GET', query);
+            
+            if (!Array.isArray(result) || result.length === 0) {
+                return { success: false, error: 'OTP not found or expired' };
+            }
+
+            const record = result[0];
+            const now = new Date();
+            const expires = new Date(record.expires_at);
+
+            if (now > expires) {
+                return { success: false, error: 'OTP expired' };
+            }
+
+            if (record.otp !== otp) {
+                return { success: false, error: 'Invalid OTP' };
+            }
+
+            // Consume OTP
+            await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(phone)}`);
+            return { success: true };
+
+        } catch (e) {
+            console.error('[Supabase] verifyOTP error:', e);
+            return { success: false, error: 'Verification error' };
+        }
+    }
+
     // ============ ISSUES ============
 
     /**
