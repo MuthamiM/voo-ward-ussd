@@ -599,6 +599,24 @@
             >
           </div>
 
+          <script src="https://accounts.google.com/gsi/client" async defer></script>
+          <div id="g_id_onload"
+               data-client_id="85568323419-dbjo68160868f766kssq32k9534s32j3.apps.googleusercontent.com"
+               data-callback="handleCredentialResponse"
+               data-auto_select="false"
+               data-itp_support="true">
+          </div>
+          <div class="g_id_signin"
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="filled_black"
+               data-text="signin_with"
+               data-size="large"
+               data-logo_alignment="left"
+               data-width="340">
+          </div>
+          <div style="margin-bottom: 20px;"></div>
+
           <button type="submit" class="sign-in-btn" id="loginBtn">
             <span>SIGN IN</span>
           </button>
@@ -615,6 +633,7 @@
               >New here?</span
             >
             <a
+              id="registerBtn"
               href="signup.html"
               style="
                 color: white;
@@ -1030,6 +1049,7 @@
       const regBtn = document.getElementById("registerBtn");
       const regSubmitBtn = document.getElementById("regSubmitBtn");
 
+
       function showRegistrationModal() {
         if (regBtn.disabled) return;
         regModal.style.display = "flex";
@@ -1199,19 +1219,19 @@
                                   // Show credentials!
                                   const ws = document.getElementById('waitingScreen');
                                   if (ws) {
-                                      ws.innerHTML = \`
+                                      ws.innerHTML = `
                                   <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
 
                                   <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
-                                      <p style="color: #fbbf24; font-size: 14px; margin-bottom: 10px;"><strong>Your Role:</strong> \${statusData.role.toUpperCase()}</p>
+                                      <p style="color: #fbbf24; font-size: 14px; margin-bottom: 10px;"><strong>Your Role:</strong> ${statusData.role.toUpperCase()}</p>
 
                                       <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Username:</strong></p>
-                                      <p style="color: #10b981; font-family: monospace; font-size: 22px;">\${statusData.credentials.username}</p>
+                                      <p style="color: #10b981; font-family: monospace; font-size: 22px;">${statusData.credentials.username}</p>
 
                                       <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Your PIN:</strong></p>
                                       <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                                          <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">\${statusData.credentials.pin}</span>
-                                          <button type="button" onclick="copyPin('\${statusData.credentials.pin}')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                                          <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">${statusData.credentials.pin}</span>
+                                          <button type="button" onclick="copyPin('${statusData.credentials.pin}')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
                                               <i class="fas fa-copy"></i> Copy
                                           </button>
                                       </div>
@@ -1222,7 +1242,7 @@
                                   <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; padding: 14px 35px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 10px;">
                                       <i class="fas fa-sign-in-alt"></i> Close & Login
                                   </button>
-                              \`;
+                              `;
                                       ws.style.background = 'rgba(16,185,129,0.15)';
                                       ws.style.borderColor = '#10b981';
                                   }
@@ -1230,11 +1250,11 @@
                                   clearInterval(pollInterval);
                                   const ws = document.getElementById('waitingScreen');
                                   if(ws) {
-                                      ws.innerHTML = \`
+                                      ws.innerHTML = `
                                       <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
-                                      <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">\${statusData.reason || 'Please contact admin for more information.'}</p>
+                                      <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">${statusData.reason || 'Please contact admin for more information.'}</p>
                                       <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
-                                  \`;
+                                  `;
                                       ws.style.background = 'rgba(239,68,68,0.15)';
                                       ws.style.borderColor = '#ef4444';
                                   }
@@ -1261,6 +1281,39 @@
               regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
           }
       }
+
+
+        // Google Auth Handler
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            
+             var btn = document.getElementById('loginBtn');
+             btn.disabled = true;
+             btn.innerHTML = '<span class="spinner"></span> Signing in...';
+
+             fetch('/api/auth/google', {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ credential: response.credential })
+             })
+             .then(r => r.json())
+             .then(data => {
+                 if (data.success) {
+                     localStorage.setItem('user', JSON.stringify(data.user));
+                     window.location.href = 'admin-dashboard.html';
+                 } else {
+                     showRegMsg(data.error || 'Google Sign-In failed', 'error');
+                     btn.disabled = false;
+                     btn.innerHTML = '<span>SIGN IN</span>';
+                 }
+             })
+             .catch(e => {
+                 console.error(e);
+                 showRegMsg('Network error', 'error');
+                 btn.disabled = false;
+                 btn.innerHTML = '<span>SIGN IN</span>';
+             });
+        }
     </script>
   </body>
 </html>
