@@ -795,8 +795,6 @@ app.get("/api/admin/stats", requireAuth, async (req, res) => {
 // Login
 app.post("/api/auth/login", loginLimiter, async (req, res) => {
   console.log('🔐 Login attempt received:', req.body ? 'with body' : 'no body');
-  console.log('🔐 Request headers:', req.headers);
-  console.log('🔐 Request IP:', req.ip);
 
   try {
     let { username, password, pin } = req.body;
@@ -811,85 +809,28 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
       return res.status(400).json({ error: "Username and password required" });
     }
 
-    // Validate input format
-    if (!validateUsername(username)) {
-      console.log('❌ Invalid username format:', username);
-      return res.status(400).json({ error: "Invalid username format" });
-    }
-
-    if (!validatePassword(password)) {
-      console.log('❌ Invalid password format');
-      return res.status(400).json({ error: "Invalid password format" });
-    }
-
-    console.log('🔄 Connecting to database for authentication...');
-    const database = await connectDB();
-
-    // When database is not connected, require DB for authentication.
-    if (!database) {
-      console.error('❌ Database not connected - authentication requires a configured database');
-      return res.status(503).json({ error: 'Database not connected' });
-    }
-
     console.log(`🔍 Login attempt for user: ${sanitizeString(username, 50)}`);
 
-    // PRODUCTION: Use database authentication
-    // Find user
-    const user = await database.collection("admin_users").findOne({
-      username: username.toLowerCase().trim()
-    });
+    // ===== SUPABASE ONLY LOGIN =====
+    const supabaseService = require('./services/supabaseService');
+    const result = await supabaseService.loginUser(username, password);
 
-    if (!user) {
-      console.warn(`⚠️  Failed login attempt for unknown user '${username}' from ${req.ip}`);
-      return res.status(401).json({ error: "Invalid username or password" });
+    if (!result.success) {
+      console.warn(`⚠️  Failed login attempt for user '${username}' from ${req.ip}: ${result.error}`);
+      return res.status(401).json({ error: result.error || "Invalid username or password" });
     }
 
-    console.log('✅ User found in database:', user.username);
-
-    // Support both bcrypt (new) and legacy SHA-256 passwords.
-    let passwordMatches = false;
-
-    try {
-      if (isBcryptHash(user.password)) {
-        passwordMatches = await bcrypt.compare(password, user.password);
-      } else {
-        // legacy SHA-256
-        passwordMatches = user.password === hashPassword(password);
-
-        // If legacy matches, migrate to bcrypt to improve security
-        if (passwordMatches) {
-          try {
-            const newHash = await bcrypt.hash(password, 10);
-            await database.collection('admin_users').updateOne({ _id: user._id }, { $set: { password: newHash } });
-            console.log(`🔁 Migrated password for user ${user.username} to bcrypt`);
-          } catch (migErr) {
-            console.warn('⚠️ Failed to migrate password to bcrypt for user', user.username, migErr && migErr.message);
-          }
-        }
-      }
-    } catch (errCompare) {
-      console.error('Password compare error:', errCompare);
-      passwordMatches = false;
-    }
-
-    if (!passwordMatches) {
-      console.warn(`Failed login attempt for user '${username}' from ${req.ip}`);
-      return res.status(401).json({ error: "Invalid username or password" });
-    }
+    console.log('✅ User authenticated via Supabase:', result.user.username);
 
     // Create session
     const token = generateSessionToken();
-    // include photo_url and settings in session so client can apply saved preferences
     const sessionUser = {
-      id: user._id.toString(),
-      username: user.username,
-      fullName: user.full_name,
-      role: user.role,
-      photo_url: user.photo_url || null,
-      photo_thumb: user.photo_thumb || null,
-      photo_webp: user.photo_webp || null,
-      photo_thumb_webp: user.photo_thumb_webp || null,
-      settings: user.settings || {}
+      id: result.user.id,
+      username: result.user.username,
+      fullName: result.user.fullName,
+      role: result.user.role || 'user', // Default role if not set
+      photo_url: result.user.photo_url || null,
+      settings: {}
     };
 
     sessions.set(token, { user: sessionUser, createdAt: new Date() });
@@ -904,6 +845,7 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // Forgot Password
 app.post("/api/auth/forgot-password", loginLimiter, async (req, res) => {
