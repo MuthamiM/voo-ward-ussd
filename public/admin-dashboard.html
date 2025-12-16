@@ -1477,6 +1477,11 @@
                     <td><span class="badge ${l.status === 'found' ? 'badge-resolved' : 'badge-pending'}">${(l.status || 'pending').toUpperCase()}</span></td>
                     <td>
                         <button class="action-btn approve" title="Mark as Found" onclick="markIdFound('${l.id}')"><i class="fas fa-check"></i></button>
+                        ${l.reporter_phone ? `
+                        <a href="https://wa.me/${l.reporter_phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${l.reporter_name}, regarding the Lost ID (${l.id_owner_name}) you reported: It has been found and is available for pickup at the Ward Office.`)}" 
+                           target="_blank" class="action-btn" style="background:#25D366;color:white;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;" title="Message Reporter">
+                            <i class="fab fa-whatsapp"></i>
+                        </a>` : ''}
                     </td>
                 </tr>
             `).join('');
