@@ -3481,7 +3481,8 @@ app.patch('/api/admin/lost-ids/:id', requireAuth, async (req, res) => {
             res.json({ success: true, message: 'Status updated' });
         } else {
             console.error('[Admin] Lost ID Update Failed:', JSON.stringify(result));
-            res.status(400).json({ error: result.error?.message || result.error || 'Update failed' });
+            const errorMsg = result.error?.message || result.error?.details || result.error?.hint || JSON.stringify(result.error) || 'Update failed';
+            res.status(400).json({ error: errorMsg });
         }
     } catch (e) {
         console.error('Lost ID update error:', e);

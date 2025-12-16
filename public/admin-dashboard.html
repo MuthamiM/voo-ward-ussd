@@ -1498,7 +1498,8 @@
                 showToast('ID marked as found');
                 loadLostIds();
             } else {
-                showToast(res?.error || 'Failed to update', 'error');
+                const errMsg = typeof res?.error === 'object' ? JSON.stringify(res.error) : (res?.error || 'Failed to update');
+                showToast(errMsg, 'error');
             }
         }
 
