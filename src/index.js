@@ -158,6 +158,30 @@ app.post("/ussd", async (req, res) => {
   }
 });
 
+// Global Error Handler - Force JSON responses for API errors
+app.use((err, req, res, next) => {
+  console.error('[Global Error]', err);
+  
+  // If headers already sent, delegate to default handler
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  // Handle Body Parser errors (SyntaxError)
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ success: false, error: 'Invalid JSON payload' });
+  }
+
+  res.status(err.status || 500).json({
+    success: false, 
+    error: err.message || 'Internal Server Error'
+  });
+});
+
+// Mount Auth Routes (Google + Free OTP)
+const authRouter = require('./routes/auth');
+app.use('/api/auth', authRouter);
+
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
 // Defensive: some versions of admin-dashboard manage their own server and do not
