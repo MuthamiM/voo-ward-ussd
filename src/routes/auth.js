@@ -148,25 +148,26 @@ router.post('/google', async (req, res) => {
              return res.status(400).json({ error: 'Google credential required' });
         }
         
-        // 1. Verify token with Google (using https module for compatibility)
-        const https = require('https');
+        // 1. Verify token with Google using Axios (more robust)
+        const axios = require('axios');
         
-        const profile = await new Promise((resolve, reject) => {
-            https.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`, (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                   try {
-                       resolve(JSON.parse(data));
-                   } catch(e) { reject(e); }
-                });
-            }).on('error', reject);
-        });
-        
-        if (profile.error) {
-            console.error('Google Token Info Error:', profile.error);
-            return res.status(401).json({ error: 'Invalid Google Token' });
+        let profile;
+        try {
+            const googleRes = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
+            profile = googleRes.data;
+        } catch (axiosErr) {
+            console.error('[Google-Auth] Token verification failed:', axiosErr.response?.data || axiosErr.message);
+            // Return the specific error from Google if available
+            const msg = axiosErr.response?.data?.error_description || 'Invalid Google Token';
+            return res.status(401).json({ success: false, error: msg });
         }
+
+        if (profile.error || !profile.email) {
+            console.error('[Google-Auth] Invalid profile:', profile);
+            return res.status(401).json({ success: false, error: 'Invalid Google Profile' });
+        }
+        
+        console.log(`[Google-Auth] Verified: ${profile.email} (${profile.name})`);
 
         // 2. Register/Login user in Supabase
         const result = await service.registerGoogleUser({
