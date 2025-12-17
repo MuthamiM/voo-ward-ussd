@@ -817,6 +817,8 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
 
     if (!result.success) {
       console.warn(`⚠️  Failed login attempt for user '${username}' from ${req.ip}: ${result.error}`);
+      // Log the full result for debugging
+      console.log('DEBUG Login Result:', JSON.stringify(result));
       return res.status(401).json({ error: result.error || "Invalid username or password" });
     }
 
