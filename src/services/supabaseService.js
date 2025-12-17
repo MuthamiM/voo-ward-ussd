@@ -161,13 +161,19 @@ class SupabaseService {
      */
     async getUserByUsernameOrPhone(username) {
         try {
+            // First try exact username match
+            let result = await this.request('GET', `/rest/v1/app_users?username=eq.${encodeURIComponent(username)}&select=*`);
+            if (Array.isArray(result) && result.length > 0) {
+                return result[0];
+            }
+
+            // If not found and looks like a phone number, try phone lookup
             let formattedPhone = username;
             if (!username.startsWith('+') && !isNaN(username.replace(/^0/, ''))) {
                 formattedPhone = `+254${username.replace(/^0/, '')}`;
             }
-
-            const query = encodeURIComponent(`(phone.eq.${formattedPhone},username.eq.${username})`);
-            const result = await this.request('GET', `/rest/v1/app_users?or=${query}&select=*`);
+            
+            result = await this.request('GET', `/rest/v1/app_users?phone=eq.${encodeURIComponent(formattedPhone)}&select=*`);
             return Array.isArray(result) && result.length > 0 ? result[0] : null;
         } catch (e) {
             console.error('[Supabase] getUserByUsernameOrPhone error:', e);
