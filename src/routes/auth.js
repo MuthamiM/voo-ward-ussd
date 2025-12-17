@@ -211,6 +211,118 @@ router.post('/google', async (req, res) => {
 });
 
 /**
+ * POST /api/auth/reset-password-otp
+ * Send OTP for password reset
+ */
+router.post('/reset-password-otp', async (req, res) => {
+    try {
+        let { phone } = req.body;
+        if (!phone) return res.status(400).json({ error: 'Phone required' });
+
+        // Normalize phone
+        if (!phone.startsWith('+')) {
+            if (phone.startsWith('0')) phone = '+254' + phone.substring(1);
+            else if (phone.startsWith('254')) phone = '+' + phone;
+            else phone = '+254' + phone;
+        }
+
+        // Check if user exists
+        const user = await service.getUserByPhone(phone);
+        if (!user) {
+            return res.status(404).json({ error: 'Phone number not registered' });
+        }
+
+        // Generate and save OTP
+        const otp = generateOTP();
+        const saved = await service.saveOTP(phone, otp);
+        if (!saved) {
+            return res.status(500).json({ error: 'Failed to generate OTP' });
+        }
+
+        console.log(`[AUTH] 📱 Password Reset OTP for ${phone}: ${otp}`);
+
+        res.json({
+            success: true,
+            message: 'OTP sent',
+            debug_otp: otp, // Mobile app will display this
+            phone: phone
+        });
+
+    } catch (e) {
+        console.error('Reset password OTP error:', e);
+        res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+/**
+ * POST /api/auth/reset-password-verify
+ * Verify OTP and set new password
+ */
+router.post('/reset-password-verify', async (req, res) => {
+    try {
+        let { phone, otp, newPassword } = req.body;
+        
+        if (!phone || !otp || !newPassword) {
+            return res.status(400).json({ error: 'Phone, OTP, and new password required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        // Normalize phone
+        if (!phone.startsWith('+')) {
+            if (phone.startsWith('0')) phone = '+254' + phone.substring(1);
+            else if (phone.startsWith('254')) phone = '+' + phone;
+            else phone = '+254' + phone;
+        }
+
+        // Verify OTP
+        const otpResult = await service.verifyOTP(phone, otp);
+        if (!otpResult.success) {
+            return res.status(400).json({ error: otpResult.error });
+        }
+
+        // Update password
+        const updateResult = await service.updatePasswordByPhone(phone, newPassword);
+        if (!updateResult.success) {
+            return res.status(500).json({ error: updateResult.error });
+        }
+
+        console.log(`[AUTH] ✅ Password reset successful for ${phone}`);
+        res.json({ success: true, message: 'Password reset successful' });
+
+    } catch (e) {
+        console.error('Reset password verify error:', e);
+        res.status(500).json({ error: 'Password reset failed' });
+    }
+});
+
+/**
+ * POST /api/auth/update-fcm
+ * Update FCM token for a user
+ */
+router.post('/update-fcm', async (req, res) => {
+    try {
+        const { userId, fcmToken } = req.body;
+        
+        if (!userId || !fcmToken) {
+            return res.status(400).json({ error: 'userId and fcmToken required' });
+        }
+
+        const result = await service.updateUserFCMToken(userId, fcmToken);
+        if (result.success) {
+            res.json({ success: true });
+        } else {
+            res.status(500).json({ error: result.error });
+        }
+    } catch (e) {
+        console.error('Update FCM error:', e);
+        res.status(500).json({ error: 'FCM update failed' });
+    }
+});
+
+/**
  * GET /api/auth/can-register
  */
 router.get('/can-register', (req, res) => {
