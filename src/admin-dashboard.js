@@ -885,6 +885,8 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
 
     // Create session
     const token = generateSessionToken();
+    console.log('[DEBUG] Generated token:', token ? token.substring(0, 10) + '...' : 'UNDEFINED');
+    
     const sessionUser = {
       id: result.user.id,
       username: result.user.username,
@@ -896,11 +898,14 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
 
     sessions.set(token, { user: sessionUser, createdAt: new Date() });
 
-    res.json({
+    const responsePayload = {
       success: true,
       token,
       user: sessionUser
-    });
+    };
+    console.log('[DEBUG] Login response payload:', JSON.stringify(responsePayload).substring(0, 200));
+    
+    res.json(responsePayload);
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: err.message });
