@@ -792,7 +792,43 @@ app.get("/api/admin/stats", requireAuth, async (req, res) => {
     }
 });
 
+// TEMPORARY DEBUG ENDPOINT - Remove after fixing login
+app.get("/api/auth/debug-login", async (req, res) => {
+  const supabaseService = require('./services/supabaseService');
+  
+  // Check if the service role key is present
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const keyPreview = process.env.SUPABASE_SERVICE_ROLE_KEY 
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...' 
+    : 'NOT SET';
+  
+  // Try to look up user 'zak'
+  let userLookup = null;
+  let userLookupError = null;
+  try {
+    userLookup = await supabaseService.getUserByUsernameOrPhone('zak');
+  } catch (e) {
+    userLookupError = e.message;
+  }
+  
+  res.json({
+    timestamp: new Date().toISOString(),
+    environment: {
+      SUPABASE_SERVICE_ROLE_KEY_SET: hasServiceKey,
+      KEY_PREVIEW: keyPreview,
+      NODE_ENV: process.env.NODE_ENV
+    },
+    userLookupTest: {
+      username: 'zak',
+      found: !!userLookup,
+      userData: userLookup ? { id: userLookup.id, username: userLookup.username } : null,
+      error: userLookupError
+    }
+  });
+});
+
 // Login
+
 app.post("/api/auth/login", loginLimiter, async (req, res) => {
   console.log('🔐 Login attempt received:', req.body ? 'with body' : 'no body');
 
