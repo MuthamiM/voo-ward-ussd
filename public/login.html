@@ -938,15 +938,28 @@
           '<span class="spinner"></span><span>SIGNING IN...</span>';
 
         try {
+          console.log(
+            "[DEBUG] Sending login request to:",
+            `${API_BASE}/api/auth/login`
+          );
+          console.log("[DEBUG] Payload:", { username, password: pin });
+
           const response = await fetch(`${API_BASE}/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ username, password: pin }),
           });
 
+          console.log("[DEBUG] Response status:", response.status);
+          console.log("[DEBUG] Response ok:", response.ok);
+
           const data = await response.json();
+          console.log("[DEBUG] Response data:", data);
 
           if (response.ok && data.token) {
+            console.log(
+              "[DEBUG] Login successful, storing token and redirecting..."
+            );
             localStorage.setItem("authToken", data.token);
             localStorage.setItem("currentUser", JSON.stringify(data.user));
 
@@ -960,11 +973,13 @@
               1000
             );
           } else {
+            console.log("[DEBUG] Login failed, showing error:", data.error);
             showError(data.error || "Invalid username or PIN");
             loginBtn.disabled = false;
             loginBtn.innerHTML = "<span>SIGN IN</span>";
           }
         } catch (error) {
+          console.error("[DEBUG] Fetch error:", error);
           showError("Network error. Please try again.");
           loginBtn.disabled = false;
           loginBtn.innerHTML = "<span>SIGN IN</span>";
@@ -1052,7 +1067,6 @@
       const regBtn = document.getElementById("registerBtn");
       const regSubmitBtn = document.getElementById("regSubmitBtn");
 
-
       function showRegistrationModal() {
         if (regBtn.disabled) return;
         regModal.style.display = "flex";
@@ -1110,84 +1124,92 @@
     <script>
       // Show registration message
       function showRegMsg(msg, type) {
-          const regMsg = document.getElementById('regMsg');
-          if (!regMsg) return;
-          regMsg.textContent = msg;
-          regMsg.style.display = 'block';
-          regMsg.style.color = type === 'error' ? '#ef4444' : '#10b981';
-          regMsg.style.background = type === 'error' ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)';
-          regMsg.style.padding = '10px';
-          regMsg.style.borderRadius = '8px';
-          regMsg.style.marginTop = '15px';
+        const regMsg = document.getElementById("regMsg");
+        if (!regMsg) return;
+        regMsg.textContent = msg;
+        regMsg.style.display = "block";
+        regMsg.style.color = type === "error" ? "#ef4444" : "#10b981";
+        regMsg.style.background =
+          type === "error" ? "rgba(239,68,68,0.2)" : "rgba(16,185,129,0.2)";
+        regMsg.style.padding = "10px";
+        regMsg.style.borderRadius = "8px";
+        regMsg.style.marginTop = "15px";
       }
 
       // Copy PIN to clipboard
       function copyPin(pin) {
-          navigator.clipboard.writeText(pin).then(() => {
-              const btn = event.target.closest('button');
-              if (btn) {
-                  const originalText = btn.innerHTML;
-                  btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                  btn.style.background = '#059669';
-                  setTimeout(() => {
-                      btn.innerHTML = originalText;
-                      btn.style.background = '#10b981';
-                  }, 2000);
-              }
-          }).catch(() => {
-              alert('PIN copied: ' + pin);
+        navigator.clipboard
+          .writeText(pin)
+          .then(() => {
+            const btn = event.target.closest("button");
+            if (btn) {
+              const originalText = btn.innerHTML;
+              btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+              btn.style.background = "#059669";
+              setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = "#10b981";
+              }, 2000);
+            }
+          })
+          .catch(() => {
+            alert("PIN copied: " + pin);
           });
       }
 
       // Explicit registration handler to avoid form submit issues
       async function handleRegistrationSubmit() {
-          const form = document.getElementById('registrationForm');
+        const form = document.getElementById("registrationForm");
 
-          // Manual validation
-          if (!form.checkValidity()) {
-              form.reportValidity();
-              return;
-          }
+        // Manual validation
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
 
-          const fullName = document.getElementById('regFullName').value.trim();
-          const idNumber = document.getElementById('regIdNumber').value.trim();
-          const phone = document.getElementById('regPhone').value.trim();
-          const username = document.getElementById('regUsername').value.trim();
-          const role = document.getElementById('regRole').value;
-          const regSubmitBtn = document.getElementById('regSubmitBtn');
+        const fullName = document.getElementById("regFullName").value.trim();
+        const idNumber = document.getElementById("regIdNumber").value.trim();
+        const phone = document.getElementById("regPhone").value.trim();
+        const username = document.getElementById("regUsername").value.trim();
+        const role = document.getElementById("regRole").value;
+        const regSubmitBtn = document.getElementById("regSubmitBtn");
 
-          if (!fullName || !idNumber || !phone || !username || !role) {
-              showRegMsg('Please fill in all fields', 'error');
-              return;
-          }
+        if (!fullName || !idNumber || !phone || !username || !role) {
+          showRegMsg("Please fill in all fields", "error");
+          return;
+        }
 
-          regSubmitBtn.disabled = true;
-          regSubmitBtn.innerHTML = '<span class="spinner"></span><span>SUBMITTING...</span>';
+        regSubmitBtn.disabled = true;
+        regSubmitBtn.innerHTML =
+          '<span class="spinner"></span><span>SUBMITTING...</span>';
 
-          try {
-              const response = await fetch(API_BASE + '/api/auth/register-request', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                      fullName,
-                      idNumber,
-                      phone,
-                      role,
-                      username
-                  })
-              });
+        try {
+          const response = await fetch(
+            API_BASE + "/api/auth/register-request",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fullName,
+                idNumber,
+                phone,
+                role,
+                username,
+              }),
+            }
+          );
 
-              const data = await response.json();
+          const data = await response.json();
 
-              if (response.ok && data.success) {
-                  // Show WAITING screen
-                  const regMsg = document.getElementById('regMsg');
-                  const appId = data.applicationId || 'pending';
+          if (response.ok && data.success) {
+            // Show WAITING screen
+            const regMsg = document.getElementById("regMsg");
+            const appId = data.applicationId || "pending";
 
-                  // Hide the form, show waiting screen
-                  document.getElementById('registrationForm').style.display = 'none';
+            // Hide the form, show waiting screen
+            document.getElementById("registrationForm").style.display = "none";
 
-                  regMsg.innerHTML = `
+            regMsg.innerHTML = `
                       <div id="waitingScreen" style="text-align: center; padding: 20px; background: rgba(59,130,246,0.15); border-radius: 12px; border: 2px solid #3b82f6;">
                           <div style="width: 60px; height: 60px; border: 4px solid rgba(59,130,246,0.3); border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 15px;"></div>
                           <p style="color: #3b82f6; margin-bottom: 10px; font-weight: bold; font-size: 18px;"><i class="fas fa-hourglass-half"></i> Waiting for Admin Approval...</p>
@@ -1198,43 +1220,56 @@
                           @keyframes spin { to { transform: rotate(360deg); } }
                       </style>
                   `;
-                  regMsg.style.display = 'block';
-                  regMsg.style.background = 'transparent';
-                  regMsg.style.padding = '0';
+            regMsg.style.display = "block";
+            regMsg.style.background = "transparent";
+            regMsg.style.padding = "0";
 
-                  // Only start polling if we have an applicationId
-                  if (data.applicationId) {
-                      // Start polling for approval
-                      let pollCount = 0;
-                      const maxPolls = 360; // 30 minutes max (5s * 360)
+            // Only start polling if we have an applicationId
+            if (data.applicationId) {
+              // Start polling for approval
+              let pollCount = 0;
+              const maxPolls = 360; // 30 minutes max (5s * 360)
 
-                      const pollInterval = setInterval(async () => {
-                          pollCount++;
-                          const statusEl = document.getElementById('waitingStatus');
-                          if (statusEl) statusEl.textContent = 'Checking status... (' + pollCount + ')';
+              const pollInterval = setInterval(async () => {
+                pollCount++;
+                const statusEl = document.getElementById("waitingStatus");
+                if (statusEl)
+                  statusEl.textContent =
+                    "Checking status... (" + pollCount + ")";
 
-                          try {
-                              const statusRes = await fetch(API_BASE + '/api/auth/check-registration/' + appId);
-                              const statusData = await statusRes.json();
+                try {
+                  const statusRes = await fetch(
+                    API_BASE + "/api/auth/check-registration/" + appId
+                  );
+                  const statusData = await statusRes.json();
 
-                              if (statusData.status === 'approved' && statusData.credentials) {
-                                  clearInterval(pollInterval);
-                                  // Show credentials!
-                                  const ws = document.getElementById('waitingScreen');
-                                  if (ws) {
-                                      ws.innerHTML = `
+                  if (
+                    statusData.status === "approved" &&
+                    statusData.credentials
+                  ) {
+                    clearInterval(pollInterval);
+                    // Show credentials!
+                    const ws = document.getElementById("waitingScreen");
+                    if (ws) {
+                      ws.innerHTML = `
                                   <p style="color: #10b981; margin-bottom: 15px; font-weight: bold; font-size: 20px;"><i class="fas fa-check-circle"></i> APPROVED!</p>
 
                                   <div style="background: rgba(0,0,0,0.4); padding: 20px; border-radius: 10px; margin: 15px 0;">
                                       <p style="color: #fbbf24; font-size: 14px; margin-bottom: 10px;"><strong>Your Role:</strong> ${statusData.role.toUpperCase()}</p>
 
                                       <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Username:</strong></p>
-                                      <p style="color: #10b981; font-family: monospace; font-size: 22px;">${statusData.credentials.username}</p>
+                                      <p style="color: #10b981; font-family: monospace; font-size: 22px;">${
+                                        statusData.credentials.username
+                                      }</p>
 
                                       <p style="color: white; font-size: 14px; margin: 15px 0 5px;"><strong>Your PIN:</strong></p>
                                       <div style="display: flex; justify-content: center; align-items: center; gap: 10px;">
-                                          <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">${statusData.credentials.pin}</span>
-                                          <button type="button" onclick="copyPin('${statusData.credentials.pin}')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                                          <span style="font-family: monospace; background: #10b981; color: white; padding: 12px 24px; border-radius: 8px; font-size: 28px; letter-spacing: 6px; font-weight: bold;">${
+                                            statusData.credentials.pin
+                                          }</span>
+                                          <button type="button" onclick="copyPin('${
+                                            statusData.credentials.pin
+                                          }')" style="background: #059669; border: none; color: white; padding: 12px 16px; border-radius: 8px; cursor: pointer; font-size: 14px;">
                                               <i class="fas fa-copy"></i> Copy
                                           </button>
                                       </div>
@@ -1246,77 +1281,80 @@
                                       <i class="fas fa-sign-in-alt"></i> Close & Login
                                   </button>
                               `;
-                                      ws.style.background = 'rgba(16,185,129,0.15)';
-                                      ws.style.borderColor = '#10b981';
-                                  }
-                              } else if (statusData.status === 'rejected') {
-                                  clearInterval(pollInterval);
-                                  const ws = document.getElementById('waitingScreen');
-                                  if(ws) {
-                                      ws.innerHTML = `
+                      ws.style.background = "rgba(16,185,129,0.15)";
+                      ws.style.borderColor = "#10b981";
+                    }
+                  } else if (statusData.status === "rejected") {
+                    clearInterval(pollInterval);
+                    const ws = document.getElementById("waitingScreen");
+                    if (ws) {
+                      ws.innerHTML = `
                                       <p style="color: #ef4444; font-weight: bold; font-size: 18px;"><i class="fas fa-times-circle"></i> Application Rejected</p>
-                                      <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">${statusData.reason || 'Please contact admin for more information.'}</p>
+                                      <p style="color: rgba(255,255,255,0.7); margin-top: 10px;">${
+                                        statusData.reason ||
+                                        "Please contact admin for more information."
+                                      }</p>
                                       <button type="button" onclick="hideRegistrationModal(); window.location.reload();" style="background: #6b7280; border: none; color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; margin-top: 15px;">Close</button>
                                   `;
-                                      ws.style.background = 'rgba(239,68,68,0.15)';
-                                      ws.style.borderColor = '#ef4444';
-                                  }
-                              }
-                          } catch (err) {
-                              console.log('Poll error:', err);
-                          }
+                      ws.style.background = "rgba(239,68,68,0.15)";
+                      ws.style.borderColor = "#ef4444";
+                    }
+                  }
+                } catch (err) {
+                  console.log("Poll error:", err);
+                }
 
-                          if (pollCount >= maxPolls) {
-                              clearInterval(pollInterval);
-                              const statusEl = document.getElementById('waitingStatus');
-                              if(statusEl) statusEl.textContent = 'Timeout. Please close and try again later.';
-                          }
-                      }, 5000); // Poll every 5 seconds
-                  } // End if (data.applicationId)
-
-              } else if (!response.ok) {
-                  showRegMsg(data.error || 'Registration failed', 'error');
-              }
-          } catch (err) {
-              showRegMsg('Network error. Please try again.', 'error');
-          } finally {
-              regSubmitBtn.disabled = false;
-              regSubmitBtn.innerHTML = '<span>SUBMIT APPLICATION</span>';
+                if (pollCount >= maxPolls) {
+                  clearInterval(pollInterval);
+                  const statusEl = document.getElementById("waitingStatus");
+                  if (statusEl)
+                    statusEl.textContent =
+                      "Timeout. Please close and try again later.";
+                }
+              }, 5000); // Poll every 5 seconds
+            } // End if (data.applicationId)
+          } else if (!response.ok) {
+            showRegMsg(data.error || "Registration failed", "error");
           }
+        } catch (err) {
+          showRegMsg("Network error. Please try again.", "error");
+        } finally {
+          regSubmitBtn.disabled = false;
+          regSubmitBtn.innerHTML = "<span>SUBMIT APPLICATION</span>";
+        }
       }
 
+      // Google Auth Handler
+      function handleCredentialResponse(response) {
+        console.log("Encoded JWT ID token: " + response.credential);
 
-        // Google Auth Handler
-        function handleCredentialResponse(response) {
-            console.log("Encoded JWT ID token: " + response.credential);
-            
-             var btn = document.getElementById('loginBtn');
-             btn.disabled = true;
-             btn.innerHTML = '<span class="spinner"></span> Signing in...';
+        var btn = document.getElementById("loginBtn");
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Signing in...';
 
-             fetch('/api/auth/google', {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ credential: response.credential })
-             })
-             .then(r => r.json())
-             .then(data => {
-                 if (data.success) {
-                     localStorage.setItem('user', JSON.stringify(data.user));
-                     window.location.href = 'admin-dashboard.html';
-                 } else {
-                     showRegMsg(data.error || 'Google Sign-In failed', 'error');
-                     btn.disabled = false;
-                     btn.innerHTML = '<span>SIGN IN</span>';
-                 }
-             })
-             .catch(e => {
-                 console.error(e);
-                 showRegMsg('Network error', 'error');
-                 btn.disabled = false;
-                 btn.innerHTML = '<span>SIGN IN</span>';
-             });
-        }
+        fetch("/api/auth/google", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: response.credential }),
+        })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.success) {
+              localStorage.setItem("user", JSON.stringify(data.user));
+              window.location.href = "admin-dashboard.html";
+            } else {
+              showRegMsg(data.error || "Google Sign-In failed", "error");
+              btn.disabled = false;
+              btn.innerHTML = "<span>SIGN IN</span>";
+            }
+          })
+          .catch((e) => {
+            console.error(e);
+            showRegMsg("Network error", "error");
+            btn.disabled = false;
+            btn.innerHTML = "<span>SIGN IN</span>";
+          });
+      }
     </script>
   </body>
 </html>
