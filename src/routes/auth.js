@@ -4,7 +4,23 @@
  */
 const express = require('express');
 const router = express.Router();
-const service = require('../services/supabaseService');
+const supabaseService = require('../services/supabaseService');
+
+// Use PostgreSQL when DATABASE_URL is set
+let otpService = supabaseService;
+let userService = supabaseService;
+
+if (process.env.DATABASE_URL) {
+    try {
+        otpService = require('../services/postgresOtpService');
+        userService = require('../services/postgresUserService');
+        console.log('[AUTH] Using PostgreSQL for OTP and User storage');
+    } catch (e) {
+        console.log('[AUTH] PostgreSQL modules not available, using Supabase:', e.message);
+    }
+} else {
+    console.log('[AUTH] DATABASE_URL not set, using Supabase');
+}
 
 // Generate 6-digit OTP
 function generateOTP() {
@@ -30,7 +46,7 @@ router.post('/register-otp', async (req, res) => {
         const otp = generateOTP();
         
         // Save to Supabase
-        const saved = await service.saveOTP(phone, otp);
+        const saved = await otpService.saveOTP(phone, otp);
         if (!saved) {
             return res.status(500).json({ error: 'Failed to generate OTP' });
         }
@@ -66,7 +82,7 @@ router.post('/register-verify-otp', async (req, res) => {
             else phone = '+254' + phone;
         }
 
-        const result = await service.verifyOTP(phone, otp);
+        const result = await otpService.verifyOTP(phone, otp);
         
         if (result.success) {
             // Return temporary verification token
@@ -92,7 +108,7 @@ router.post('/register-complete', async (req, res) => {
         // In a real app, verify 'token' to ensure OTP was passed
         if (!token) return res.status(401).json({ error: 'Verification required' });
 
-        const result = await service.registerUser({
+        const result = await userService.registerUser({
             fullName,
             phone,
             idNumber,
@@ -114,9 +130,11 @@ router.post('/register-complete', async (req, res) => {
 
 // ============ EMAIL OTP (FREE - Unlimited) ============
 
+const emailService = require('../services/emailService');
+
 /**
  * POST /api/auth/email-otp
- * Generates OTP for email verification (FREE - No SMS costs!)
+ * Generates OTP and sends to email (FREE via Resend - 3000/month)
  */
 router.post('/email-otp', async (req, res) => {
     try {
@@ -133,21 +151,32 @@ router.post('/email-otp', async (req, res) => {
         const otp = generateOTP();
         
         // Save to Supabase
-        const saved = await service.saveEmailOTP(email, otp);
+        const saved = await otpService.saveEmailOTP(email, otp);
         if (!saved) {
             return res.status(500).json({ error: 'Failed to generate OTP' });
         }
 
-        console.log(`[AUTH] 📧 EMAIL OTP for ${email}: ${otp}`);
+        // Send OTP via email
+        const emailResult = await emailService.sendOTPEmail(email, otp);
+        
+        console.log(`[AUTH] 📧 EMAIL OTP for ${email}: ${otp} - Sent: ${emailResult.success}`);
 
-        // In production, send email here using nodemailer/resend/etc
-        // For now, return OTP in response for development
-        res.json({
-            success: true,
-            message: 'OTP sent to your email',
-            debug_otp: otp, // Mobile app will display this (until email sending is configured)
-            email: email
-        });
+        // If email sending is configured and works, don't return debug_otp
+        if (emailResult.success) {
+            res.json({
+                success: true,
+                message: 'Verification code sent to your email',
+                email: email
+            });
+        } else {
+            // Fallback: return debug_otp if email not configured
+            res.json({
+                success: true,
+                message: 'OTP generated (email not configured)',
+                debug_otp: emailResult.debug_otp || otp,
+                email: email
+            });
+        }
 
     } catch (e) {
         console.error('Email OTP error:', e);
@@ -169,7 +198,7 @@ router.post('/email-verify-otp', async (req, res) => {
         
         email = email.toLowerCase().trim();
 
-        const result = await service.verifyEmailOTP(email, otp);
+        const result = await otpService.verifyEmailOTP(email, otp);
         
         if (result.success) {
             // Return temporary verification token
@@ -195,7 +224,7 @@ router.post('/email-register-complete', async (req, res) => {
         // Verify token contains email verification
         if (!token) return res.status(401).json({ error: 'Email verification required' });
 
-        const result = await service.registerUserWithEmail({
+        const result = await supabaseuserService.registerUserWithEmail({
             fullName,
             email,
             phone, // Still collect phone number
@@ -227,7 +256,7 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ error: 'Username/Phone and password required' });
         }
 
-        const result = await service.loginUser(username, password);
+        const result = await userService.loginUser(username, password);
         
         if (result.success) {
             // Generate session token for dashboard compatibility
@@ -295,7 +324,7 @@ router.post('/google', async (req, res) => {
         console.log(`[Google-Auth] Verified: ${profile.email} (${profile.name})`);
 
         // 2. Register/Login user in Supabase
-        const result = await service.registerGoogleUser({
+        const result = await userService.registerGoogleUser({
             id: profile.sub,
             email: profile.email,
             name: profile.name,
@@ -331,14 +360,14 @@ router.post('/reset-password-otp', async (req, res) => {
         }
 
         // Check if user exists
-        const user = await service.getUserByPhone(phone);
+        const user = await userService.getUserByPhone(phone);
         if (!user) {
             return res.status(404).json({ error: 'Phone number not registered' });
         }
 
         // Generate and save OTP
         const otp = generateOTP();
-        const saved = await service.saveOTP(phone, otp);
+        const saved = await otpService.saveOTP(phone, otp);
         if (!saved) {
             return res.status(500).json({ error: 'Failed to generate OTP' });
         }
@@ -382,13 +411,13 @@ router.post('/reset-password-verify', async (req, res) => {
         }
 
         // Verify OTP
-        const otpResult = await service.verifyOTP(phone, otp);
+        const otpResult = await otpService.verifyOTP(phone, otp);
         if (!otpResult.success) {
             return res.status(400).json({ error: otpResult.error });
         }
 
         // Update password
-        const updateResult = await service.updatePasswordByPhone(phone, newPassword);
+        const updateResult = await userService.updatePasswordByPhone(phone, newPassword);
         if (!updateResult.success) {
             return res.status(500).json({ error: updateResult.error });
         }
@@ -414,7 +443,7 @@ router.post('/update-fcm', async (req, res) => {
             return res.status(400).json({ error: 'userId and fcmToken required' });
         }
 
-        const result = await service.updateUserFCMToken(userId, fcmToken);
+        const result = await userService.updateUserFCMToken(userId, fcmToken);
         if (result.success) {
             res.json({ success: true });
         } else {
