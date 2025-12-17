@@ -131,18 +131,23 @@ router.post('/login', async (req, res) => {
             const token = crypto.randomBytes(32).toString('hex');
             
             // Build user object with role for dashboard authorization
-            const user = {
+            const sessionUser = {
                 id: result.user.id,
                 username: result.user.username,
                 fullName: result.user.fullName,
                 role: result.user.role || 'user',
                 phone: result.user.phone,
-                village: result.user.village
+                village: result.user.village,
+                settings: {}
             };
             
-            console.log('[AUTH] Login success for:', user.username, 'role:', user.role);
+            // Store session in the shared adminSessionStore so dashboard auth works
+            const sessions = require('../services/adminSessionStore');
+            sessions.set(token, { user: sessionUser, createdAt: new Date() });
             
-            res.json({ success: true, token, user });
+            console.log('[AUTH] Login success for:', sessionUser.username, 'role:', sessionUser.role, 'token stored');
+            
+            res.json({ success: true, token, user: sessionUser });
         } else {
             res.status(401).json({ error: result.error });
         }
