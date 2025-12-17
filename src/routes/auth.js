@@ -126,7 +126,23 @@ router.post('/login', async (req, res) => {
         const result = await service.loginUser(username, password);
         
         if (result.success) {
-            res.json({ success: true, user: result.user });
+            // Generate session token for dashboard compatibility
+            const crypto = require('crypto');
+            const token = crypto.randomBytes(32).toString('hex');
+            
+            // Build user object with role for dashboard authorization
+            const user = {
+                id: result.user.id,
+                username: result.user.username,
+                fullName: result.user.fullName,
+                role: result.user.role || 'user',
+                phone: result.user.phone,
+                village: result.user.village
+            };
+            
+            console.log('[AUTH] Login success for:', user.username, 'role:', user.role);
+            
+            res.json({ success: true, token, user });
         } else {
             res.status(401).json({ error: result.error });
         }
