@@ -805,10 +805,33 @@ app.get("/api/auth/debug-login", async (req, res) => {
   // Try to look up user 'zak'
   let userLookup = null;
   let userLookupError = null;
+  let passwordTest = null;
+  
   try {
     userLookup = await supabaseService.getUserByUsernameOrPhone('zak');
+    
+    if (userLookup) {
+      // Test password verification
+      const testPassword = '827700';
+      const storedHash = userLookup.password_hash;
+      const verifyResult = supabaseService.verifyPassword(testPassword, storedHash);
+      
+      passwordTest = {
+        testPassword: testPassword,
+        storedHashPreview: storedHash ? storedHash.substring(0, 20) + '...' : 'NO HASH',
+        verifyResult: verifyResult
+      };
+    }
   } catch (e) {
     userLookupError = e.message;
+  }
+  
+  // Also test full login
+  let loginTest = null;
+  try {
+    loginTest = await supabaseService.loginUser('zak', '827700');
+  } catch (e) {
+    loginTest = { error: e.message };
   }
   
   res.json({
@@ -823,7 +846,9 @@ app.get("/api/auth/debug-login", async (req, res) => {
       found: !!userLookup,
       userData: userLookup ? { id: userLookup.id, username: userLookup.username } : null,
       error: userLookupError
-    }
+    },
+    passwordTest: passwordTest,
+    fullLoginTest: loginTest
   });
 });
 
