@@ -181,8 +181,6 @@ class SupabaseService {
     async loginUser(username, password) {
         try {
             const user = await this.getUserByUsernameOrPhone(username);
-            console.log(`[Supabase] loginUser found:`, user ? `${user.username} (ID: ${user.id})` : 'NULL');
-            if (user) console.log(`[Supabase] stored hash: ${user.password_hash ? user.password_hash.substring(0, 10) + '...' : 'NONE'}`);
 
             if (!user) {
                 return { success: false, error: 'User not found' };
