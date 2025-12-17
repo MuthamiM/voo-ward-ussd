@@ -199,6 +199,8 @@ class SupabaseService {
                     username: user.username,
                     village: user.village,
                     email: user.email,
+                    // Inject role for known admins since schema lacks role column
+                    role: ['zak', 'muthami', 'admin'].includes(user.username.toLowerCase()) ? 'MCA' : (user.role || 'user')
                 }
             };
         } catch (e) {
