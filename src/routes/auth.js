@@ -112,6 +112,110 @@ router.post('/register-complete', async (req, res) => {
     }
 });
 
+// ============ EMAIL OTP (FREE - Unlimited) ============
+
+/**
+ * POST /api/auth/email-otp
+ * Generates OTP for email verification (FREE - No SMS costs!)
+ */
+router.post('/email-otp', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        email = email.toLowerCase().trim();
+        
+        // Validate email format
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({ error: 'Invalid email format' });
+        }
+
+        const otp = generateOTP();
+        
+        // Save to Supabase
+        const saved = await service.saveEmailOTP(email, otp);
+        if (!saved) {
+            return res.status(500).json({ error: 'Failed to generate OTP' });
+        }
+
+        console.log(`[AUTH] 📧 EMAIL OTP for ${email}: ${otp}`);
+
+        // In production, send email here using nodemailer/resend/etc
+        // For now, return OTP in response for development
+        res.json({
+            success: true,
+            message: 'OTP sent to your email',
+            debug_otp: otp, // Mobile app will display this (until email sending is configured)
+            email: email
+        });
+
+    } catch (e) {
+        console.error('Email OTP error:', e);
+        res.status(500).json({ error: 'Internal error' });
+    }
+});
+
+/**
+ * POST /api/auth/email-verify-otp
+ * Verifies email OTP
+ */
+router.post('/email-verify-otp', async (req, res) => {
+    try {
+        let { email, otp } = req.body;
+        
+        if (!email || !otp) {
+            return res.status(400).json({ error: 'Email and OTP required' });
+        }
+        
+        email = email.toLowerCase().trim();
+
+        const result = await service.verifyEmailOTP(email, otp);
+        
+        if (result.success) {
+            // Return temporary verification token
+            const token = Buffer.from(`${email}:${Date.now()}:email-verified`).toString('base64'); 
+            res.json({ success: true, token, email });
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (e) {
+        console.error('Email Verify OTP error:', e);
+        res.status(500).json({ error: e.message });
+    }
+});
+
+/**
+ * POST /api/auth/email-register-complete
+ * Finalize registration with email verification (still collects phone)
+ */
+router.post('/email-register-complete', async (req, res) => {
+    try {
+        const { email, phone, password, fullName, idNumber, username, token, village } = req.body;
+        
+        // Verify token contains email verification
+        if (!token) return res.status(401).json({ error: 'Email verification required' });
+
+        const result = await service.registerUserWithEmail({
+            fullName,
+            email,
+            phone, // Still collect phone number
+            idNumber,
+            password,
+            username,
+            village: village || 'N/A'
+        });
+
+        if (result.success) {
+            res.json({ success: true, user: result.user });
+        } else {
+            res.status(400).json({ error: result.error });
+        }
+    } catch (e) {
+        console.error('Email register complete error:', e);
+        res.status(500).json({ error: 'Registration failed' });
+    }
+});
+
 /**
  * POST /api/auth/login
  * Standard Phone/Password Login

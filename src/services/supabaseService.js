@@ -389,6 +389,143 @@ class SupabaseService {
         }
     }
 
+    // ============ EMAIL OTP (FREE - Uses same table, keyed by email) ============
+
+    /**
+     * Save Email OTP to Supabase
+     * Uses same mobile_otps table but with email in phone field (prefixed with 'email:')
+     */
+    async saveEmailOTP(email, otp) {
+        try {
+            const emailKey = `email:${email.toLowerCase()}`;
+            const expiresAt = new Date(Date.now() + 10 * 60000).toISOString(); // 10 mins for email
+            
+            // Delete old OTP first
+            await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(emailKey)}`);
+            
+            // Insert new OTP
+            await this.request('POST', '/rest/v1/mobile_otps', {
+                phone: emailKey,
+                otp,
+                expires_at: expiresAt
+            });
+
+            return true;
+        } catch (e) {
+            console.error('[Supabase] saveEmailOTP error:', e);
+            return false;
+        }
+    }
+
+    /**
+     * Verify Email OTP from Supabase
+     */
+    async verifyEmailOTP(email, otp) {
+        try {
+            const emailKey = `email:${email.toLowerCase()}`;
+            const query = `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(emailKey)}&select=*`;
+            const result = await this.request('GET', query);
+            
+            if (!Array.isArray(result) || result.length === 0) {
+                return { success: false, error: 'OTP not found or expired' };
+            }
+
+            const record = result[0];
+            const now = new Date();
+            const expires = new Date(record.expires_at);
+
+            if (now > expires) {
+                return { success: false, error: 'OTP expired' };
+            }
+
+            if (record.otp !== otp) {
+                return { success: false, error: 'Invalid OTP' };
+            }
+
+            // Consume OTP
+            await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(emailKey)}`);
+            return { success: true };
+
+        } catch (e) {
+            console.error('[Supabase] verifyEmailOTP error:', e);
+            return { success: false, error: 'Verification error' };
+        }
+    }
+
+    /**
+     * Get user by email
+     */
+    async getUserByEmail(email) {
+        try {
+            const result = await this.request('GET', `/rest/v1/app_users?email=eq.${encodeURIComponent(email.toLowerCase())}&select=*`);
+            return Array.isArray(result) && result.length > 0 ? result[0] : null;
+        } catch (e) {
+            console.error('[Supabase] getUserByEmail error:', e);
+            return null;
+        }
+    }
+
+    /**
+     * Register user with email (for email OTP flow)
+     * Still collects phone number but verifies via email
+     */
+    async registerUserWithEmail({ fullName, email, phone, idNumber, password, village, username }) {
+        try {
+            // Format phone
+            let formattedPhone = phone;
+            if (phone && !formattedPhone.startsWith('+')) {
+                formattedPhone = `+254${formattedPhone.replace(/^0/, '')}`;
+            }
+
+            // Check if email already exists
+            const existingEmail = await this.getUserByEmail(email);
+            if (existingEmail) {
+                return { success: false, error: 'Email already registered' };
+            }
+
+            // Check if phone already exists (if provided)
+            if (phone) {
+                const existingPhone = await this.getUserByPhone(formattedPhone);
+                if (existingPhone) {
+                    return { success: false, error: 'Phone number already registered' };
+                }
+            }
+
+            // Hash password
+            const passwordHash = this.hashPassword(password);
+
+            // Insert user - mark as verified and active since OTP was verified
+            const result = await this.request('POST', '/rest/v1/app_users', {
+                full_name: fullName,
+                email: email.toLowerCase(),
+                phone: formattedPhone || null,
+                id_number: idNumber,
+                password_hash: passwordHash,
+                village: village,
+                username: username || email.split('@')[0],
+                is_verified: true,  // User verified via OTP
+                is_active: true,    // Account is active
+                created_at: new Date().toISOString(),
+            });
+
+            const userData = Array.isArray(result) ? result[0] : result;
+
+            return {
+                success: true,
+                user: {
+                    id: userData.id,
+                    fullName: userData.full_name,
+                    email: userData.email,
+                    phone: userData.phone,
+                    username: userData.username,
+                }
+            };
+        } catch (e) {
+            console.error('[Supabase] registerUserWithEmail error:', e);
+            return { success: false, error: 'Registration failed' };
+        }
+    }
+
     /**
      * Update password by phone number (for password reset)
      */
