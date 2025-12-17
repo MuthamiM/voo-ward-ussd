@@ -161,9 +161,17 @@ class SupabaseService {
      */
     async getUserByUsernameOrPhone(username) {
         try {
+            console.log(`[DEBUG] getUserByUsernameOrPhone called with: "${username}"`);
+            
             // First try exact username match
-            let result = await this.request('GET', `/rest/v1/app_users?username=eq.${encodeURIComponent(username)}&select=*`);
+            const usernameQuery = `/rest/v1/app_users?username=eq.${encodeURIComponent(username)}&select=*`;
+            console.log(`[DEBUG] Username query: ${usernameQuery}`);
+            
+            let result = await this.request('GET', usernameQuery);
+            console.log(`[DEBUG] Username query result: ${JSON.stringify(result).substring(0, 200)}`);
+            
             if (Array.isArray(result) && result.length > 0) {
+                console.log(`[DEBUG] Found user by username: ${result[0].username}`);
                 return result[0];
             }
 
@@ -173,7 +181,10 @@ class SupabaseService {
                 formattedPhone = `+254${username.replace(/^0/, '')}`;
             }
             
+            console.log(`[DEBUG] Trying phone lookup with: ${formattedPhone}`);
             result = await this.request('GET', `/rest/v1/app_users?phone=eq.${encodeURIComponent(formattedPhone)}&select=*`);
+            console.log(`[DEBUG] Phone query result: ${JSON.stringify(result).substring(0, 200)}`);
+            
             return Array.isArray(result) && result.length > 0 ? result[0] : null;
         } catch (e) {
             console.error('[Supabase] getUserByUsernameOrPhone error:', e);
@@ -186,13 +197,20 @@ class SupabaseService {
      */
     async loginUser(username, password) {
         try {
+            console.log(`[DEBUG] loginUser called with username: "${username}"`);
             const user = await this.getUserByUsernameOrPhone(username);
+            console.log(`[DEBUG] User lookup result: ${user ? user.username : 'NULL'}`);
 
             if (!user) {
+                console.log(`[DEBUG] User not found, returning error`);
                 return { success: false, error: 'User not found' };
             }
 
-            if (!this.verifyPassword(password, user.password_hash)) {
+            console.log(`[DEBUG] Verifying password against hash: ${user.password_hash ? user.password_hash.substring(0, 15) + '...' : 'NO HASH'}`);
+            const passwordMatch = this.verifyPassword(password, user.password_hash);
+            console.log(`[DEBUG] Password match result: ${passwordMatch}`);
+            
+            if (!passwordMatch) {
                 return { success: false, error: 'Invalid password' };
             }
 
