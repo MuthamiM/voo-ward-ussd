@@ -44,11 +44,18 @@ function hashPassword(password, salt = null) {
 
 function verifyPassword(password, storedHash) {
     if (!storedHash || !storedHash.includes(':')) {
+        console.log('[DEBUG verifyPassword] Invalid hash format:', storedHash);
         return false;
     }
-    const [salt] = storedHash.split(':');
+    const [salt, hash] = storedHash.split(':');
+    console.log('[DEBUG verifyPassword] Salt:', salt);
+    console.log('[DEBUG verifyPassword] Stored hash part:', hash);
     const expectedHash = hashPassword(password, salt);
-    return expectedHash === storedHash;
+    console.log('[DEBUG verifyPassword] Expected:', expectedHash);
+    console.log('[DEBUG verifyPassword] Stored:', storedHash);
+    const match = expectedHash === storedHash;
+    console.log('[DEBUG verifyPassword] Match:', match);
+    return match;
 }
 
 async function getUserByPhone(phone) {
