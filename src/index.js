@@ -182,6 +182,11 @@ app.use((err, req, res, next) => {
 const authRouter = require('./routes/auth');
 app.use('/api/auth', authRouter);
 
+// Mount DB Routes for Mobile App (PostgreSQL)
+const dbRoutes = require('./routes/dbRoutes');
+app.use('/api/db', dbRoutes);
+console.log('✅ Mobile DB routes mounted at /api/db');
+
 // 3) (Optional) DB-backed endpoints can go below; never block startup on DB.
 // Mount admin dashboard API routes (merged from admin-dashboard.js)
 // Defensive: some versions of admin-dashboard manage their own server and do not
