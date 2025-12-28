@@ -212,7 +212,7 @@ router.post('/email-register-complete', async (req, res) => {
         // Verify token contains email verification
         if (!token) return res.status(401).json({ error: 'Email verification required' });
 
-        const result = await supabaseuserService.registerUserWithEmail({
+        const result = await userService.registerUserWithEmail({
             fullName,
             email,
             phone, // Still collect phone number
