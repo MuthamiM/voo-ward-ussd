@@ -58,15 +58,15 @@ async function sendOTPEmail(to, otp) {
         const data = await response.json();
         
         if (response.ok) {
-            console.log(`[Email] ✅ OTP sent to ${to} via Resend`);
+            console.log(`[Email] OTP sent to ${to} via Resend`);
             return { success: true };
         } else {
-            console.error(`[Email] ❌ Resend error:`, data);
+            console.error(`[Email] Resend error:`, data);
             return { success: false, error: data.message || 'Send failed', debug_otp: otp };
         }
         
     } catch (error) {
-        console.error(`[Email] ❌ Failed to send to ${to}:`, error.message);
+        console.error(`[Email] Failed to send to ${to}:`, error.message);
         return { success: false, error: error.message, debug_otp: otp };
     }
 }

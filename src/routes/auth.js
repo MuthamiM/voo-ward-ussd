@@ -40,7 +40,7 @@ router.post('/register-otp', async (req, res) => {
         }
 
         // SIMULATED SMS: Return OTP in response so UI can show it
-        console.log(`[AUTH] 📱 SIMULATED SMS for ${phone}: ${otp}`);
+        console.log(`[AUTH] SIMULATED SMS for ${phone}: ${otp}`);
 
         res.json({
             success: true,
@@ -147,7 +147,7 @@ router.post('/email-otp', async (req, res) => {
         // Send OTP via email
         const emailResult = await emailService.sendOTPEmail(email, otp);
         
-        console.log(`[AUTH] 📧 EMAIL OTP for ${email}: ${otp} - Sent: ${emailResult.success}`);
+        console.log(`[AUTH] EMAIL OTP for ${email}: ${otp} - Sent: ${emailResult.success}`);
 
         // If email sending is configured and works, don't return debug_otp
         if (emailResult.success) {
