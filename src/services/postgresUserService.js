@@ -173,13 +173,17 @@ async function registerUserWithEmail(data) {
 
 async function loginUser(username, password) {
     try {
+        console.log('[PostgreSQL] Login attempt for:', username);
         const user = await getUserByUsernameOrPhone(username);
 
         if (!user) {
+            console.log('[PostgreSQL] User not found:', username);
             return { success: false, error: 'User not found' };
         }
 
+        console.log('[PostgreSQL] User found:', user.username, 'has password_hash:', !!user.password_hash);
         const passwordMatch = verifyPassword(password, user.password_hash);
+        console.log('[PostgreSQL] Password match:', passwordMatch);
         
         if (!passwordMatch) {
             return { success: false, error: 'Invalid password' };
