@@ -872,16 +872,16 @@ app.post("/api/auth/login", loginLimiter, async (req, res) => {
 
     console.log(`🔍 Login attempt for user: ${sanitizeString(username, 50)}`);
 
-    // ===== SUPABASE ONLY LOGIN =====
-    const supabaseService = require('./services/supabaseService');
-    const result = await supabaseService.loginUser(username, password);
+    // ===== USE POSTGRESQL FOR LOGIN =====
+    const userService = require('./services/postgresUserService');
+    const result = await userService.loginUser(username, password);
 
     if (!result.success) {
       console.warn(`⚠️  Failed login attempt for user '${username}' from ${req.ip}: ${result.error}`);
       return res.status(401).json({ error: result.error || "Invalid username or password" });
     }
 
-    console.log('✅ User authenticated via Supabase:', result.user.username);
+    console.log('✅ User authenticated via PostgreSQL:', result.user.username);
 
     // Create session
     const token = generateSessionToken();
