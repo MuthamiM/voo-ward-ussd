@@ -74,10 +74,18 @@ async function getUserByUsernameOrPhone(username) {
     return await queryOne('SELECT * FROM app_users WHERE phone = $1', [formattedPhone]);
 }
 
-async function registerUser({ fullName, phone, idNumber, password, village, username }) {
+async function registerUser(data) {
     try {
+        // Handle various field name formats
+        const fullName = data.fullName || data.full_name || data.name || 'User';
+        const phone = data.phone || data.phoneNumber;
+        const idNumber = data.idNumber || data.id_number || null;
+        const password = data.password;
+        const village = data.village || null;
+        const username = data.username;
+
         let formattedPhone = phone;
-        if (!formattedPhone.startsWith('+')) {
+        if (formattedPhone && !formattedPhone.startsWith('+')) {
             formattedPhone = `+254${formattedPhone.replace(/^0/, '')}`;
         }
 
@@ -110,8 +118,17 @@ async function registerUser({ fullName, phone, idNumber, password, village, user
     }
 }
 
-async function registerUserWithEmail({ fullName, email, phone, idNumber, password, village, username }) {
+async function registerUserWithEmail(data) {
     try {
+        // Handle various field name formats
+        const fullName = data.fullName || data.full_name || data.name || 'User';
+        const email = data.email;
+        const phone = data.phone || data.phoneNumber;
+        const idNumber = data.idNumber || data.id_number || null;
+        const password = data.password;
+        const village = data.village || null;
+        const username = data.username;
+
         let formattedPhone = phone;
         if (phone && !formattedPhone.startsWith('+')) {
             formattedPhone = `+254${formattedPhone.replace(/^0/, '')}`;
