@@ -746,46 +746,12 @@ app.get("/api/admin/me", requireAuth, async (req, res) => {
     }
 });
 
-// Dashboard Stats
+// Dashboard Stats - PostgreSQL
 app.get("/api/admin/stats", requireAuth, async (req, res) => {
     try {
-        const database = await connectDB();
-        if (!database) return res.status(503).json({ error: "DB not connected" });
-        
-        // Parallel queries
-        const [issuesCount, usersCount, feedbackCount, issuesList] = await Promise.all([
-            database.collection('issues').countDocuments({}),
-            database.collection('app_users').countDocuments({}), // Citizen users
-            database.collection('feedback').countDocuments({}),
-            database.collection('issues').find({}, { projection: { created_at: 1 } }).toArray()
-        ]);
-        
-        // Calculate Trends (Last 7 Days)
-        const labels = [];
-        const data = [];
-        const now = new Date();
-        for(let i=6; i>=0; i--) {
-            const date = new Date(now);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
-            labels.push(date.toLocaleDateString('en-US', { weekday: 'short' }));
-            
-            // Count issues for this day
-            const count = issuesList.filter(i => i.created_at && i.created_at.toISOString().startsWith(dateStr)).length;
-            data.push(count);
-        }
-
-        res.json({
-            counts: {
-                issues: issuesCount,
-                users: usersCount,
-                feedback: feedbackCount
-            },
-            trends: {
-                labels: labels,
-                data: data
-            }
-        });
+        const dataService = require('./services/postgresDataService');
+        const stats = await dataService.getStats();
+        res.json(stats);
     } catch (e) {
         console.error('Stats error:', e);
         res.status(500).json({ error: e.message });
@@ -2376,13 +2342,12 @@ app.post('/api/admin/reject-registration/:id', requireAuth, async (req, res) => 
 // ADMIN API ROUTES
 // ============================================
 
-// Get all reported issues (PA and MCA can access) - NOW FROM SUPABASE
+// Get all reported issues (PA and MCA can access) - NOW FROM PostgreSQL
 app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
-    // Use Supabase service to get issues (same as mobile app)
-    const supabaseService = require('./services/supabaseService');
-    console.log('[DEBUG] Fetching issues from Supabase...');
-    const issues = await supabaseService.getAllIssues();
+    const dataService = require('./services/postgresDataService');
+    console.log('[DEBUG] Fetching issues from PostgreSQL...');
+    const issues = await dataService.getIssues({ limit: 100 });
     console.log('[DEBUG] Issues fetched:', issues.length, 'items');
     
     // Map to consistent format for dashboard
@@ -2396,8 +2361,8 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
         description: issue.description,
         location: issue.location,
         status: issue.status || 'pending',
-        image_url: imageUrls.length > 0 ? imageUrls[0] : null,
-        image_urls: imageUrls,
+        image_url: Array.isArray(imageUrls) && imageUrls.length > 0 ? imageUrls[0] : null,
+        image_urls: Array.isArray(imageUrls) ? imageUrls : [],
         user_id: issue.user_id,
         phone_number: issue.phone,
         action_note: issue.resolution_notes || issue.action_note,
@@ -2409,16 +2374,16 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
 
     res.json(formattedIssues);
   } catch (err) {
-    console.error("Error fetching issues from Supabase:", err);
+    console.error("Error fetching issues from PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get all App Users (Citizens) from Supabase (Admin access)
+// Get all App Users (Citizens) from PostgreSQL (Admin access)
 app.get("/api/admin/app-users", requireAuth, async (req, res) => {
   try {
-    const supabaseService = require('./services/supabaseService');
-    const users = await supabaseService.getAllUsers();
+    const dataService = require('./services/postgresDataService');
+    const users = await dataService.getUsers({ limit: 100 });
     
     // Map to consistent format
     const formattedUsers = users.map(u => ({
@@ -2434,16 +2399,16 @@ app.get("/api/admin/app-users", requireAuth, async (req, res) => {
 
     res.json(formattedUsers);
   } catch (err) {
-    console.error("Error fetching app users from Supabase:", err);
+    console.error("Error fetching app users from PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Get all bursary applications (MCA only) - NOW FROM SUPABASE
+// Get all bursary applications (MCA only) - NOW FROM PostgreSQL
 app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
-    const supabaseService = require('./services/supabaseService');
-    const bursaries = await supabaseService.getAllBursaries();
+    const dataService = require('./services/postgresDataService');
+    const bursaries = await dataService.getBursaries({ limit: 100 });
     
     // Map to consistent format for dashboard
     const formattedBursaries = bursaries.map(b => ({
@@ -2465,7 +2430,7 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
       has_scholarship: b.has_scholarship,
       reason: b.reason || b.purpose,
       status: b.status || 'Pending',
-      amount_approved: b.amount_approved || b.approved_amount, // Supabase column is amount_approved
+      amount_approved: b.amount_approved || b.approved_amount,
       approved_amount: b.amount_approved || b.approved_amount,
       admin_notes: b.admin_notes || b.approval_notes,
       approval_notes: b.admin_notes || b.approval_notes,
@@ -2476,7 +2441,7 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
 
     res.json(formattedBursaries);
   } catch (err) {
-    console.error("Error fetching bursaries from Supabase:", err);
+    console.error("Error fetching bursaries from PostgreSQL:", err);
     res.status(500).json({ error: err.message });
   }
 });
