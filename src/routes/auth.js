@@ -1,26 +1,14 @@
 /**
  * Auth Routes (Google + Backend OTP)
- * Centralizes auth logic for both USSD Dashboard and Mobile App.
+ * Uses PostgreSQL for all auth operations
  */
 const express = require('express');
 const router = express.Router();
-const supabaseService = require('../services/supabaseService');
 
-// Use PostgreSQL when DATABASE_URL is set
-let otpService = supabaseService;
-let userService = supabaseService;
-
-if (process.env.DATABASE_URL) {
-    try {
-        otpService = require('../services/postgresOtpService');
-        userService = require('../services/postgresUserService');
-        console.log('[AUTH] Using PostgreSQL for OTP and User storage');
-    } catch (e) {
-        console.log('[AUTH] PostgreSQL modules not available, using Supabase:', e.message);
-    }
-} else {
-    console.log('[AUTH] DATABASE_URL not set, using Supabase');
-}
+// PostgreSQL only - no Supabase
+const otpService = require('../services/postgresOtpService');
+const userService = require('../services/postgresUserService');
+console.log('[AUTH] Using PostgreSQL for all auth operations');
 
 // Generate 6-digit OTP
 function generateOTP() {
