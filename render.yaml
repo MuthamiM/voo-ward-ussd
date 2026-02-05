@@ -1,0 +1,52 @@
+services:
+  # Backend API Service
+  - type: web
+    name: voo-ward-backend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install --production
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-3.5-turbo
+      - key: SESSION_TIMEOUT_MS
+        value: 1800000
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
+      # OAuth - Facebook
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      # OAuth - Twitter
+      - key: TWITTER_CONSUMER_KEY
+        sync: false
+      - key: TWITTER_CONSUMER_SECRET
+        sync: false
+      - key: OAUTH_CALLBACK_URL
+        sync: false
+      # Infobip SMS
+      - key: INFOBIP_BASE_URL
+        sync: false
+      - key: INFOBIP_API_KEY
+        sync: false
+      - key: INFOBIP_SENDER
+        value: ServiceSMS
+      - key: SESSION_SECRET
+        generateValue: true
+

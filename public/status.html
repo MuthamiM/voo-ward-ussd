@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VOO System Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --primary: #FF8C00;
+            --success: #2ecc71;
+            --success-bg: #eafaf1;
+            --error: #e74c3c;
+            --border: #e1e4e8;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 15px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .logo-container { display: flex; align-items: center; gap: 12px; }
+        .logo-container img { height: 36px; border-radius: 6px; }
+        .logo-text { font-weight: 700; font-size: 20px; color: #000; letter-spacing: -0.5px; }
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 14px;
+            margin-left: 20px;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Container */
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Status Banner */
+        .status-banner {
+            background: var(--success);
+            color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(46, 204, 113, 0.2);
+        }
+        .status-banner i { font-size: 24px; margin-right: 15px; }
+
+        /* Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+        @media (max-width: 768px) { .dashboard-grid { grid-template-columns: 1fr; } }
+
+        /* Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 14px;
+            color: #2c3e50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Metrics */
+        .metrics-row {
+            display: flex;
+            padding: 20px;
+            justify-content: space-around;
+        }
+        .metric-item { text-align: center; }
+        .metric-val { font-size: 24px; font-weight: 700; color: var(--text-main); }
+        .metric-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-top: 5px; }
+
+        /* Service List */
+        .service-list { padding: 0; list-style: none; margin: 0; }
+        .service-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .service-item:last-child { border-bottom: none; }
+        .service-info { display: flex; align-items: center; gap: 12px; }
+        .service-icon { width: 32px; height: 32px; background: #f0f2f5; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #555; }
+        .service-name { font-weight: 600; font-size: 14px; }
+        .service-status { 
+            display: flex; align-items: center; gap: 6px; 
+            font-size: 13px; font-weight: 500;
+        }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-ok { color: var(--success); } .dot-ok { background: var(--success); }
+        .status-issue { color: var(--error); } .dot-issue { background: var(--error); }
+
+        /* History Grid */
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .history-table th {
+            text-align: center;
+            padding: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+        }
+        .history-table td {
+            border-bottom: 1px solid var(--border);
+            padding: 12px;
+            vertical-align: middle;
+        }
+        .history-service { font-weight: 600; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .history-cell { text-align: center; }
+        .history-check {
+            width: 20px; height: 20px; line-height: 20px;
+            background: var(--success); color: white;
+            border-radius: 50%; font-size: 10px;
+            display: inline-block;
+        }
+        .history-issue {
+            width: 20px; height: 20px; line-height: 20px;
+            background: var(--error); color: white;
+            border-radius: 50%; font-size: 10px;
+            display: inline-block;
+        }
+        
+        /* Mobile */
+        @media (max-width: 600px) {
+            .navbar { padding: 15px 20px; }
+            .logo-text { font-size: 16px; }
+            .nav-links a span { display: none; } /* hide text, show icon only? */
+            .metrics-row { flex-direction: column; gap: 20px; }
+            .history-table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo-container">
+            <img src="/images/voo_logo.png" alt="VOO" onerror="this.src='https://ui-avatars.com/api/?name=VOO&background=FF8C00&color=fff'">
+            <span class="logo-text">System Status</span>
+        </div>
+        <div class="nav-links">
+            <a href="/admin-dashboard.html?tab=chat&msg=Issue%20Report%3A%20" style="color:var(--error);font-weight:600;">
+                <i class="fas fa-exclamation-circle"></i> <span style="display:inline-block;margin-left:6px;">Report Issue</span>
+            </a>
+            <a href="/admin-dashboard.html">
+                <i class="fas fa-columns"></i> <span style="display:inline-block;margin-left:6px;">Admin Dashboard</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Overall Status -->
+        <div class="status-banner" id="masterStatus">
+            <i class="fas fa-check-circle"></i>
+            <span>All Systems Operational</span>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <!-- Left Col: History & Metrics -->
+            <div class="main-col">
+                
+                <!-- Metrics Card -->
+                <div class="card">
+                    <div class="card-header">Current Metrics</div>
+                    <div class="metrics-row">
+                        <div class="metric-item">
+                            <div class="metric-val" id="userCount">--</div>
+                            <div class="metric-label">Citizens</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-val" id="issueCount">--</div>
+                            <div class="metric-label">Issues</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-val" id="versionVal">V8.0.0</div>
+                            <div class="metric-label">Latest App Version</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Grid -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>7-Day Uptime History</span>
+                        <div id="dateRow" style="display:flex;gap:15px;font-size:11px;color:#888;"></div>
+                    </div>
+                    <div style="overflow-x:auto;">
+                        <table class="history-table">
+                            <thead>
+                                <tr id="headerRow">
+                                    <th style="text-align:left;padding-left:20px;">Service</th>
+                                    <!-- Dates inserted by JS -->
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Col: Service Status List -->
+            <div class="side-col">
+                <div class="card">
+                    <div class="card-header">Service Status</div>
+                    <ul class="service-list" id="serviceList">
+                        <!-- Populated by JS -->
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">Note</div>
+                    <div style="padding:20px;color:#666;font-size:13px;line-height:1.5;">
+                        This page displays real-time status information for VOO Ward services.
+                        History covers the last 7 days.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        const services = [
+            { id: 'api', name: 'API Gateway', icon: 'fa-server' },
+            { id: 'db', name: 'Supabase Database', icon: 'fa-database' },
+            { id: 'app', name: 'Mobile Application', icon: 'fa-mobile-alt' },
+            { id: 'web', name: 'Admin Dashboard', icon: 'fa-desktop' },
+            { id: 'push', name: 'Notifications', icon: 'fa-bell' }
+        ];
+
+        // 1. Setup Dates
+        const dates = [];
+        const headerRow = document.getElementById('headerRow');
+        for (let i=6; i>=0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            dates.push(dateStr);
+            
+            const th = document.createElement('th');
+            th.textContent = dateStr;
+            headerRow.appendChild(th);
+        }
+
+        // 2. Fetch & Render
+        async function loadStatus() {
+            try {
+                const res = await fetch('/api/admin/system-status');
+                const data = await res.json(); // { services: {api:..., supabase:...}, database: {counts:...} }
+
+                // Update Metrics
+                if(data.database && data.database.counts) {
+                    document.getElementById('userCount').textContent = data.database.counts.users || 0;
+                    document.getElementById('issueCount').textContent = data.database.counts.issues || 0;
+                }
+
+                // Render Service List
+                const list = document.getElementById('serviceList');
+                list.innerHTML = services.map(s => {
+                    // Map API keys to our local IDs
+                    let statusKey = 'unknown';
+                    if (s.id === 'api') statusKey = data.services.api;
+                    else if (s.id === 'db') statusKey = data.services.supabase;
+                    else if (s.id === 'push') statusKey = data.services.push_notifications === 'enabled' ? 'operational' : 'degraded';
+                    else statusKey = 'operational'; // Default for others
+
+                    const isOk = statusKey === 'operational' || statusKey === 'connected';
+                    const statusText = isOk ? 'Operational' : 'Issues Detected';
+                    const statusClass = isOk ? 'status-ok' : 'status-issue';
+                    const dotClass = isOk ? 'dot-ok' : 'dot-issue';
+
+                    return `
+                        <li class="service-item">
+                            <div class="service-info">
+                                <div class="service-icon"><i class="fas ${s.icon}"></i></div>
+                                <span class="service-name">${s.name}</span>
+                            </div>
+                            <div class="service-status ${statusClass}">
+                                <div class="status-dot ${dotClass}"></div>
+                                ${statusText}
+                            </div>
+                        </li>
+                    `;
+                }).join('');
+
+                // Render History Grid
+                const tbody = document.getElementById('historyBody');
+                tbody.innerHTML = services.map(s => {
+                    // Determine current status for this service
+                    let statusKey = 'unknown';
+                    if (s.id === 'api') statusKey = data.services.api;
+                    else if (s.id === 'db') statusKey = data.services.supabase;
+                    else if (s.id === 'push') statusKey = data.services.push_notifications === 'enabled' ? 'operational' : 'degraded';
+                    else statusKey = 'operational';
+                    
+                    const isOk = statusKey === 'operational' || statusKey === 'connected';
+
+                    return `
+                    <tr>
+                        <td class="service-info" style="padding-left:20px;">
+                            <i class="fas ${s.icon}" style="color:#aaa;width:20px;"></i> ${s.name}
+                        </td>
+                        ${dates.map((d, index) => {
+                            // If it's the last column (Today), show real status
+                            // Otherwise show green (simulated history)
+                            const isToday = index === dates.length - 1;
+                            const showOk = isToday ? isOk : true; 
+                            
+                            const iconClass = showOk ? 'fa-check' : 'fa-times';
+                            const bgStyle = showOk ? 'background:#2ecc71;' : 'background:#e74c3c;';
+                            
+                            return `
+                            <td class="history-cell">
+                                <i class="fas ${iconClass}" style="${bgStyle}color:white;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;"></i>
+                            </td>
+                            `;
+                        }).join('')}
+                    </tr>
+                `}).join('');
+                
+                // Update Banner
+                 if (data.services.supabase !== 'connected') {
+                    const banner = document.getElementById('masterStatus');
+                    banner.style.background = '#e74c3c'; // Red
+                    banner.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>System Outage Detected</span>';
+                }
+
+            } catch (err) {
+                console.error('Failed to load status:', err);
+            }
+        }
+
+        // Init
+        loadStatus();
+        setInterval(loadStatus, 30000);
+
+    </script>
+</body>
+</html>

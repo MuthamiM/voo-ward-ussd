@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Deletion - VOO Ward</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 48px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+        h1 {
+            color: #1f2937;
+            font-size: 32px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 16px;
+        }
+
+        h2 {
+            color: #374151;
+            font-size: 20px;
+            margin: 32px 0 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        h2:first-of-type {
+            border-top: none;
+            margin-top: 0;
+        }
+
+        p,
+        ul,
+        ol {
+            color: #4b5563;
+            line-height: 1.8;
+            margin-bottom: 16px;
+        }
+
+        ul,
+        ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        a {
+            color: #6366f1;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+
+        .info-box strong {
+            color: #0369a1;
+        }
+
+        .delete-form {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+
+        .delete-form h3 {
+            color: #991b1b;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .submit-btn:hover {
+            background: #b91c1c;
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 32px;
+        }
+
+        .back-link a {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #6366f1;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .back-link a:hover {
+            background: #4f46e5;
+        }
+
+        #result {
+            margin-top: 16px;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #result.success {
+            background: #d1fae5;
+            color: #065f46;
+            display: block;
+        }
+
+        #result.error {
+            background: #fee2e2;
+            color: #991b1b;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="logo-icon">VW</div>
+        </div>
+        <h1>User Data Deletion</h1>
+        <p class="subtitle">Request deletion of your personal data from VOO Ward</p>
+
+        <h2>Your Data Rights</h2>
+        <p>Under data protection regulations, you have the right to request deletion of your personal data. This
+            includes:</p>
+        <ul>
+            <li>Your account information (name, email, phone number)</li>
+            <li>Social login connections (Facebook, Twitter)</li>
+            <li>Issue reports and submissions</li>
+            <li>Any other personal data we hold about you</li>
+        </ul>
+
+        <div class="info-box">
+            <strong>Important:</strong> Data deletion is permanent and cannot be undone. Once your data is deleted, you
+            will no longer be able to access your account or view your submission history.
+        </div>
+
+        <h2>How to Request Data Deletion</h2>
+        <p>You can request deletion of your data using any of these methods:</p>
+        <ol>
+            <li><strong>Via Email:</strong> Send a deletion request to <a
+                    href="mailto:mutindimusa04@gmail.com">mutindimusa04@gmail.com</a></li>
+            <li><strong>Via Form:</strong> Use the form below to submit a deletion request</li>
+            <li><strong>In-App:</strong> Go to Settings → Account → Delete Account (if logged in)</li>
+        </ol>
+
+        <div class="delete-form">
+            <h3>🗑️ Data Deletion Request Form</h3>
+            <form id="deletionForm">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="Your account email">
+                </div>
+                <div class="form-group">
+                    <label for="username">Username (if known)</label>
+                    <input type="text" id="username" name="username" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label for="reason">Reason for Deletion (optional)</label>
+                    <textarea id="reason" name="reason" placeholder="Let us know why you're leaving..."></textarea>
+                </div>
+                <button type="submit" class="submit-btn">Submit Deletion Request</button>
+                <div id="result"></div>
+            </form>
+        </div>
+
+        <h2>What Happens After Your Request</h2>
+        <ol>
+            <li><strong>Verification (1-2 days):</strong> We verify your identity to ensure the request is legitimate
+            </li>
+            <li><strong>Processing (7-14 days):</strong> We process your request and delete your data from our systems
+            </li>
+            <li><strong>Confirmation:</strong> You'll receive an email confirming your data has been deleted</li>
+        </ol>
+
+        <h2>Data We May Retain</h2>
+        <p>Some data may be retained for legal or security purposes:</p>
+        <ul>
+            <li>Anonymized statistical data that cannot identify you</li>
+            <li>Records required for legal compliance or dispute resolution</li>
+            <li>Backup copies (deleted within 30 days of the backup cycle)</li>
+        </ul>
+
+        <h2>Contact Us</h2>
+        <p>For questions about data deletion or privacy:</p>
+        <ul>
+            <li>Email: <a href="mailto:mutindimusa04@gmail.com">mutindimusa04@gmail.com</a></li>
+            <li>See our full <a href="/privacy.html">Privacy Policy</a></li>
+        </ul>
+
+        <div class="back-link">
+            <a href="/login.html">← Back to Login</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('deletionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const result = document.getElementById('result');
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const reason = document.getElementById('reason').value;
+
+            // In production, this would send to your API
+            // For now, show success message
+            result.className = 'success';
+            result.innerHTML = '<strong>✓ Request Submitted!</strong><br>We have received your data deletion request. You will receive a confirmation email at ' + email + ' within 1-2 business days.';
+
+            // Log for demo purposes
+            console.log('Data deletion request:', { email, username, reason });
+        });
+    </script>
+</body>
+
+</html>

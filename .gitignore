@@ -1,0 +1,168 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Environment variables - CRITICAL SECURITY
+.env
+.env.local
+.env.production
+.env.*.local
+*.env
+!.env.example
+
+# Unused legacy folders (do not deploy)
+frontend/
+voo-admin-v2/
+backend/
+
+# Development/test files (not needed in production)
+examples/
+handover/
+scripts/backup.*
+scripts/*-temp-admin.js
+scripts/seed*.js
+scripts/insert-example-issue.js
+scripts/trigger_and_poll_render.js
+scripts/fetch_deploy_events.js
+scripts/get_service.js
+scripts/try_logs.js
+scripts/check_endpoints.js
+web-simulator/
+fly.toml
+nodemon.json
+.hintrc
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Testing
+coverage/
+.nyc_output/
+test-results/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+*.bak
+
+# Cloudflare
+cloudflare-tunnel.log
+
+# Local config
+backend/config/local.js
+**/mongo_uri
+
+# Uploads (profile pictures should be in cloud storage)
+public/uploads/
+uploads/
+
+# Sensitive files
+*.pem
+*.key
+*.cert
+*.crt
+secrets/
+.secrets
+credentials.json
+
+# Large binary files (APKs)
+*.apk
+
+# Sensitive cleanup
+response*.txt
+reset-admin-password.js
+test_cloudinary.js
+data.json
+setup-new-tables.js
+migrate_admins_to_supabase.js
+check_render.txt
+deploy-trigger.txt
+check_users.js
+test_backend_upload.js
+
+# Deep Cleanup - Admin & Sensitive Scripts
+add-test-issues.js
+check_prod_images.js
+check_recent_cloudinary.js
+check_supabase_admins.js
+delete_admin.js
+fix-syntax.js
+list_admins.js
+migrate-issues-to-supabase.js
+update_app_version.js
+update_minimum_version.js
+check_render.txt
+deploy-trigger.txt
+response*.txt
+reset-admin-password.js
+fix_html.py
+fix_login_form.py
+migrate_admins_to_supabase.js
+setup-new-tables.js
+test_backend_upload.js
+test_cloudinary.js
+data.json
+ai_requirements.txt
+check_users.js
+ADMIN-DASHBOARD-DEPLOY.md
+
+# Scripts folder sensitive cleanup
+scripts/add_admins.js
+scripts/cleanup-and-test.js
+scripts/cleanup-bad-users.js
+scripts/clear-all-pending.js
+scripts/clear-registration.js
+scripts/clear-test-data.js
+scripts/create-bursary-table.js
+scripts/create-user-manual.js
+scripts/create_admin_supabase.js
+scripts/delete-cantroll.js
+scripts/delete-user-application.js
+scripts/diagnose_auth.js
+scripts/drop-username-index.js
+scripts/list-users.js
+scripts/list_admin_users.js
+scripts/list_users.js
+scripts/remove-zak.js
+scripts/reset-admin-password.js
+scripts/reset-admin.js
+scripts/reset_admin_password.js
+scripts/reset_user_pin.js
+scripts/run-migrations.ps1
+scripts/seed.sql
+scripts/start-db-and-seed.ps1
+scripts/supabase_schema.sql
+scripts/test-mobile-api.js
+scripts/test_login_logic.js
+scripts/test_remote_login.js
+scripts/update-admin-pin.js
+scripts/verify-oauth.js

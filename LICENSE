@@ -1,0 +1,185 @@
+================================================================================
+PROPRIETARY SOFTWARE LICENSE
+VOO Citizen Platform - All Rights Reserved
+================================================================================
+
+Copyright (C) 2025 Musa Muthami
+All Rights Reserved.
+
+================================================================================
+GRANT OF LICENSE
+================================================================================
+
+This software and associated documentation files (the "Software") are the
+exclusive property of Musa Muthami ("the Author"). By accessing or using this
+Software, you ("the User") agree to the following terms:
+
+1. PERMITTED USE
+
+   - You MAY use the Software for its intended purpose as provided
+   - You MAY interact with the Software as an end-user
+   - You MAY report bugs or suggest features to the Author
+   - You MAY view the source code for educational purposes only
+
+2. PROHIBITED ACTIONS
+   You may NOT, under any circumstances:
+
+   - Modify, alter, or change any part of the Software
+   - Copy, reproduce, or duplicate the Software or its components
+   - Distribute, sublicense, sell, or transfer the Software
+   - Create derivative works based on the Software
+   - Reverse engineer, decompile, or disassemble the Software
+   - Remove or alter any copyright notices or this license
+   - Use the Software for commercial purposes without written permission
+   - Host, deploy, or make available copies of this Software
+   - Extract, reuse, or repurpose any code from this Software
+
+3. EXCLUSIVE MODIFICATION RIGHTS - SOURCE CODE EDITING STRICTLY FORBIDDEN
+   - THE SOURCE CODE CANNOT BE EDITED BY ANYONE except Musa Muthami
+   - ABSOLUTE PROHIBITION: No person, organization, or entity may alter, modify,
+     change, adapt, or otherwise edit any portion of the source code
+   - ONLY Musa Muthami has the exclusive right to modify this Software
+   - All updates, patches, and enhancements are exclusively performed by the Author
+   - No third-party modifications, contributions, or pull requests are accepted
+   - Viewing the code for educational purposes is permitted, but editing is FORBIDDEN
+   - Any unauthorized modifications are ILLEGAL and void all warranties and support
+   - Violators will be subject to immediate legal action
+
+================================================================================
+WARRANTY AND MAINTENANCE
+================================================================================
+
+Unlike typical open-source software, this Software INCLUDES warranties:
+
+1. LIMITED WARRANTY
+   The Author warrants that:
+
+   - The Software will perform substantially as described
+   - The Software will be maintained to remain functional
+   - Critical bugs will be addressed within 72 hours of confirmation
+   - Security vulnerabilities will be patched within 24 hours
+   - The Software will receive regular updates and improvements
+
+2. DAILY MAINTENANCE COMMITMENT
+   The Author commits to:
+
+   - Daily monitoring of system performance
+   - Daily review of error logs and user reports
+   - Continuous improvement and feature development
+   - Regular security audits and updates
+   - Database optimization and maintenance
+   - Server uptime monitoring (target: 99.5%)
+
+3. WARRANTY PERIOD
+
+   - This warranty is valid for the lifetime of the Software
+   - Warranty coverage begins upon first deployment
+   - Coverage is contingent on compliance with this license
+
+4. REMEDY FOR BREACH OF WARRANTY
+   If the Software fails to meet warranty conditions:
+
+   - The Author will repair or replace the affected components
+   - Users will receive priority support and resolution
+   - Compensation may be provided at the Author's discretion
+
+5. WARRANTY EXCLUSIONS
+   This warranty does NOT cover:
+   - Damage caused by unauthorized modifications
+   - Issues arising from misuse or negligence
+   - Third-party service failures (hosting, internet, etc.)
+   - Force majeure events beyond the Author's control
+
+================================================================================
+SUPPORT AND UPDATES
+================================================================================
+
+1. TECHNICAL SUPPORT
+
+   - Email support: musamwange2@gmail.com
+   - Response time: Within 24 hours for critical issues
+   - Response time: Within 72 hours for non-critical issues
+
+2. AUTOMATIC UPDATES
+
+   - The Software may receive automatic updates
+   - Updates will be tested before deployment
+   - Users will be notified of significant changes
+
+3. BACKWARD COMPATIBILITY
+   - The Author will maintain reasonable backward compatibility
+   - Breaking changes will be clearly communicated in advance
+
+================================================================================
+OWNERSHIP AND INTELLECTUAL PROPERTY
+================================================================================
+
+1. COPYRIGHT
+
+   - All source code, designs, and documentation are copyrighted
+   - Copyright © 2025 Musa Muthami. All Rights Reserved.
+
+2. TRADEMARKS
+
+   - "VOO", "VOO Citizen", "VOO Platform" are trademarks of Musa Muthami
+   - Unauthorized use of these marks is strictly prohibited
+
+3. PROPRIETARY INFORMATION
+   - All code, algorithms, and designs are trade secrets
+   - Unauthorized disclosure is prohibited and legally actionable
+
+================================================================================
+TERMINATION
+================================================================================
+
+1. This license terminates automatically if you:
+
+   - Violate any terms of this agreement
+   - Attempt to modify or redistribute the Software
+   - Use the Software for unauthorized purposes
+
+2. Upon termination:
+   - You must immediately cease all use of the Software
+   - You must delete all copies in your possession
+   - All warranties and support are immediately void
+
+================================================================================
+LIMITATION OF LIABILITY
+================================================================================
+
+To the maximum extent permitted by law:
+
+- The Author is not liable for indirect, incidental, or consequential damages
+- Total liability shall not exceed the fees paid for the Software (if any)
+- This limitation applies even if the Author has been advised of potential damages
+
+However, unlike open-source software, the Author DOES accept responsibility
+for defects covered under the warranty provisions above.
+
+================================================================================
+COMMERCIAL LICENSING
+================================================================================
+
+For commercial use, custom deployments, or white-label solutions:
+
+- Contact: musamwange2@gmail.com
+- Separate commercial license agreements available
+- Custom warranty and SLA terms negotiable
+
+================================================================================
+GOVERNING LAW
+================================================================================
+
+This license shall be governed by the laws of Kenya.
+Any disputes shall be resolved in Kenyan courts.
+
+================================================================================
+CONTACT INFORMATION
+================================================================================
+
+Musa Muthami
+Email: musamwange2@gmail.com
+Project: VOO Citizen Platform
+
+© 2025 Musa Muthami. All Rights Reserved.
+Unauthorized copying, modification, or distribution is strictly prohibited.

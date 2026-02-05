@@ -1,0 +1,42 @@
+{
+  "name": "voo-ward-backend",
+  "version": "1.0.0",
+  "description": "Voo Kyamatu Ward USSD backend (production)",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "admin": "node src/admin-dashboard.js",
+    "backup": "node scripts/backup-db.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.929.0",
+    "@sentry/node": "^7.120.4",
+    "@supabase/supabase-js": "^2.87.1",
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^2.2.0",
+    "cloudinary": "^1.41.3",
+    "compression": "^1.7.4",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^6.11.2",
+    "express-session": "^1.18.2",
+    "ioredis": "^5.3.2",
+    "mongodb": "^6.20.0",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^7.0.11",
+    "openai": "^4.24.0",
+    "passport": "^0.7.0",
+    "passport-facebook": "^3.0.0",
+    "passport-twitter": "^1.0.4",
+    "pg": "^8.11.3",
+    "pino": "^8.17.0",
+    "redis": "^4.6.0",
+    "sharp": "^0.32.5",
+    "socket.io": "^4.8.1",
+    "twilio": "^4.20.0",
+    "web-push": "^3.6.7"
+  }
+}
