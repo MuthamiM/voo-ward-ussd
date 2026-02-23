@@ -164,7 +164,7 @@ class SupabaseService {
             // First try exact username match
             const usernameQuery = `/rest/v1/app_users?username=eq.${encodeURIComponent(username)}&select=*`;
             let result = await this.request('GET', usernameQuery);
-            
+
             if (Array.isArray(result) && result.length > 0) {
                 return result[0];
             }
@@ -174,7 +174,7 @@ class SupabaseService {
             if (!username.startsWith('+') && !isNaN(username.replace(/^0/, ''))) {
                 formattedPhone = `+254${username.replace(/^0/, '')}`;
             }
-            
+
             result = await this.request('GET', `/rest/v1/app_users?phone=eq.${encodeURIComponent(formattedPhone)}&select=*`);
             return Array.isArray(result) && result.length > 0 ? result[0] : null;
         } catch (e) {
@@ -195,7 +195,7 @@ class SupabaseService {
             }
 
             const passwordMatch = this.verifyPassword(password, user.password_hash);
-            
+
             if (!passwordMatch) {
                 return { success: false, error: 'Invalid password' };
             }
@@ -210,7 +210,7 @@ class SupabaseService {
                     village: user.village,
                     email: user.email,
                     // Inject role for known admins since schema lacks role column
-                    role: ['zak', 'muthami', 'admin'].includes(user.username.toLowerCase()) ? 'MCA' : (user.role || 'user')
+                    role: ['zak', 'muthami', 'admin', 'martin'].includes(user.username.toLowerCase()) ? 'MCA' : (user.role || 'user')
                 }
             };
         } catch (e) {
@@ -287,7 +287,7 @@ class SupabaseService {
         try {
             // Check if user exists by Google ID
             let user = await this.findUserByGoogleId(profile.id);
-            
+
             if (user) {
                 return { success: true, user };
             }
@@ -312,10 +312,10 @@ class SupabaseService {
                 google_id: profile.id,
                 avatar_url: profile.picture,
                 phone: null, // Phone is optional in this flow, or collected later
-                username: profile.email.split('@')[0], 
+                username: profile.email.split('@')[0],
                 created_at: new Date().toISOString()
             });
-            
+
             return { success: true, user: Array.isArray(result) ? result[0] : result };
 
         } catch (e) {
@@ -330,7 +330,7 @@ class SupabaseService {
     async saveOTP(phone, otp) {
         try {
             const expiresAt = new Date(Date.now() + 5 * 60000).toISOString(); // 5 mins
-            
+
             // Upsert (update if exists, insert if not)
             const result = await this.request('POST', '/rest/v1/mobile_otps', {
                 phone,
@@ -338,7 +338,7 @@ class SupabaseService {
                 expires_at: expiresAt,
                 created_at: new Date().toISOString()
             }, { 'Prefer': 'resolution=merge-duplicates' }); // Ensure Supabase handles upsert if configured, or use standard Insert/Update logic if not.
-            
+
             // Basic Insert/Upsert logic via POST usually requires unique constraints handling or explicit UPSERT param.
             // Simplified: DELETE old, INSERT new
             await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(phone)}`);
@@ -362,7 +362,7 @@ class SupabaseService {
         try {
             const query = `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(phone)}&select=*`;
             const result = await this.request('GET', query);
-            
+
             if (!Array.isArray(result) || result.length === 0) {
                 return { success: false, error: 'OTP not found or expired' };
             }
@@ -399,10 +399,10 @@ class SupabaseService {
         try {
             const emailKey = `email:${email.toLowerCase()}`;
             const expiresAt = new Date(Date.now() + 10 * 60000).toISOString(); // 10 mins for email
-            
+
             // Delete old OTP first
             await this.request('DELETE', `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(emailKey)}`);
-            
+
             // Insert new OTP
             await this.request('POST', '/rest/v1/mobile_otps', {
                 phone: emailKey,
@@ -425,7 +425,7 @@ class SupabaseService {
             const emailKey = `email:${email.toLowerCase()}`;
             const query = `/rest/v1/mobile_otps?phone=eq.${encodeURIComponent(emailKey)}&select=*`;
             const result = await this.request('GET', query);
-            
+
             if (!Array.isArray(result) || result.length === 0) {
                 return { success: false, error: 'OTP not found or expired' };
             }
@@ -598,14 +598,14 @@ class SupabaseService {
         try {
             // Determine if issueId is a UUID or an issue_number
             const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
-            
+
             let path;
             if (isUUID) {
                 path = `/rest/v1/issues?id=eq.${issueId}&select=*`;
             } else {
                 path = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`;
             }
-            
+
             const result = await this.request('GET', path);
             return Array.isArray(result) && result.length > 0 ? result[0] : null;
         } catch (e) {
@@ -637,16 +637,16 @@ class SupabaseService {
             const payload = {
                 updated_at: new Date().toISOString(),
             };
-            
+
             // Only include fields that exist in Supabase schema
             if (updates.status) payload.status = updates.status;
             // resolved_at and action_note columns don't exist - skip them
-            
+
             console.log(`[Supabase] Updating issue ${issueId} with:`, JSON.stringify(payload));
-            
+
             const query = `/rest/v1/issues?id=eq.${issueId}`;
             const result = await this.request('PATCH', query, payload);
-            
+
             console.log(`[Supabase] Update result:`, JSON.stringify(result));
             return { success: true, result };
         } catch (e) {
@@ -673,7 +673,7 @@ class SupabaseService {
                 status: data.status || 'Pending',
                 created_at: new Date().toISOString()
             });
-            
+
             return { success: true, data: result };
         } catch (e) {
             console.error('[Supabase] createIssue error:', e);
@@ -719,12 +719,12 @@ class SupabaseService {
             if (updates.status) {
                 updates.status = updates.status.toLowerCase();
             }
-            
+
             const result = await this.request('PATCH', `/rest/v1/bursary_applications?id=eq.${bursaryId}`, {
                 ...updates,
                 updated_at: new Date().toISOString()
             });
-            
+
             return { success: true, result };
         } catch (e) {
             console.error('[Supabase] updateBursary error:', e);
@@ -780,14 +780,14 @@ class SupabaseService {
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             });
-            
+
             return { success: true, data: result };
         } catch (e) {
             console.error('[Supabase] createBursaryApplication error:', e);
             return { success: false, error: 'Insert failed' };
         }
     }
-    
+
     /**
      * Get bursaries for specific user
      */
@@ -831,9 +831,9 @@ class SupabaseService {
                 is_active: true,
                 created_at: new Date().toISOString(),
             };
-            
+
             if (image_url) data.image_url = image_url;
-            
+
             const result = await this.request('POST', '/rest/v1/announcements', data);
             return { success: true, result };
         } catch (e) {
@@ -882,10 +882,10 @@ class SupabaseService {
     async deleteIssue(issueId) {
         try {
             console.log(`[Supabase] deleteIssue called with: ${issueId}`);
-            
+
             // Determine if issueId is a UUID or an issue_number (like ISS-123456)
             const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
-            
+
             let deletePath;
             if (isUUID) {
                 // It's a UUID, use id field
@@ -894,10 +894,10 @@ class SupabaseService {
                 // It's an issue_number like ISS-123456
                 deletePath = `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`;
             }
-            
+
             console.log(`[Supabase] Deleting via path: ${deletePath}`);
             const result = await this.request('DELETE', deletePath);
-            
+
             // Check if any rows were deleted
             if (Array.isArray(result) && result.length > 0) {
                 console.log(`[Supabase] Issue ${issueId} deleted successfully (Rows: ${result.length})`);
@@ -912,12 +912,12 @@ class SupabaseService {
             // Try the other field if first one failed
             try {
                 const isUUID = issueId.includes('-') && issueId.length > 10 && !issueId.startsWith('ISS-');
-                const fallbackPath = isUUID 
+                const fallbackPath = isUUID
                     ? `/rest/v1/issues?issue_number=eq.${encodeURIComponent(issueId)}&select=*`
                     : `/rest/v1/issues?id=eq.${issueId}&select=*`;
                 console.log(`[Supabase] Trying fallback delete path: ${fallbackPath}`);
                 const result2 = await this.request('DELETE', fallbackPath);
-                
+
                 if (Array.isArray(result2) && result2.length > 0) {
                     console.log(`[Supabase] Issue ${issueId} deleted via fallback`);
                     return { success: true, count: result2.length };
@@ -938,14 +938,14 @@ class SupabaseService {
         try {
             // Format timestamp for Supabase (ISO string)
             const isoTime = typeof timestamp === 'string' ? timestamp : timestamp.toISOString();
-            
+
             // Query: status=Resolved AND updated_at < timestamp
             // Note: 'resolved_at' column does not exist, so we use 'updated_at' 
             // assuming the status change to 'Resolved' was the last update.
-            
+
             // Delete requests with filters
             await this.request('DELETE', `/rest/v1/issues?status=eq.Resolved&updated_at=lt.${isoTime}`);
-            
+
             return { success: true };
         } catch (e) {
             console.error('[Supabase] deleteResolvedIssuesBefore error:', e);
@@ -1001,7 +1001,7 @@ class SupabaseService {
             const updateData = { status };
             // if (status === 'found') updateData.found_at = new Date().toISOString(); // Column missing
             if (adminNotes) updateData.admin_notes = adminNotes;
-            
+
             const result = await this.request('PATCH', `/rest/v1/lost_ids?id=eq.${id}`, updateData);
             return { success: true, result };
         } catch (e) {

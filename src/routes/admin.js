@@ -7,13 +7,17 @@ const { addSession, isActiveSession, removeSession } = require('../services/sess
 let devAnnouncements = [
   { id: 1, title: 'Ward Maintenance Notice', body: 'Road maintenance scheduled for next week. Please avoid main street.', created_at: new Date().toISOString() },
   { id: 2, title: 'Community Meeting', body: 'Monthly community meeting on Friday at 3 PM at the ward office.', created_at: new Date().toISOString() },
-  { id: 3, title: 'Bursary Applications Open', body: 'Applications for school bursaries are now open. Deadline: end of month.', created_at: new Date().toISOString() }
+  { id: 3, title: 'Bursary Applications Open', body: 'Applications for school bursaries are now open. Deadline: end of month.', created_at: new Date().toISOString() },
+  { id: 4, title: 'Health Clinic Upgrade', body: 'The local health clinic has received new equipment. Free checkups available.', created_at: new Date().toISOString() },
+  { id: 5, title: 'Youth Empowerment Drive', body: 'Registration for youth empowerment program is ongoing at the ward office.', created_at: new Date().toISOString() }
 ];
 
 let devIssues = [
   { id: 1, ticket: 'ISS-001', category: 'Infrastructure', message: 'Pothole on main street causing accidents', phone_number: '0712345678', status: 'open', source: 'Dashboard', comments: [], created_at: new Date().toISOString() },
   { id: 2, ticket: 'ISS-002', category: 'Water', message: 'No water supply in zone B for 3 days', phone_number: '0787654321', status: 'in_progress', source: 'Dashboard', comments: ['Technician dispatched'], created_at: new Date().toISOString() },
-  { id: 3, ticket: 'ISS-003', category: 'Health', message: 'Clinic is out of malaria medication', phone_number: '0723456789', status: 'resolved', source: 'Dashboard', comments: ['Stock replenished', 'Issue resolved'], created_at: new Date().toISOString() }
+  { id: 3, ticket: 'ISS-003', category: 'Health', message: 'Clinic is out of malaria medication', phone_number: '0723456789', status: 'resolved', source: 'Dashboard', comments: ['Stock replenished', 'Issue resolved'], created_at: new Date().toISOString() },
+  { id: 4, ticket: 'ISS-004', category: 'Security', message: 'Street lights not working near the market', phone_number: '0734567890', status: 'open', source: 'USSD', comments: [], created_at: new Date().toISOString() },
+  { id: 5, ticket: 'ISS-005', category: 'Education', message: 'Roof leak at the primary school', phone_number: '0745678901', status: 'in_progress', source: 'Dashboard', comments: ['Assessment completed, contractor notified'], created_at: new Date().toISOString() }
 ];
 
 // Helper function for USSD to add issues
@@ -33,11 +37,35 @@ let devUsers = [
     pin_hash: '$2b$12$xx9EAn4xTiuTlFjXfyg31O2kLNJ.ypV8yvV607emW5SFfxpgjar/q', // bcrypt hash of '827700'
     role: 'super_admin',
     created_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    name: 'Martin',
+    phone: '827700',
+    pin_hash: '$2b$12$xx9EAn4xTiuTlFjXfyg31O2kLNJ.ypV8yvV607emW5SFfxpgjar/q',
+    role: 'super_admin',
+    created_at: new Date().toISOString()
   }
 ];
 
 // Citizen messages (complaints, suggestions, feedback from residents)
-let devCitizenMessages = [];
+let devCitizenMessages = [
+  { id: 1, name: 'Alice Kamau', phone_number: '0700112233', subject: 'Great Job on the Road', message: 'Thanks for fixing the potholes quickly!', status: 'unread', created_at: new Date(Date.now() - 86400000).toISOString() },
+  { id: 2, name: 'Brian Ochieng', phone_number: '0722334455', subject: 'Garbage Collection', message: 'The garbage collection truck missed our street this week.', status: 'read', created_at: new Date(Date.now() - 172800000).toISOString() },
+  { id: 3, name: 'Cynthia Mutuku', phone_number: '0733445566', subject: 'Bursary Query', message: 'When will the bursary list be published?', status: 'replied', admin_reply: 'The list will be out by Friday.', replied_at: new Date().toISOString(), replied_by: 'Martin', created_at: new Date(Date.now() - 259200000).toISOString() }
+];
+
+let devConstituents = [
+  { id: 1, phone_number: '+254712345678', national_id: '12345678', full_name: 'John Doe', first_name: 'John', middle_name: '', last_name: 'Doe', location: 'Nairobi', sublocation: 'Central', village: 'Mtaa 1', verification_status: 'verified', verified_by: 'ZAK', verified_at: new Date().toISOString(), created_at: new Date(Date.now() - 864000000).toISOString() },
+  { id: 2, phone_number: '+254723456789', national_id: '23456789', full_name: 'Jane Smith', first_name: 'Jane', middle_name: 'W.', last_name: 'Smith', location: 'Mombasa', sublocation: 'Island', village: 'Mtaa 2', verification_status: 'pending', verified_by: null, verified_at: null, created_at: new Date(Date.now() - 432000000).toISOString() },
+  { id: 3, phone_number: '+254734567890', national_id: '34567890', full_name: 'Peter Wamalwa', first_name: 'Peter', middle_name: '', last_name: 'Wamalwa', location: 'Kisumu', sublocation: 'Milimani', village: 'Mtaa 3', verification_status: 'rejected', verified_by: 'Martin', verified_at: new Date().toISOString(), created_at: new Date(Date.now() - 100000000).toISOString() }
+];
+
+let devBursaryApplications = [
+  { id: 1, ref_code: 'BUR-001', application_number: 'APP-001', phone_number: '+254712345678', category: 'University', student_name: 'John Doe Jr', institution: 'Nairobi University', amount_requested: 50000, status: 'Pending', created_at: new Date(Date.now() - 86400000).toISOString(), applicant_name: 'John Doe', applicant_location: 'Nairobi' },
+  { id: 2, ref_code: 'BUR-002', application_number: 'APP-002', phone_number: '+254723456789', category: 'Secondary', student_name: 'Mary Smith', institution: 'Mombasa Girls', amount_requested: 30000, status: 'Approved', created_at: new Date(Date.now() - 172800000).toISOString(), applicant_name: 'Jane Smith', applicant_location: 'Mombasa' },
+  { id: 3, ref_code: 'BUR-003', application_number: 'APP-003', phone_number: '+254734567890', category: 'College', student_name: 'James Wamalwa', institution: 'Kisumu Polytechnic', amount_requested: 25000, status: 'Under Review', created_at: new Date(Date.now() - 259200000).toISOString(), applicant_name: 'Peter Wamalwa', applicant_location: 'Kisumu' }
+];
 
 // Load PA accounts from database on startup (dev mode)
 async function loadAdminUsersFromDB() {
@@ -822,6 +850,11 @@ async function handleExportBursaries(req, reply) {
 async function handleGetConstituents(req, reply) {
   logger.info('Get constituents requested');
 
+  // Dev mode: return dev data
+  if (process.env.NODE_ENV === 'development') {
+    return reply.send(devConstituents);
+  }
+
   // Query database
   const db = getDb();
   if (!db) {
@@ -839,6 +872,11 @@ async function handleGetConstituents(req, reply) {
 
 async function handleGetBursaryApplications(req, reply) {
   logger.info('Get bursary applications requested');
+
+  // Dev mode: return dev data
+  if (process.env.NODE_ENV === 'development') {
+    return reply.send(devBursaryApplications);
+  }
 
   // Query database for bursary applications
   const db = getDb();
