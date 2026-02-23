@@ -389,7 +389,7 @@ function requireMCA(req, res, next) {
 }
 
 // MongoDB connection
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { ServerApiVersion } = require("mongodb");
 let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
