@@ -266,16 +266,16 @@ setInterval(() => {
 // Issue cleanup: Remove resolved issues older than 4 hours
 const ISSUE_CLEANUP_INTERVAL = 60 * 60 * 1000; // Check every hour
 setInterval(async () => {
-    try {
-        const supabaseService = require('./services/supabaseService');
-        // 4 hours ago
-        const cleanBefore = new Date(Date.now() - 4 * 60 * 60 * 1000);
-        console.log(`🧹 Running auto-cleanup for issues resolved before ${cleanBefore.toISOString()}`);
-        
-        await supabaseService.deleteResolvedIssuesBefore(cleanBefore);
-    } catch (e) {
-        console.error('Issue cleanup error', e);
-    }
+  try {
+    const supabaseService = require('./services/supabaseService');
+    // 4 hours ago
+    const cleanBefore = new Date(Date.now() - 4 * 60 * 60 * 1000);
+    console.log(`🧹 Running auto-cleanup for issues resolved before ${cleanBefore.toISOString()}`);
+
+    await supabaseService.deleteResolvedIssuesBefore(cleanBefore);
+  } catch (e) {
+    console.error('Issue cleanup error', e);
+  }
 }, ISSUE_CLEANUP_INTERVAL);
 
 // Helper: Hash password
@@ -389,7 +389,7 @@ function requireMCA(req, res, next) {
 }
 
 // MongoDB connection
-const { ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion } = require("mongodb");
 let client;
 let db;
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -731,57 +731,57 @@ app.get("/api/admin/health", requireAuth, async (req, res) => {
 
 // Verify Session / Get Current User
 app.get("/api/admin/me", requireAuth, async (req, res) => {
-    try {
-        const user = req.user;
-        res.json({
-            id: user._id || user.id,
-            username: user.username,
-            fullName: user.full_name || user.username,
-            role: user.role,
-            photo_url: user.photo_url,
-            settings: user.settings || {}
-        });
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
+  try {
+    const user = req.user;
+    res.json({
+      id: user._id || user.id,
+      username: user.username,
+      fullName: user.full_name || user.username,
+      role: user.role,
+      photo_url: user.photo_url,
+      settings: user.settings || {}
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Dashboard Stats - PostgreSQL
 app.get("/api/admin/stats", requireAuth, async (req, res) => {
-    try {
-        const dataService = require('./services/postgresDataService');
-        const stats = await dataService.getStats();
-        res.json(stats);
-    } catch (e) {
-        console.error('Stats error:', e);
-        res.status(500).json({ error: e.message });
-    }
+  try {
+    const dataService = require('./services/postgresDataService');
+    const stats = await dataService.getStats();
+    res.json(stats);
+  } catch (e) {
+    console.error('Stats error:', e);
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // TEMPORARY DEBUG ENDPOINT - Remove after fixing login
 app.get("/api/auth/debug-login", async (req, res) => {
   const supabaseService = require('./services/supabaseService');
-  
+
   // Check if the service role key is present
   const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const keyPreview = process.env.SUPABASE_SERVICE_ROLE_KEY 
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...' 
+  const keyPreview = process.env.SUPABASE_SERVICE_ROLE_KEY
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...'
     : 'NOT SET';
-  
+
   // Try to look up user 'zak'
   let userLookup = null;
   let userLookupError = null;
   let passwordTest = null;
-  
+
   try {
     userLookup = await supabaseService.getUserByUsernameOrPhone('zak');
-    
+
     if (userLookup) {
       // Test password verification
       const testPassword = '827700';
       const storedHash = userLookup.password_hash;
       const verifyResult = supabaseService.verifyPassword(testPassword, storedHash);
-      
+
       passwordTest = {
         testPassword: testPassword,
         storedHashPreview: storedHash ? storedHash.substring(0, 20) + '...' : 'NO HASH',
@@ -791,7 +791,7 @@ app.get("/api/auth/debug-login", async (req, res) => {
   } catch (e) {
     userLookupError = e.message;
   }
-  
+
   // Also test full login
   let loginTest = null;
   try {
@@ -799,7 +799,7 @@ app.get("/api/auth/debug-login", async (req, res) => {
   } catch (e) {
     loginTest = { error: e.message };
   }
-  
+
   res.json({
     timestamp: new Date().toISOString(),
     environment: {
@@ -1853,7 +1853,7 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
 
     // Admin can override the role
     let assignedRole = (req.body.role || application.role || 'clerk').toLowerCase();
-    
+
     // Validate role
     const validRoles = ['pa', 'clerk', 'mca'];
     if (!validRoles.includes(assignedRole)) {
@@ -1865,7 +1865,7 @@ app.post("/api/admin/approve-registration/:id", requireAuth, async (req, res) =>
     if (users.length >= 3) {
       return res.status(400).json({ error: "Maximum user limit (3) reached. Cannot approve more users." });
     }
-    
+
     // Enforce role limits: 1 MCA only
     if (assignedRole === 'mca') {
       const existingMCA = users.find(u => u.role === 'mca');
@@ -2349,7 +2349,7 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
     console.log('[DEBUG] Fetching issues from PostgreSQL...');
     const issues = await dataService.getIssues({ limit: 100 });
     console.log('[DEBUG] Issues fetched:', issues.length, 'items');
-    
+
     // Map to consistent format for dashboard
     const formattedIssues = issues.map(issue => {
       const imageUrls = issue.images || issue.image_urls || [];
@@ -2384,7 +2384,7 @@ app.get("/api/admin/app-users", requireAuth, async (req, res) => {
   try {
     const dataService = require('./services/postgresDataService');
     const users = await dataService.getUsers({ limit: 100 });
-    
+
     // Map to consistent format
     const formattedUsers = users.map(u => ({
       _id: u.id,
@@ -2409,7 +2409,7 @@ app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
     const dataService = require('./services/postgresDataService');
     const bursaries = await dataService.getBursaries({ limit: 100 });
-    
+
     // Map to consistent format for dashboard
     const formattedBursaries = bursaries.map(b => ({
       id: b.id,
@@ -2452,12 +2452,12 @@ app.post("/api/admin/bursaries/:id/approve", requireAuth, async (req, res) => {
     // Role Check
     const role = (req.user.role || '').toUpperCase();
     if (role !== 'MCA' && role !== 'ADMIN') {
-        return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can approve' });
+      return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can approve' });
     }
 
     const { amount, notes } = req.body;
     const supabaseService = require('./services/supabaseService');
-    
+
     // Fetch bursary first to get user details for notification
     const existingBursary = await supabaseService.getBursaryById(req.params.id);
 
@@ -2467,19 +2467,19 @@ app.post("/api/admin/bursaries/:id/approve", requireAuth, async (req, res) => {
       notes,
       req.user.username
     );
-    
+
     if (result.success) {
       res.json({ success: true, message: 'Bursary application approved' });
-      
+
       // Notify User via SMS
       if (existingBursary && existingBursary.user_id) {
-          try {
-              const user = await supabaseService.getUserById(existingBursary.user_id);
-              if (user && user.phone) {
-                  const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been APPROVED. Amount: KES ${amount}. Check app for details.`;
-                  sendSMS(user.phone, msg).catch(console.error);
-              }
-          } catch(e) { console.error('Failed to notify user:', e); }
+        try {
+          const user = await supabaseService.getUserById(existingBursary.user_id);
+          if (user && user.phone) {
+            const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been APPROVED. Amount: KES ${amount}. Check app for details.`;
+            sendSMS(user.phone, msg).catch(console.error);
+          }
+        } catch (e) { console.error('Failed to notify user:', e); }
       }
     } else {
       res.status(400).json({ error: result.error || 'Approval failed' });
@@ -2496,12 +2496,12 @@ app.post("/api/admin/bursaries/:id/reject", requireAuth, async (req, res) => {
     // Role Check
     const role = (req.user.role || '').toUpperCase();
     if (role !== 'MCA' && role !== 'ADMIN') {
-        return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can reject' });
+      return res.status(403).json({ error: 'Unauthorized: Only MCA or Admin can reject' });
     }
 
     const { reason } = req.body;
     const supabaseService = require('./services/supabaseService');
-    
+
     // Fetch bursary first to get user details for notification
     const existingBursary = await supabaseService.getBursaryById(req.params.id);
 
@@ -2510,19 +2510,19 @@ app.post("/api/admin/bursaries/:id/reject", requireAuth, async (req, res) => {
       reason,
       req.user.username
     );
-    
+
     if (result.success) {
       res.json({ success: true, message: 'Bursary application rejected' });
-      
+
       // Notify User via SMS
       if (existingBursary && existingBursary.user_id) {
-          try {
-              const user = await supabaseService.getUserById(existingBursary.user_id);
-              if (user && user.phone) {
-                  const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been REJECTED. Reason: ${reason}. Check app for details.`;
-                  sendSMS(user.phone, msg).catch(console.error);
-              }
-          } catch(e) { console.error('Failed to notify user:', e); }
+        try {
+          const user = await supabaseService.getUserById(existingBursary.user_id);
+          if (user && user.phone) {
+            const msg = `Dear ${user.full_name || 'Student'}, your VOO Bursary application has been REJECTED. Reason: ${reason}. Check app for details.`;
+            sendSMS(user.phone, msg).catch(console.error);
+          }
+        } catch (e) { console.error('Failed to notify user:', e); }
       }
     } else {
       res.status(400).json({ error: result.error || 'Rejection failed' });
@@ -2580,7 +2580,7 @@ app.get("/api/admin/chat/messages", requireAuth, async (req, res) => {
   try {
     const supabaseService = require('./services/supabaseService');
     const messages = await supabaseService.request('GET', '/rest/v1/admin_chat_messages?select=*&order=created_at.desc&limit=100');
-    
+
     // Format for frontend
     const formatted = (messages || []).reverse().map(m => ({
       id: m.id,
@@ -2592,7 +2592,7 @@ app.get("/api/admin/chat/messages", requireAuth, async (req, res) => {
       voice: m.voice_url,
       timestamp: m.created_at
     }));
-    
+
     res.json(formatted);
   } catch (err) {
     console.error("Error fetching chat messages:", err);
@@ -2605,20 +2605,20 @@ app.get('/api/admin/system-status', async (req, res) => {
   const start = Date.now();
   try {
     const supabaseService = require('./services/supabaseService');
-    
+
     // Fetch counts for dashboard (Parallel for speed)
     // Using getAll* methods internally calls requests. We'll use request direct for lightweight ID select
     const [issues, users, feedback] = await Promise.all([
-         supabaseService.request('GET', '/rest/v1/issues?select=id'),
-         supabaseService.request('GET', '/rest/v1/app_users?select=id'),
-         supabaseService.request('GET', '/rest/v1/feedback?select=id')
+      supabaseService.request('GET', '/rest/v1/issues?select=id'),
+      supabaseService.request('GET', '/rest/v1/app_users?select=id'),
+      supabaseService.request('GET', '/rest/v1/feedback?select=id')
     ]);
-    
+
     const latency = Date.now() - start;
-    
+
     // Determine status based on fetch success
     const dbStatus = 'connected';
-    
+
     res.json({
       services: {
         api: 'operational',
@@ -2637,7 +2637,7 @@ app.get('/api/admin/system-status', async (req, res) => {
       latency: latency, // Real measured latency
       incidents: [] // Still empty for now, but dynamic structure allows future addition
     });
-    
+
   } catch (err) {
     console.error("Status check failed:", err);
     res.json({
@@ -2648,9 +2648,9 @@ app.get('/api/admin/system-status', async (req, res) => {
       },
       latency: Date.now() - start,
       incidents: [{
-         title: 'System Partial Outage',
-         status: 'Investigating',
-         date: new Date().toISOString()
+        title: 'System Partial Outage',
+        status: 'Investigating',
+        date: new Date().toISOString()
       }]
     });
   }
@@ -2927,7 +2927,7 @@ app.get("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const supabaseService = require('./services/supabaseService');
     const issue = await supabaseService.getIssue(req.params.id);
-    
+
     if (issue) {
       res.json(issue);
     } else {
@@ -2944,7 +2944,7 @@ app.delete("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     // Only MCA or PA can delete
     if (!['MCA', 'PA', 'admin'].includes(req.user.role)) {
-       return res.status(403).json({ error: "Unauthorized to delete issues" });
+      return res.status(403).json({ error: "Unauthorized to delete issues" });
     }
 
     const supabaseService = require('./services/supabaseService');
@@ -2966,10 +2966,10 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, action_note } = req.body;
-    
+
     // Use Supabase to update issue
     const supabaseService = require('./services/supabaseService');
-    
+
     // Extract numeric ID from ticket format
     let issueId = id;
     let issueTitle = 'Issue';
@@ -2990,7 +2990,7 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
         }
       }
     }
-    
+
     // Update issue
     const updateData = {
       status: status,
@@ -2998,11 +2998,11 @@ app.patch("/api/admin/issues/:id", requireAuth, async (req, res) => {
     };
 
     if (status === 'Resolved') {
-        updateData.resolved_at = new Date().toISOString();
+      updateData.resolved_at = new Date().toISOString();
     }
 
     const result = await supabaseService.updateIssue(issueId, updateData);
-    
+
     if (!result.success) {
       return res.status(400).json({ error: result.error || "Update failed" });
     }
@@ -3160,33 +3160,33 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
 
     // Capitalize status for consistency
     const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    
+
     // 1. Try Supabase
     try {
-        const supabaseService = require('./services/supabaseService');
-        const result = await supabaseService.updateBursary(id, {
-          status: normalizedStatus,
-          admin_notes: admin_notes || null
-        });
-        if (result.success) success = true;
-    } catch(e) { console.warn('Supabase update failed:', e.message); }
+      const supabaseService = require('./services/supabaseService');
+      const result = await supabaseService.updateBursary(id, {
+        status: normalizedStatus,
+        admin_notes: admin_notes || null
+      });
+      if (result.success) success = true;
+    } catch (e) { console.warn('Supabase update failed:', e.message); }
 
     // 2. Try MongoDB
     try {
-        const database = await connectDB();
-        const { ObjectId } = require('mongodb');
-        let query;
-        try { query = { _id: new ObjectId(id) }; }
-        catch(e) { query = { ref_code: id }; }
+      const database = await connectDB();
+      const { ObjectId } = require('mongodb');
+      let query;
+      try { query = { _id: new ObjectId(id) }; }
+      catch (e) { query = { ref_code: id }; }
 
-        const result = await database.collection('bursaries').updateOne(query, {
-            $set: {
-                status: normalizedStatus,
-                admin_notes: admin_notes || null,
-                updated_at: new Date()
-            }
-        });
-        if (result.matchedCount > 0) success = true;
+      const result = await database.collection('bursaries').updateOne(query, {
+        $set: {
+          status: normalizedStatus,
+          admin_notes: admin_notes || null,
+          updated_at: new Date()
+        }
+      });
+      if (result.matchedCount > 0) success = true;
     } catch (e) { console.warn('MongoDB update failed:', e.message); }
 
     if (success) {
@@ -3354,155 +3354,155 @@ app.get('/api/admin/app-users', requireAuth, async (req, res) => {
 
 // Approve bursary
 app.post('/api/admin/bursaries/:id/approve', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { amount, notes } = req.body;
-        
-        console.log(`[Admin] Approving bursary: ${id} with amount ${amount}`);
-        
-        // Update Supabase
-        const result = await supabaseService.updateBursary(id, { 
-            status: 'approved',
-            amount_approved: amount,
-            admin_notes: notes,
-            approved_by: req.user.username,
-            approved_at: new Date().toISOString()
-        });
-        
-        if (result.success) {
-            // Get bursary details for SMS
-            const bursary = await supabaseService.getBursaryById(id);
-            if (bursary && bursary.phone) {
-                const phone = bursary.phone;
-                const msg = `Dear ${bursary.applicant_name}, your bursary application has been APPROVED. Amount: KES ${amount}. Check dashboard for details.`;
-                console.log(`[SMS] Sending to ${phone}: ${msg}`);
-                // TODO: Integrate actual SMS gateway (Africa's Talking / Twilio)
-            }
-            
-            res.json({ success: true, message: 'Bursary approved' });
-        } else {
-            res.status(400).json({ error: result.error || 'Failed to approve' });
-        }
-    } catch (e) {
-        console.error('Bursary approve error:', e);
-        res.status(500).json({ error: 'Internal server error' });
+  try {
+    const { id } = req.params;
+    const { amount, notes } = req.body;
+
+    console.log(`[Admin] Approving bursary: ${id} with amount ${amount}`);
+
+    // Update Supabase
+    const result = await supabaseService.updateBursary(id, {
+      status: 'approved',
+      amount_approved: amount,
+      admin_notes: notes,
+      approved_by: req.user.username,
+      approved_at: new Date().toISOString()
+    });
+
+    if (result.success) {
+      // Get bursary details for SMS
+      const bursary = await supabaseService.getBursaryById(id);
+      if (bursary && bursary.phone) {
+        const phone = bursary.phone;
+        const msg = `Dear ${bursary.applicant_name}, your bursary application has been APPROVED. Amount: KES ${amount}. Check dashboard for details.`;
+        console.log(`[SMS] Sending to ${phone}: ${msg}`);
+        // TODO: Integrate actual SMS gateway (Africa's Talking / Twilio)
+      }
+
+      res.json({ success: true, message: 'Bursary approved' });
+    } else {
+      res.status(400).json({ error: result.error || 'Failed to approve' });
     }
+  } catch (e) {
+    console.error('Bursary approve error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Reject bursary
 app.post('/api/admin/bursaries/:id/reject', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { reason } = req.body;
-        
-        console.log(`[Admin] Rejecting bursary: ${id}`);
-        
-        // Update Supabase
-        const result = await supabaseService.updateBursary(id, { 
-            status: 'rejected',
-            admin_notes: reason,
-            rejected_by: req.user.username,
-            rejected_at: new Date().toISOString()
-        });
-        
-        if (result.success) {
-             // Get bursary details for SMS
-            const bursary = await supabaseService.getBursaryById(id);
-            if (bursary && bursary.phone) {
-                const phone = bursary.phone;
-                const msg = `Dear ${bursary.applicant_name}, your bursary application was NOT successful. Reason: ${reason}.`;
-                console.log(`[SMS] Sending to ${phone}: ${msg}`);
-            }
-            res.json({ success: true, message: 'Bursary rejected' });
-        } else {
-            res.status(400).json({ error: result.error || 'Failed to reject' });
-        }
-    } catch (e) {
-        console.error('Bursary reject error:', e);
-        res.status(500).json({ error: 'Internal server error' });
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    console.log(`[Admin] Rejecting bursary: ${id}`);
+
+    // Update Supabase
+    const result = await supabaseService.updateBursary(id, {
+      status: 'rejected',
+      admin_notes: reason,
+      rejected_by: req.user.username,
+      rejected_at: new Date().toISOString()
+    });
+
+    if (result.success) {
+      // Get bursary details for SMS
+      const bursary = await supabaseService.getBursaryById(id);
+      if (bursary && bursary.phone) {
+        const phone = bursary.phone;
+        const msg = `Dear ${bursary.applicant_name}, your bursary application was NOT successful. Reason: ${reason}.`;
+        console.log(`[SMS] Sending to ${phone}: ${msg}`);
+      }
+      res.json({ success: true, message: 'Bursary rejected' });
+    } else {
+      res.status(400).json({ error: result.error || 'Failed to reject' });
     }
+  } catch (e) {
+    console.error('Bursary reject error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Update Lost ID Status (and announce if found)
 app.patch('/api/admin/lost-ids/:id', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { status } = req.body;
-        console.log(`[Admin] Updating Lost ID ${id} to ${status}`);
-        
-        const result = await supabaseService.updateLostIdStatus(id, status);
-        
-        if (result.success) {
-            // If found, create an announcement
-            if (status === 'found') {
-                const lostId = result.result?.[0] || {};
-                const name = lostId.id_owner_name || 'an ID';
-                const location = lostId.last_seen_location || 'VOO Ward';
-                
-                await supabaseService.createAnnouncement({
-                    title: 'Lost ID Found!',
-                    body: `Good News! The ID belonging to ${name}, reported lost at ${location}, has been found. Please contact the office or the reporter to claim it.`,
-                    priority: 'high',
-                    target_audience: 'all'
-                });
-            }
-            res.json({ success: true, message: 'Status updated' });
-        } else {
-            console.error('[Admin] Lost ID Update Failed:', JSON.stringify(result));
-            const errorMsg = result.error?.message || result.error?.details || result.error?.hint || JSON.stringify(result.error) || 'Update failed';
-            res.status(400).json({ error: errorMsg });
-        }
-    } catch (e) {
-        console.error('Lost ID update error:', e);
-        res.status(500).json({ error: 'Internal server error' });
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    console.log(`[Admin] Updating Lost ID ${id} to ${status}`);
+
+    const result = await supabaseService.updateLostIdStatus(id, status);
+
+    if (result.success) {
+      // If found, create an announcement
+      if (status === 'found') {
+        const lostId = result.result?.[0] || {};
+        const name = lostId.id_owner_name || 'an ID';
+        const location = lostId.last_seen_location || 'VOO Ward';
+
+        await supabaseService.createAnnouncement({
+          title: 'Lost ID Found!',
+          body: `Good News! The ID belonging to ${name}, reported lost at ${location}, has been found. Please contact the office or the reporter to claim it.`,
+          priority: 'high',
+          target_audience: 'all'
+        });
+      }
+      res.json({ success: true, message: 'Status updated' });
+    } else {
+      console.error('[Admin] Lost ID Update Failed:', JSON.stringify(result));
+      const errorMsg = result.error?.message || result.error?.details || result.error?.hint || JSON.stringify(result.error) || 'Update failed';
+      res.status(400).json({ error: errorMsg });
     }
+  } catch (e) {
+    console.error('Lost ID update error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Respond to Feedback (and announce)
 app.patch('/api/admin/feedback/:id', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { admin_response, status } = req.body;
-        console.log(`[Admin] Responding to feedback ${id}`);
-        
-        const result = await supabaseService.respondToFeedback(id, admin_response);
-        
-        if (result.success) {
-            // Create announcement for the response
-             await supabaseService.createAnnouncement({
-                title: 'Feedback Response',
-                body: `Regarding your feedback: "${admin_response}". We appreciate your input and have taken action.`,
-                priority: 'normal',
-                target_audience: 'all' // Ideally this would be targeted if we had push notifs, for now public
-            });
-            
-            res.json({ success: true, message: 'Response sent' });
-        } else {
-            res.status(400).json({ error: result.error || 'Failed to respond' });
-        }
-    } catch (e) {
-        console.error('Feedback response error:', e);
-        res.status(500).json({ error: 'Internal server error' });
+  try {
+    const { id } = req.params;
+    const { admin_response, status } = req.body;
+    console.log(`[Admin] Responding to feedback ${id}`);
+
+    const result = await supabaseService.respondToFeedback(id, admin_response);
+
+    if (result.success) {
+      // Create announcement for the response
+      await supabaseService.createAnnouncement({
+        title: 'Feedback Response',
+        body: `Regarding your feedback: "${admin_response}". We appreciate your input and have taken action.`,
+        priority: 'normal',
+        target_audience: 'all' // Ideally this would be targeted if we had push notifs, for now public
+      });
+
+      res.json({ success: true, message: 'Response sent' });
+    } else {
+      res.status(400).json({ error: result.error || 'Failed to respond' });
     }
+  } catch (e) {
+    console.error('Feedback response error:', e);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
 
 // Delete issue (Supabase)
 app.delete('/api/admin/issues/:id', requireAuth, async (req, res) => {
-    try {
-        const { id } = req.params;
-        console.log(`[Admin] Deleting issue: ${id}`);
-        const result = await supabaseService.deleteIssue(id);
-        
-        if (result.success) {
-            res.json({ success: true, message: 'Issue deleted successfully' });
-        } else {
-            console.error('[Admin] Delete failed:', result.error);
-            res.status(404).json({ error: result.error || 'Failed to delete issue' });
-        }
-    } catch (e) {
-        console.error('[Admin] Delete exception:', e);
-        res.status(500).json({ error: e.message || 'Internal server error' });
+  try {
+    const { id } = req.params;
+    console.log(`[Admin] Deleting issue: ${id}`);
+    const result = await supabaseService.deleteIssue(id);
+
+    if (result.success) {
+      res.json({ success: true, message: 'Issue deleted successfully' });
+    } else {
+      console.error('[Admin] Delete failed:', result.error);
+      res.status(404).json({ error: result.error || 'Failed to delete issue' });
     }
+  } catch (e) {
+    console.error('[Admin] Delete exception:', e);
+    res.status(500).json({ error: e.message || 'Internal server error' });
+  }
 });
 
 // Simple chatbot/help endpoint to guide admins in using the dashboard
@@ -4285,9 +4285,9 @@ app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
   try {
     const subscription = req.body;
     const { id: userId, username } = req.user;
-    
+
     const { endpoint, keys } = subscription;
-    
+
     if (!endpoint || !keys) {
       return res.status(400).json({ error: 'Invalid subscription object' });
     }
@@ -4297,21 +4297,21 @@ app.post('/api/notifications/subscribe', requireAuth, async (req, res) => {
     // Upsert subscription to Supabase `push_subscriptions`
     // Using `updated_at` to refresh active status
     await supabaseService.request('POST', '/rest/v1/push_subscriptions', {
-        user_id: userId,
-        username: username,
-        endpoint: endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        user_agent: req.headers['user-agent'],
-        updated_at: new Date().toISOString()
+      user_id: userId,
+      username: username,
+      endpoint: endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      user_agent: req.headers['user-agent'],
+      updated_at: new Date().toISOString()
     }, {
-        headers: { 'Prefer': 'resolution=merge-duplicates' } 
+      headers: { 'Prefer': 'resolution=merge-duplicates' }
     });
 
     res.status(201).json({ success: true, message: 'Subscribed to notifications' });
   } catch (err) {
     console.warn("Notification subscription error:", err.message);
-    res.status(200).json({ success: false, error: 'Failed to save subscription' }); 
+    res.status(200).json({ success: false, error: 'Failed to save subscription' });
   }
 });
 
@@ -4356,40 +4356,40 @@ async function startServer() {
 const CLEANUP_INTERVAL = 30 * 60 * 1000; // 30 mins
 
 function startIssueCleanupJob() {
-    // Run immediately
-    runCleanup();
-    // Then interval
-    setInterval(runCleanup, CLEANUP_INTERVAL);
+  // Run immediately
+  runCleanup();
+  // Then interval
+  setInterval(runCleanup, CLEANUP_INTERVAL);
 }
 
 async function runCleanup() {
-    try {
-        console.log('[Cleanup] Running issue cleanup job...');
-        const supabaseService = require('./services/supabaseService');
-        const issues = await supabaseService.getAllIssues();
-        const now = new Date();
-        const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
-        
-        const toDelete = issues.filter(i => 
-            (i.status === 'Resolved' || i.status === 'resolved') && 
-            new Date(i.updated_at || i.created_at) < fourHoursAgo
-        );
-        
-        console.log(`[Cleanup] Found ${toDelete.length} resolved issues older than 4 hours.`);
-        
-        for (const issue of toDelete) {
-            await supabaseService.deleteIssue(issue.id);
-            console.log(`[Cleanup] Deleted issue ${issue.id} (Resolved > 4h ago)`);
-        }
-    } catch (err) {
-        console.error('[Cleanup] Job failed:', err);
+  try {
+    console.log('[Cleanup] Running issue cleanup job...');
+    const supabaseService = require('./services/supabaseService');
+    const issues = await supabaseService.getAllIssues();
+    const now = new Date();
+    const fourHoursAgo = new Date(now.getTime() - (4 * 60 * 60 * 1000));
+
+    const toDelete = issues.filter(i =>
+      (i.status === 'Resolved' || i.status === 'resolved') &&
+      new Date(i.updated_at || i.created_at) < fourHoursAgo
+    );
+
+    console.log(`[Cleanup] Found ${toDelete.length} resolved issues older than 4 hours.`);
+
+    for (const issue of toDelete) {
+      await supabaseService.deleteIssue(issue.id);
+      console.log(`[Cleanup] Deleted issue ${issue.id} (Resolved > 4h ago)`);
     }
+  } catch (err) {
+    console.error('[Cleanup] Job failed:', err);
+  }
 }
 
 // If this file is executed directly (node admin-dashboard.js) start its own server.
 if (require.main === module) {
   startServer().then(() => {
-      startIssueCleanupJob();
+    startIssueCleanupJob();
   }).catch(err => {
     console.error('Failed to start admin-dashboard server:', err && err.message);
     process.exit(1);
