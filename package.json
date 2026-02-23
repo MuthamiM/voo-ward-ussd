@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
+    "prestart": "node scripts/seed_martin_pg.js",
     "start": "node src/index.js",
     "admin": "node src/admin-dashboard.js",
     "backup": "node scripts/backup-db.js"
