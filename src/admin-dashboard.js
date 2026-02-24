@@ -2556,17 +2556,9 @@ app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => 
 // Get all announcements (PA and MCA can access)
 app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
-
-    const announcements = await database.collection("announcements")
-      .find({})
-      .sort({ created_at: -1 })
-      .toArray();
-
-    res.json(announcements);
+    const dataService = require('./services/postgresDataService');
+    const announcements = await dataService.query('SELECT * FROM announcements ORDER BY created_at DESC');
+    res.json(announcements || []);
   } catch (err) {
     console.error("Error fetching announcements:", err);
     res.status(500).json({ error: err.message });
