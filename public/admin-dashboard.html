@@ -1358,7 +1358,8 @@
             debug('Loading users...');
             const users = await api('/api/admin/app-users');
             
-            const dataToUse = (users && Array.isArray(users) && users.length > 0) ? users : allUsers;
+            const dataToUse = (users && Array.isArray(users) && users.length > 0) ? users : 
+                             (allUsers.length > 0 ? allUsers : generateDemoData().users);
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allUsers = dataToUse;
@@ -1524,7 +1525,8 @@
             debug('Loading bursaries...');
             const burses = await api('/api/admin/bursaries');
             
-            const dataToUse = (burses && Array.isArray(burses) && burses.length > 0) ? burses : allBursaries;
+            const dataToUse = (burses && Array.isArray(burses) && burses.length > 0) ? burses : 
+                             (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allBursaries = dataToUse;
