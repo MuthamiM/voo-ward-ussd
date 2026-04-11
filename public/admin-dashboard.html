@@ -761,6 +761,129 @@
             window.location.href = '/login.html';
         }
 
+        // ============ DATA LOADERS (RESTORED) ============
+        
+        async function loadUserInfo() {
+            try {
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (user.username) {
+                    currentUser = user;
+                    const nameEl = document.getElementById('userName');
+                    const roleEl = document.getElementById('userRole');
+                    if (nameEl) nameEl.textContent = user.fullName || user.username;
+                    if (roleEl) roleEl.textContent = user.role || 'Admin';
+                    
+                    // Hide sensitive sections if not MCA
+                    if (user.role !== 'MCA' && user.role !== 'ADMIN') {
+                        const bursaryItems = document.querySelectorAll('[data-page="bursary"]');
+                        bursaryItems.forEach(item => item.style.display = 'none');
+                    }
+                    debug('User info loaded: ' + user.username);
+                }
+            } catch (e) {
+                console.error('Error in loadUserInfo:', e);
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                debug('Loading dashboard stats...');
+                // Aggregated stats from multiple endpoints or direct stats endpoint
+                const iss = await api('/api/admin/issues');
+                const usrs = await api('/api/admin/app-users');
+                const burs = await api('/api/admin/bursaries');
+                const feed = await api('/api/admin/feedback');
+                
+                // Demo Data Fallback Logic
+                const issues = (iss && Array.isArray(iss) && iss.length > 0) ? iss : generateDemoData().issues;
+                const users = (usrs && Array.isArray(usrs) && usrs.length > 0) ? usrs : generateDemoData().users;
+                const bursaries = (burs && Array.isArray(burs) && burs.length > 0) ? burs : generateDemoData().bursaries;
+                const feedback = (feed && Array.isArray(feed) && feed.length > 0) ? feed : generateDemoData().feedback;
+
+                allIssues = issues;
+                allUsers = users;
+                allBursaries = bursaries;
+
+                // Update Stats
+                document.getElementById('statTotalIssues').textContent = issues.length;
+                document.getElementById('statTotalCitizens').textContent = users.length;
+                document.getElementById('statBursaryApps').textContent = bursaries.length;
+                document.getElementById('statPendingFeedback').textContent = feedback.filter(f => f.status === 'Pending').length;
+
+                // Refresh Charts
+                initCharts(issues, users, bursaries);
+                
+                // Render Recent Items
+                renderRecentIssues(issues.slice(0, 5));
+                renderRecentBursaries(bursaries.slice(0, 5));
+                
+                debug('Dashboard data synchronized');
+            } catch (e) {
+                console.error('Error in loadDashboard:', e);
+                debug('ERROR: Dashboard failed to load');
+            }
+        }
+
+        async function loadIssues() {
+            try {
+                debug('Loading issues list...');
+                const data = await api('/api/admin/issues');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allIssues.length > 0 ? allIssues : generateDemoData().issues);
+                allIssues = dataToUse;
+                renderIssues(dataToUse);
+            } catch (e) {
+                debug('Issue load failed, using cache');
+                renderIssues(allIssues);
+            }
+        }
+
+        async function loadBursaries() {
+            try {
+                debug('Loading bursaries list...');
+                const data = await api('/api/admin/bursaries');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
+                allBursaries = dataToUse;
+                
+                const pending = dataToUse.filter(b => b.status === 'pending').length;
+                const approved = dataToUse.filter(b => b.status === 'approved').length;
+                const rejected = dataToUse.filter(b => b.status === 'rejected').length;
+                const bsEl = document.getElementById('bursaryStats');
+                if (bsEl) {
+                    bsEl.innerHTML = `
+                        <div class="stat-card"><div class="stat-value">${dataToUse.length}</div><div class="stat-label">Total</div></div>
+                        <div class="stat-card"><div class="stat-value" style="color:#f59e0b;">${pending}</div><div class="stat-label">Pending</div></div>
+                        <div class="stat-card"><div class="stat-value" style="color:#10b981;">${approved}</div><div class="stat-label">Approved</div></div>
+                        <div class="stat-card"><div class="stat-value" style="color:#ef4444;">${rejected}</div><div class="stat-label">Rejected</div></div>
+                    `;
+                }
+                renderBursaries(dataToUse);
+            } catch (e) {
+                debug('Bursary load failed');
+            }
+        }
+
+        async function loadAnnouncements() {
+            try {
+                debug('Loading announcements...');
+                const anns = await api('/api/admin/announcements');
+                const dataToUse = (anns && Array.isArray(anns) && anns.length > 0) ? anns : generateDemoData().announcements;
+                renderAnnouncements(dataToUse);
+            } catch (e) {
+                debug('Announcement load failed');
+            }
+        }
+
+        async function loadLostIds() {
+            try {
+                debug('Loading lost IDs...');
+                const res = await api('/api/admin/lost-ids');
+                const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : generateDemoData().lostIds;
+                renderLostIds(dataToUse);
+            } catch (e) {
+                debug('Lost IDs load failed');
+            }
+        }
+
         // API helper
         async function api(endpoint, options = {}) {
             const headers = { 'Content-Type': 'application/json', ...options.headers };
