@@ -432,6 +432,7 @@
                         <input type="text" class="search-input" id="searchLostIds" placeholder="Search by name..." oninput="filterLostIds()">
                     </div>
                     <button class="btn btn-outline" onclick="loadLostIds()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    <button class="btn btn-primary" onclick="exportToCSV('lostIdsTableExport', 'lost_ids_export')"><i class="fas fa-file-excel"></i> Export Excel</button>
                 </div>
                 <div class="data-table">
                     <table>
@@ -451,6 +452,7 @@
                         </tbody>
                     </table>
                 </div>
+                <table id="lostIdsTableExport" style="display:none;"></table>
             </div>
 
             <!-- Feedback -->
@@ -470,6 +472,7 @@
                         <option value="general">General</option>
                     </select>
                     <button class="btn btn-outline" onclick="loadFeedback()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    <button class="btn btn-primary" onclick="exportToCSV('feedbackTableExport', 'feedback_export')"><i class="fas fa-file-excel"></i> Export Excel</button>
                 </div>
                 <div class="data-table">
                     <table>
@@ -489,11 +492,20 @@
                         </tbody>
                     </table>
                 </div>
+                <table id="feedbackTableExport" style="display:none;"></table>
             </div>
 
             <!-- Admin Chat -->
             <div id="chat" class="page">
-                <div class="page-header"><h1 class="page-title">Admin Chat</h1><span id="chatStatus" style="font-size:12px;color:var(--text-muted);margin-left:12px;">Connecting...</span></div>
+                <div class="page-header">
+                    <h1 class="page-title">Admin Chat</h1>
+                    <div style="margin-left:auto; display:flex; align-items:center; gap:12px;">
+                        <span id="chatStatus" style="font-size:12px;color:var(--text-muted);">Connecting...</span>
+                        <button id="clearChatBtn" class="btn" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);display:none;" onclick="clearChatHistory()">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                    </div>
+                </div>
                 <div style="display:flex;gap:16px;height:calc(100vh - 180px);">
                     <!-- Online Users -->
                     <div style="width:200px;background:var(--card-bg);border-radius:12px;padding:16px;border:1px solid var(--border);">
@@ -725,6 +737,8 @@
                 users = demo.users;
                 bursaries = demo.bursaries;
                 feedback = demo.feedback;
+                announcements = demo.announcements;
+                allLostIds = demo.lostIds; // Set global
                 showToast('🚀 Demo Mode: Sample data loaded', 'info');
             }
 
@@ -1078,9 +1092,23 @@
                 });
             }
             
-            const feedback = [{ id: 1, status: 'Pending' }, { id: 2, status: 'Pending' }, { id: 3, status: 'Pending' }, { id: 4, status: 'Resolved' }];
+            const feedback = [
+                { id: 1, full_name: 'Jane Doe', phone: '0712345678', message: 'The water system in Island is back online. Thanks!', status: 'Pending', created_at: new Date().toISOString() },
+                { id: 2, full_name: 'John Smith', phone: '0722334455', message: 'Requesting more lighting near the market.', status: 'Pending', created_at: new Date().toISOString() },
+                { id: 3, full_name: 'Kevin Omondi', phone: '0700112233', message: 'Excellent service on the new road.', status: 'Resolved', created_at: new Date().toISOString() }
+            ];
+
+            const announcements = [
+                { _id: 'a1', title: 'Ward Meeting', body: 'Please join us this Friday for a community health discussion.', created_at: new Date().toISOString() },
+                { _id: 'a2', title: 'Bursary Deadline', body: 'Remember to submit all bursary documents by the 15th.', created_at: new Date().toISOString() }
+            ];
+
+            const lostIds = [
+                { id: 1, finder_name: 'Samson Njau', finder_phone: '0799887766', id_number: '12345678', collection_point: 'Island Chief Office', status: 'Pending', created_at: new Date().toISOString() },
+                { id: 2, finder_name: 'Mercy Waku', finder_phone: '0788776655', id_number: '87654321', collection_point: 'Central Post Office', status: 'In Progress', created_at: new Date().toISOString() }
+            ];
             
-            return { issues, users, bursaries, feedback };
+            return { issues, users, bursaries, feedback, announcements, lostIds };
         }
 
         // Load Issues
@@ -1089,15 +1117,19 @@
             document.getElementById('issuesTable').innerHTML = '<div class="loading"><i class="fas fa-spinner"></i> Loading issues...</div>';
             
             const issues = await api('/api/admin/issues');
-            if (issues && Array.isArray(issues)) {
-                allIssues = issues;
-                debug('Issues loaded for table: ' + issues.length);
+            
+            // USE DEMO DATA IF API FAILS OR EMPTY AND WE HAVE DEMO STATE
+            const dataToUse = (issues && Array.isArray(issues) && issues.length > 0) ? issues : allIssues;
+            
+            if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+                allIssues = dataToUse;
+                debug('Issues loaded for table: ' + dataToUse.length);
                 
                 // Populate categories filter
-                const cats = [...new Set(issues.map(i => i.category).filter(Boolean))];
+                const cats = [...new Set(dataToUse.map(i => i.category).filter(Boolean))];
                 document.getElementById('filterCategory').innerHTML = '<option value="">Category: All</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
                 
-                renderIssues(issues);
+                renderIssues(dataToUse);
             } else {
                 document.getElementById('issuesTable').innerHTML = '<p style="padding:20px;color:var(--text-muted);">No issues found or failed to load.</p>';
             }
@@ -1283,10 +1315,13 @@
         async function loadUsers() {
             debug('Loading users...');
             const users = await api('/api/admin/app-users');
-            if (users && Array.isArray(users)) {
-                allUsers = users;
-                document.getElementById('statTotalUsers').textContent = users.length;
-                renderUsers(users);
+            
+            const dataToUse = (users && Array.isArray(users) && users.length > 0) ? users : allUsers;
+            
+            if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+                allUsers = dataToUse;
+                document.getElementById('statTotalUsers').textContent = dataToUse.length;
+                renderUsers(dataToUse);
             } else {
                 document.getElementById('usersGrid').innerHTML = '<p style="padding:20px;color:var(--text-muted);">No users found or not authorized.</p>';
             }
@@ -1449,18 +1484,21 @@
         async function loadBursaries() {
             debug('Loading bursaries...');
             const burses = await api('/api/admin/bursaries');
-            if (burses && Array.isArray(burses)) {
-                allBursaries = burses;
-                const pending = burses.filter(b => !b.status || b.status === 'pending').length;
-                const approved = burses.filter(b => b.status === 'approved').length;
-                const rejected = burses.filter(b => b.status === 'rejected').length;
+            
+            const dataToUse = (burses && Array.isArray(burses) && burses.length > 0) ? burses : allBursaries;
+            
+            if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+                allBursaries = dataToUse;
+                const pending = dataToUse.filter(b => !b.status || b.status === 'pending').length;
+                const approved = dataToUse.filter(b => b.status === 'approved').length;
+                const rejected = dataToUse.filter(b => b.status === 'rejected').length;
                 document.getElementById('bursaryStats').innerHTML = `
-                    <div class="stat-card"><div class="stat-value">${burses.length}</div><div class="stat-label">Total</div></div>
+                    <div class="stat-card"><div class="stat-value">${dataToUse.length}</div><div class="stat-label">Total</div></div>
                     <div class="stat-card"><div class="stat-value" style="color:#f59e0b;">${pending}</div><div class="stat-label">Pending</div></div>
                     <div class="stat-card"><div class="stat-value" style="color:#10b981;">${approved}</div><div class="stat-label">Approved</div></div>
                     <div class="stat-card"><div class="stat-value" style="color:#ef4444;">${rejected}</div><div class="stat-label">Rejected</div></div>
                 `;
-                renderBursaries(burses);
+                renderBursaries(dataToUse);
             } else {
                 document.getElementById('bursaryTable').innerHTML = '<p style="padding:20px;color:var(--text-muted);">No applications or not authorized (MCA only).</p>';
             }
@@ -1785,8 +1823,11 @@
         async function loadLostIds() {
             debug('Loading lost IDs...');
             const res = await api('/api/admin/lost-ids');
-            if (res) {
-                allLostIds = Array.isArray(res) ? res : (res.data || []);
+            
+            const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : allLostIds;
+            
+            if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+                allLostIds = dataToUse;
             } else {
                 allLostIds = [];
             }
@@ -1795,11 +1836,18 @@
 
         function renderLostIds(data) {
             const tbody = document.getElementById('lostIdsTable');
+            const exportBody = document.getElementById('lostIdsTableExport');
+            
             if (!data || data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">No lost ID reports found</td></tr>';
+                exportBody.innerHTML = '';
                 return;
             }
-            tbody.innerHTML = data.map(l => `
+
+            let exportHtml = '<thead><tr><th>ID Owner</th><th>ID Number</th><th>Reporter</th><th>Location</th><th>Date Lost</th><th>Status</th></tr></thead><tbody>';
+            
+            tbody.innerHTML = data.map(l => {
+                const row = `
                 <tr>
                     <td>
                         <strong>${escapeHtml(l.id_owner_name)}</strong><br>
@@ -1820,8 +1868,21 @@
                             <i class="fab fa-whatsapp"></i>
                         </a>` : ''}
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+
+                exportHtml += `<tr>
+                    <td>${escapeHtml(l.id_owner_name || '-')}</td>
+                    <td>${escapeHtml(l.id_number || '-')}</td>
+                    <td>${escapeHtml(l.reporter_name || '-')} (${escapeHtml(l.reporter_phone || '')})</td>
+                    <td>${escapeHtml(l.last_seen_location || '-')}</td>
+                    <td>${l.date_lost || '-'}</td>
+                    <td>${(l.status || 'pending').toUpperCase()}</td>
+                </tr>`;
+
+                return row;
+            }).join('');
+            
+            exportBody.innerHTML = exportHtml + '</tbody>';
         }
 
         function filterLostIds() {
@@ -1851,8 +1912,11 @@
         async function loadFeedback() {
             debug('Loading feedback...');
             const res = await api('/api/admin/feedback');
-            if (res) {
-                allFeedback = Array.isArray(res) ? res : (res.data || []);
+            
+            const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : allFeedback;
+            
+            if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
+                allFeedback = dataToUse;
             } else {
                 allFeedback = [];
             }
@@ -1861,23 +1925,45 @@
 
         function renderFeedback(data) {
             const tbody = document.getElementById('feedbackTable');
+            const exportBody = document.getElementById('feedbackTableExport');
+            
             if (!data || data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:40px;">No feedback found</td></tr>';
+                exportBody.innerHTML = '';
                 return;
             }
-            tbody.innerHTML = data.map(f => `
+            
+            let exportHtml = '<thead><tr><th>User</th><th>Phone</th><th>Category</th><th>Message</th><th>Rating</th><th>Status</th><th>Date</th></tr></thead><tbody>';
+            
+            tbody.innerHTML = data.map(f => {
+                const date = f.created_at ? new Date(f.created_at).toLocaleDateString() : '-';
+                const row = `
                 <tr>
                     <td>${escapeHtml(f.user_name || 'Anonymous')}<br><small style="color:var(--text-muted)">${escapeHtml(f.user_phone || '')}</small></td>
                     <td><span class="badge" style="background:rgba(59,130,246,0.2);color:#3b82f6;">${(f.category || 'general').toUpperCase()}</span></td>
                     <td style="max-width:250px;">${escapeHtml(f.message || '')}</td>
                     <td>${f.rating ? '⭐'.repeat(f.rating) : '-'}</td>
                     <td><span class="badge ${f.status === 'responded' ? 'badge-resolved' : 'badge-pending'}">${(f.status || 'new').toUpperCase()}</span></td>
-                    <td>${f.created_at ? new Date(f.created_at).toLocaleDateString() : '-'}</td>
+                    <td>${date}</td>
                     <td>
                         <button class="action-btn view" title="View/Respond" onclick="respondFeedback('${f.id}')"><i class="fas fa-reply"></i></button>
                     </td>
-                </tr>
-            `).join('');
+                </tr>`;
+
+                exportHtml += `<tr>
+                    <td>${escapeHtml(f.user_name || 'Anonymous')}</td>
+                    <td>${escapeHtml(f.user_phone || '')}</td>
+                    <td>${(f.category || 'general').toUpperCase()}</td>
+                    <td>${escapeHtml(f.message || '')}</td>
+                    <td>${f.rating || '-'}</td>
+                    <td>${(f.status || 'new').toUpperCase()}</td>
+                    <td>${date}</td>
+                </tr>`;
+
+                return row;
+            }).join('');
+            
+            exportBody.innerHTML = exportHtml + '</tbody>';
         }
 
         function filterFeedback() {
@@ -2060,8 +2146,26 @@
                     messages.forEach(msg => appendChatMessage(msg, false));
                     container.scrollTop = container.scrollHeight;
                 }
+                
+                // Show clear button only for MCA or Admin
+                const role = currentUser?.role?.toUpperCase();
+                if (role === 'MCA' || role === 'ADMIN') {
+                    document.getElementById('clearChatBtn').style.display = 'flex';
+                }
             } catch (e) {
                 debug('Failed to load chat history');
+            }
+        }
+        
+        async function clearChatHistory() {
+            if (!confirm('Are you sure you want to PERMANENTLY delete all chat history? This cannot be undone.')) return;
+            
+            const res = await api('/api/admin/chat/messages', { method: 'DELETE' });
+            if (res && res.success) {
+                showToast('Chat history cleared');
+                document.getElementById('chatMessages').innerHTML = '<p class="text-muted" style="text-align:center;padding:20px;">Chat history cleared.</p>';
+            } else {
+                showToast(res?.error || 'Failed to clear chat', 'error');
             }
         }
         
