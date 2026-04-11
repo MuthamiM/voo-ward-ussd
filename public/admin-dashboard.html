@@ -612,10 +612,44 @@
             document.querySelector('.sidebar-overlay').classList.toggle('show');
         }
         
-        // Close mobile menu when nav item clicked
+        // Consolidation of navigation and page switching
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.nav-item').forEach(item => {
-                item.addEventListener('click', () => {
+                item.addEventListener('click', function() {
+                    const pageId = this.dataset.page;
+                    if (!pageId) return;
+
+                    debug('Switching to page: ' + pageId);
+                    
+                    // Update active nav state
+                    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Update active page visibility
+                    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+                    const targetPage = document.getElementById(pageId);
+                    if (targetPage) {
+                        targetPage.classList.add('active');
+                    } else {
+                        console.error('Page not found:', pageId);
+                        return;
+                    }
+                    
+                    // Trigger loader
+                    try {
+                        if (pageId === 'dashboard') loadDashboard();
+                        else if (pageId === 'issues') loadIssues();
+                        else if (pageId === 'users') loadUsers();
+                        else if (pageId === 'announcements') loadAnnouncements();
+                        else if (pageId === 'bursary') loadBursaries();
+                        else if (pageId === 'lostids') loadLostIds();
+                        else if (pageId === 'feedback') loadFeedback();
+                        else if (pageId === 'chat') { initChat(); if (typeof clearChatBadge === 'function') clearChatBadge(); }
+                    } catch (e) {
+                        console.error('Error loading page ' + pageId + ':', e);
+                    }
+
+                    // Mobile menu behavior
                     if (window.innerWidth <= 768) {
                         document.querySelector('.sidebar').classList.remove('open');
                         document.querySelector('.sidebar-overlay').classList.remove('show');
@@ -2028,25 +2062,7 @@
             }
         }
 
-        // Navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
-            item.addEventListener('click', function() {
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-                this.classList.add('active');
-                const pageId = this.dataset.page;
-                document.getElementById(pageId).classList.add('active');
-                
-                if (pageId === 'dashboard') loadDashboard();
-                if (pageId === 'issues') loadIssues();
-                if (pageId === 'users') loadUsers();
-                if (pageId === 'announcements') loadAnnouncements();
-                if (pageId === 'bursary') loadBursaries();
-                if (pageId === 'lostids') loadLostIds();
-                if (pageId === 'feedback') loadFeedback();
-                if (pageId === 'chat') { initChat(); clearChatBadge(); }
-            });
-        });
+        // Navigation logic moved to DOMContentLoaded at top of script for reliability
 
         // ============ ADMIN CHAT ============
         let chatSocket = null;
