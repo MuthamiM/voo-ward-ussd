@@ -728,19 +728,34 @@
                 api('/api/admin/feedback')
             ]);
             
-            // DEMO DATA FALLBACK
-            const isDemo = (!issues || issues.length === 0) && (!users || users.length === 0);
-            if (isDemo) {
-                console.log('Using demo data fallback...');
-                const demo = generateDemoData();
+            // DEMO DATA FALLBACK (More robust: if any major section is empty, generate demo data for it)
+            const demo = generateDemoData();
+            
+            if (!issues || issues.length === 0) {
+                console.log('Using demo Issues fallback...');
                 issues = demo.issues;
-                users = demo.users;
-                bursaries = demo.bursaries;
-                feedback = demo.feedback;
-                announcements = demo.announcements;
-                allLostIds = demo.lostIds; // Set global
-                showToast('🚀 Demo Mode: Sample data loaded', 'info');
+                allIssues = demo.issues;
+                showToast('🚀 Demo Mode: Sample issues loaded', 'info');
             }
+            if (!users || users.length === 0) {
+                console.log('Using demo Users fallback...');
+                users = demo.users;
+                allUsers = demo.users;
+            }
+            if (!bursaries || bursaries.length === 0) {
+                console.log('Using demo Bursaries fallback...');
+                bursaries = demo.bursaries;
+                allBursaries = demo.bursaries;
+            }
+            if (!feedback || feedback.length === 0) {
+                feedback = demo.feedback;
+                allFeedback = demo.feedback;
+            }
+            if (!announcements || announcements.length === 0) {
+                announcements = demo.announcements;
+            }
+            allLostIds = demo.lostIds; // Always set global lost IDs demo data
+
 
             if (issues && Array.isArray(issues)) {
                 allIssues = issues;
