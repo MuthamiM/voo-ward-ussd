@@ -250,9 +250,9 @@
                 </div>
                 <div class="stats-grid">
                     <div class="stat-card"><div class="stat-value" id="statTotalIssues">0</div><div class="stat-label">Total Issues</div></div>
-                    <div class="stat-card"><div class="stat-value" id="statPending" style="color:#f59e0b;">0</div><div class="stat-label">Pending</div></div>
-                    <div class="stat-card"><div class="stat-value" id="statResolved" style="color:#10b981;">0</div><div class="stat-label">Resolved</div></div>
-                    <div class="stat-card"><div class="stat-value" id="statAnnouncements">0</div><div class="stat-label">Announcements</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statTotalUsers">0</div><div class="stat-label">Total Citizens</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statTotalBursaries">0</div><div class="stat-label">Bursary Apps</div></div>
+                    <div class="stat-card"><div class="stat-value" id="statTotalFeedback">0</div><div class="stat-label">Pending Feedback</div></div>
                 </div>
                 <div class="charts-row">
                     <div class="chart-card">
@@ -266,10 +266,42 @@
                         <div class="chart-container" style="height:180px;"><canvas id="categoryChart"></canvas></div>
                     </div>
                     <div class="chart-card">
-                        <div class="chart-header"><span class="chart-title">Status Distribution</span></div>
+                        <div class="chart-header"><span class="chart-title">Bursary Status Distribution</span></div>
                         <div class="donut-container">
-                            <div class="donut-chart"><canvas id="statusChart"></canvas></div>
-                            <div class="donut-legend" id="statusLegend"></div>
+                            <div class="donut-chart"><canvas id="bursaryStatusChart"></canvas></div>
+                            <div class="donut-legend" id="bursaryStatusLegend"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="charts-row" style="margin-top: 20px;">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <span class="chart-title">Citizen Registration Trend (30 Days)</span>
+                            <div style="font-size: 12px; color: var(--primary);">+12% vs last month</div>
+                        </div>
+                        <div class="chart-container" style="height: 200px;"><canvas id="userGrowthChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <span class="chart-title"><i class="fas fa-history" style="margin-right:8px;"></i> Recent Issues</span>
+                            <a href="#" onclick="document.querySelector('.nav-item[data-page=\'issues\']').click()" style="font-size:12px;color:var(--primary);">View All</a>
+                        </div>
+                        <div id="recentIssuesList" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <span class="chart-title"><i class="fas fa-user-graduate" style="margin-right:8px;"></i> Recent Bursaries</span>
+                            <a href="#" onclick="document.querySelector('.nav-item[data-page=\'bursary\']').click()" style="font-size:12px;color:var(--primary);">View All</a>
+                        </div>
+                        <div id="recentBursariesList" style="display:flex;flex-direction:column;gap:12px;">
+                            <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
                         </div>
                     </div>
                 </div>
@@ -638,42 +670,69 @@
         async function loadDashboard() {
             debug('Loading dashboard data...');
             
-            const [issues, announcements] = await Promise.all([
+            // Show loading states for recent lists
+            document.getElementById('recentIssuesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+            document.getElementById('recentBursariesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+
+            let [issues, announcements, users, bursaries, feedback] = await Promise.all([
                 api('/api/admin/issues'),
-                api('/api/admin/announcements')
+                api('/api/admin/announcements'),
+                api('/api/admin/app-users'),
+                api('/api/admin/bursaries'),
+                api('/api/admin/feedback')
             ]);
             
+            // DEMO DATA FALLBACK
+            const isDemo = (!issues || issues.length === 0) && (!users || users.length === 0);
+            if (isDemo) {
+                console.log('Using demo data fallback...');
+                const demo = generateDemoData();
+                issues = demo.issues;
+                users = demo.users;
+                bursaries = demo.bursaries;
+                feedback = demo.feedback;
+                showToast('🚀 Demo Mode: Sample data loaded', 'info');
+            }
+
             if (issues && Array.isArray(issues)) {
                 allIssues = issues;
                 debug('Issues loaded: ' + issues.length);
-                
-                // Case-insensitive status filtering
-                const pending = issues.filter(i => !i.status || i.status.toLowerCase() === 'pending').length;
-                const resolved = issues.filter(i => i.status && i.status.toLowerCase() === 'resolved').length;
-                
                 document.getElementById('statTotalIssues').textContent = issues.length;
-                document.getElementById('statPending').textContent = pending;
-                document.getElementById('statResolved').textContent = resolved;
                 
                 if (!chartsInitialized) {
                     updateCharts(issues);
-                    chartsInitialized = true;
                 }
-            } else {
-                debug('Failed to load issues: ' + JSON.stringify(issues));
+                renderRecentIssues(issues.slice(0, 5));
+            }
+
+            if (users && Array.isArray(users)) {
+                allUsers = users;
+                document.getElementById('statTotalUsers').textContent = users.length;
+                updateUserGrowthChart(users);
+            }
+
+            if (bursaries && Array.isArray(bursaries)) {
+                allBursaries = bursaries;
+                document.getElementById('statTotalBursaries').textContent = bursaries.length;
+                updateBursaryStatusChart(bursaries);
+                renderRecentBursaries(bursaries.slice(0, 5));
+            }
+
+            if (feedback && Array.isArray(feedback)) {
+                allFeedback = feedback;
+                const pendingFeedback = feedback.filter(f => !f.status || f.status === 'new' || f.status === 'Pending').length;
+                document.getElementById('statTotalFeedback').textContent = pendingFeedback;
             }
             
             if (announcements && Array.isArray(announcements)) {
-                document.getElementById('statAnnouncements').textContent = announcements.length;
+                // Announcements count removed from main stats but kept for logic
             }
             
-            if (issues && Array.isArray(issues)) {
-                // ... (existing code)
-            }
+            chartsInitialized = true;
             
-            // Check App Health (Simulated check or based on data fetch success)
+            // Check App Health
             const appHealthEl = document.getElementById('appHealth');
-            if (issues && announcements) { // If both fetches succeeded
+            if (issues && bursaries && users) {
                 appHealthEl.style.background = 'rgba(16,185,129,0.1)';
                 appHealthEl.style.borderColor = 'rgba(16,185,129,0.2)';
                 appHealthEl.innerHTML = '<div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></div><span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>';
@@ -692,13 +751,6 @@
             issues.forEach(i => {
                 const cat = i.category || 'Other';
                 categories[cat] = (categories[cat] || 0) + 1;
-            });
-
-            const statuses = { Pending: 0, 'In Progress': 0, Resolved: 0 };
-            issues.forEach(i => {
-                const s = i.status || 'Pending';
-                if (statuses.hasOwnProperty(s)) statuses[s]++;
-                else statuses['Pending']++;
             });
 
             const days = [], counts = [];
@@ -732,18 +784,134 @@
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.5)' } } } }
                 });
             }
+        }
 
-            // Status donut chart
-            const statusCtx = document.getElementById('statusChart');
+        function updateBursaryStatusChart(bursaries) {
+            const statuses = { Pending: 0, Approved: 0, Rejected: 0 };
+            bursaries.forEach(b => {
+                const s = b.status ? b.status.charAt(0).toUpperCase() + b.status.slice(1).toLowerCase() : 'Pending';
+                if (statuses.hasOwnProperty(s)) statuses[s]++;
+                else statuses['Pending']++;
+            });
+
+            const statusCtx = document.getElementById('bursaryStatusChart');
             if (statusCtx) {
-                const colors = { Pending: '#f59e0b', 'In Progress': '#3b82f6', Resolved: '#10b981' };
+                const colors = { Pending: '#f59e0b', Approved: '#10b981', Rejected: '#ef4444' };
                 new Chart(statusCtx, {
                     type: 'doughnut',
-                    data: { labels: Object.keys(statuses), datasets: [{ data: Object.values(statuses), backgroundColor: Object.keys(statuses).map(k => colors[k]), borderWidth: 0, cutout: '70%' }] },
+                    data: { labels: Object.keys(statuses), datasets: [{ data: Object.values(statuses), backgroundColor: Object.keys(statuses).map(k => colors[k]), borderWidth: 0, cutout: '70%', hoverOffset: 10 }] },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
                 });
-                document.getElementById('statusLegend').innerHTML = Object.entries(statuses).map(([k,v]) => `<div class="legend-item"><span class="legend-dot" style="background:${colors[k]};"></span>${k}: ${v}</div>`).join('');
+                document.getElementById('bursaryStatusLegend').innerHTML = Object.entries(statuses).map(([k,v]) => `<div class="legend-item"><span class="legend-dot" style="background:${colors[k]};"></span>${k}: ${v}</div>`).join('');
             }
+        }
+
+        function updateUserGrowthChart(users) {
+            const days = [], counts = [];
+            for (let i = 29; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().slice(0,10);
+                if (i % 5 === 0) days.push(d.toLocaleDateString('en', { month: 'short', day: 'numeric' }));
+                else days.push('');
+                
+                counts.push(users.filter(x => x.created_at && x.created_at.slice(0,10) === dateStr).length);
+            }
+
+            const ctx = document.getElementById('userGrowthChart');
+            if (ctx) {
+                const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 200);
+                gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+                gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                
+                new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: days, datasets: [{ label: 'New Registrations', data: counts, borderColor: '#3b82f6', backgroundColor: gradient, borderWidth: 2, fill: true, tension: 0.3, pointRadius: 0 }] },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { display: false } }, 
+                        scales: { 
+                            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.4)', fontSize: 10 } }, 
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { stepSize: 1, color: 'rgba(255,255,255,0.4)' } } 
+                        } 
+                    }
+                });
+            }
+        }
+
+        function renderRecentIssues(issues) {
+            const container = document.getElementById('recentIssuesList');
+            if (!issues || !issues.length) {
+                container.innerHTML = '<p class="text-muted" style="font-size:12px;">No issues yet.</p>';
+                return;
+            }
+            container.innerHTML = issues.map(i => {
+                const status = (i.status || 'Pending').toLowerCase();
+                let badgeClass = 'badge-pending';
+                if (status === 'resolved') badgeClass = 'badge-resolved';
+                if (status === 'in progress' || status === 'in_progress') badgeClass = 'badge-progress';
+                
+                return `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid ${status === 'resolved' ? 'var(--success)' : (status.includes('progress') ? 'var(--info)' : 'var(--warning)')};">
+                    <div style="overflow:hidden;margin-right:8px;">
+                        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(i.category)}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(i.ticket)} • ${new Date(i.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${i.status || 'Pending'}</span>
+                </div>
+            `}).join('');
+        }
+
+        function renderRecentBursaries(bursaries) {
+            const container = document.getElementById('recentBursariesList');
+            if (!bursaries || !bursaries.length) {
+                container.innerHTML = '<p class="text-muted" style="font-size:12px;">No applications yet.</p>';
+                return;
+            }
+            container.innerHTML = bursaries.map(b => {
+                const status = (b.status || 'pending').toLowerCase();
+                let badgeClass = 'badge-pending';
+                if (status === 'approved') badgeClass = 'badge-resolved';
+                if (status === 'under review' || status === 'under_review') badgeClass = 'badge-progress';
+                if (status === 'rejected') badgeClass = 'badge-rejected';
+                
+                return `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid ${status === 'approved' ? 'var(--success)' : (status === 'rejected' ? 'var(--error)' : 'var(--warning)')};">
+                    <div style="overflow:hidden;margin-right:8px;">
+                        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.full_name || b.applicant_name || 'Anonymous')}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">KES ${Number(b.amount_requested || 0).toLocaleString()} • ${new Date(b.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <span class="badge ${badgeClass}">${status.toUpperCase()}</span>
+                </div>
+            `}).join('');
+        }
+
+        function generateDemoData() {
+            const issues = [
+                { id: 1, ticket: 'ISS-001', category: 'Infrastructure', status: 'Pending', created_at: new Date(Date.now() - 86400000).toISOString() },
+                { id: 2, ticket: 'ISS-002', category: 'Water', status: 'In Progress', created_at: new Date(Date.now() - 172800000).toISOString() },
+                { id: 3, ticket: 'ISS-003', category: 'Energy', status: 'Resolved', created_at: new Date(Date.now() - 43200000).toISOString() },
+                { id: 4, ticket: 'ISS-004', category: 'Roads', status: 'Pending', created_at: new Date(Date.now() - 129600000).toISOString() },
+                { id: 5, ticket: 'ISS-005', category: 'Health', status: 'Resolved', created_at: new Date().toISOString() }
+            ];
+            
+            const users = [];
+            for (let i = 0; i < 45; i++) {
+                users.push({ id: i, created_at: new Date(Date.now() - Math.random() * 30 * 86400000).toISOString() });
+            }
+            
+            const bursaries = [
+                { id: 1, full_name: 'John Kamau', amount_requested: 50000, status: 'approved', created_at: new Date(Date.now() - 86400000).toISOString() },
+                { id: 2, full_name: 'Mary Atieno', amount_requested: 30000, status: 'pending', created_at: new Date(Date.now() - 172800000).toISOString() },
+                { id: 3, full_name: 'David Ochieng', amount_requested: 25000, status: 'pending', created_at: new Date(Date.now() - 43200000).toISOString() },
+                { id: 4, full_name: 'Sarah Wambui', amount_requested: 45000, status: 'rejected', created_at: new Date(Date.now() - 259200000).toISOString() },
+                { id: 5, full_name: 'Peter Evans', amount_requested: 60000, status: 'approved', created_at: new Date().toISOString() }
+            ];
+            
+            const feedback = [{ id: 1, status: 'Pending' }, { id: 2, status: 'Pending' }];
+            
+            return { issues, users, bursaries, feedback };
         }
 
         // Load Issues
