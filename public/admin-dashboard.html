@@ -593,8 +593,11 @@
         let allIssues = [];
         let allUsers = [];
         let allBursaries = [];
+        let allFeedback = [];
+        let allLostIds = [];
         let currentIssueId = null;
         let chartsInitialized = false;
+        let isDemoMode = false; // System-wide demo mode flag
 
         // Debug function
         function debug(msg) {
@@ -720,6 +723,12 @@
             document.getElementById('recentIssuesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
             document.getElementById('recentBursariesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
+            debug('Dashboard data fetch check started');
+            
+            // Fetch stats or use demo if needed
+            const stats = await api('/api/admin/stats');
+            
+            // Parallel fetch remains for speed, but we handle results independently
             let [issues, announcements, users, bursaries, feedback] = await Promise.all([
                 api('/api/admin/issues'),
                 api('/api/admin/announcements'),
@@ -728,33 +737,50 @@
                 api('/api/admin/feedback')
             ]);
             
-            // DEMO DATA FALLBACK (More robust: if any major section is empty, generate demo data for it)
+            // Independent Fallbacks
             const demo = generateDemoData();
             
             if (!issues || issues.length === 0) {
-                console.log('Using demo Issues fallback...');
                 issues = demo.issues;
                 allIssues = demo.issues;
-                showToast('🚀 Demo Mode: Sample issues loaded', 'info');
+                isDemoMode = true;
+                debug('Demo Issues loaded for dash');
+            } else {
+                allIssues = issues;
             }
+
             if (!users || users.length === 0) {
-                console.log('Using demo Users fallback...');
                 users = demo.users;
                 allUsers = demo.users;
+                isDemoMode = true;
+            } else {
+                allUsers = users;
             }
+
             if (!bursaries || bursaries.length === 0) {
-                console.log('Using demo Bursaries fallback...');
                 bursaries = demo.bursaries;
                 allBursaries = demo.bursaries;
+                isDemoMode = true;
+            } else {
+                allBursaries = bursaries;
             }
+
             if (!feedback || feedback.length === 0) {
                 feedback = demo.feedback;
                 allFeedback = demo.feedback;
+            } else {
+                allFeedback = feedback;
             }
+            
             if (!announcements || announcements.length === 0) {
                 announcements = demo.announcements;
             }
-            allLostIds = demo.lostIds; // Always set global lost IDs demo data
+            
+            allLostIds = demo.lostIds; // Always set demo for lost IDs as default
+
+            if (isDemoMode) {
+                showToast('🚀 Running in Demo Mode (Live DB empty/offline)', 'info');
+            }
 
 
             if (issues && Array.isArray(issues)) {
@@ -1133,8 +1159,9 @@
             
             const issues = await api('/api/admin/issues');
             
-            // USE DEMO DATA IF API FAILS OR EMPTY AND WE HAVE DEMO STATE
-            const dataToUse = (issues && Array.isArray(issues) && issues.length > 0) ? issues : allIssues;
+            // INDEPENDENT FALLBACK
+            const dataToUse = (issues && Array.isArray(issues) && issues.length > 0) ? issues : 
+                             (allIssues.length > 0 ? allIssues : generateDemoData().issues);
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allIssues = dataToUse;
@@ -1434,11 +1461,8 @@
         async function loadAnnouncements() {
             debug('Loading announcements...');
             const anns = await api('/api/admin/announcements');
-            if (anns && Array.isArray(anns)) {
-                renderAnnouncements(anns);
-            } else {
-                document.getElementById('announcementsList').innerHTML = '<p style="padding:20px;color:var(--text-muted);">No announcements.</p>';
-            }
+            const dataToUse = (anns && Array.isArray(anns) && anns.length > 0) ? anns : generateDemoData().announcements;
+            renderAnnouncements(dataToUse);
         }
 
         function renderAnnouncements(anns) {
