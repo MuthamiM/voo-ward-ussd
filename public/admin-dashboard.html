@@ -8,6 +8,73 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // CORE NAVIGATION & DEBUG - DEFINE EARLY AND GLOBALLY
+        function debug(msg) {
+            console.log('[Dashboard]', msg);
+            const d = document.getElementById('debugInfo');
+            if (d) {
+                d.innerHTML = msg + '<br>' + d.innerHTML.substring(0, 1000);
+                d.scrollTop = 0;
+            }
+        }
+        window.debug = debug;
+
+        function switchPage(pageId) {
+            if (!pageId) return;
+            console.log('[Nav] switchPage called:', pageId);
+            if (typeof debug === 'function') debug('Navigating: ' + pageId);
+            
+            try {
+                // Update nav items
+                const navItems = document.querySelectorAll('.nav-item');
+                if (navItems.length > 0) {
+                    navItems.forEach(item => {
+                        if (item.dataset.page === pageId) item.classList.add('active');
+                        else item.classList.remove('active');
+                    });
+                }
+                
+                // Update pages
+                const pages = document.querySelectorAll('.page');
+                if (pages.length > 0) {
+                    pages.forEach(page => {
+                        if (page.id === pageId) page.classList.add('active');
+                        else page.classList.remove('active');
+                    });
+                } else {
+                    // Fallback: search by ID directly
+                    const allPages = ['dashboard', 'issues', 'users', 'announcements', 'bursary', 'lostids', 'feedback', 'chat', 'settings'];
+                    allPages.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.classList.remove('active');
+                    });
+                    const target = document.getElementById(pageId);
+                    if (target) target.classList.add('active');
+                }
+                
+                // Close mobile menu
+                const sb = document.querySelector('.sidebar');
+                if (sb) sb.classList.remove('open');
+                const sbo = document.querySelector('.sidebar-overlay');
+                if (sbo) sbo.classList.remove('show');
+                
+                // Trigger loaders if they exist
+                if (pageId === 'dashboard' && typeof loadDashboard === 'function') loadDashboard();
+                else if (pageId === 'issues' && typeof loadIssues === 'function') loadIssues();
+                else if (pageId === 'users' && typeof loadUsers === 'function') loadUsers();
+                else if (pageId === 'announcements' && typeof loadAnnouncements === 'function') loadAnnouncements();
+                else if (pageId === 'bursary' && typeof loadBursaries === 'function') loadBursaries();
+                else if (pageId === 'lostids' && typeof loadLostIds === 'function') loadLostIds();
+                else if (pageId === 'feedback' && typeof loadFeedback === 'function') loadFeedback();
+                else if (pageId === 'chat' && typeof initChat === 'function') { initChat(); if (typeof clearChatBadge === 'function') clearChatBadge(); }
+            } catch (e) {
+                console.error('CRASH in switchPage:', e);
+                if (typeof debug === 'function') debug('ERROR: ' + e.message);
+            }
+        }
+        window.switchPage = switchPage;
+    </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -323,7 +390,7 @@
                     <div class="chart-card">
                         <div class="chart-header">
                             <span class="chart-title"><i class="fas fa-history" style="margin-right:8px;"></i> Recent Issues</span>
-                            <a href="#" onclick="document.querySelector('.nav-item[data-page=\'issues\']').click()" style="font-size:12px;color:var(--primary);">View All</a>
+                            <a href="#" onclick="switchPage('issues'); return false;" style="font-size:12px;color:var(--primary);">View All</a>
                         </div>
                         <div id="recentIssuesList" style="display:flex;flex-direction:column;gap:12px;">
                             <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
@@ -332,7 +399,7 @@
                     <div class="chart-card">
                         <div class="chart-header">
                             <span class="chart-title"><i class="fas fa-user-graduate" style="margin-right:8px;"></i> Recent Bursaries</span>
-                            <a href="#" onclick="document.querySelector('.nav-item[data-page=\'bursary\']').click()" style="font-size:12px;color:var(--primary);">View All</a>
+                            <a href="#" onclick="switchPage('bursary'); return false;" style="font-size:12px;color:var(--primary);">View All</a>
                         </div>
                         <div id="recentBursariesList" style="display:flex;flex-direction:column;gap:12px;">
                             <div class="loading"><i class="fas fa-spinner fa-spin"></i></div>
@@ -610,73 +677,17 @@
         let chartsInitialized = false;
         let isDemoMode = false; // System-wide demo mode flag
 
-        // Debug function
-        function debug(msg) {
-            console.log('[Dashboard]', msg);
-            const d = document.getElementById('debugInfo');
-            if (d) d.innerHTML = msg + '<br>' + d.innerHTML.substring(0, 500);
-        }
-
-        // Mobile menu toggle
-        function toggleMobileMenu() {
-            document.querySelector('.sidebar').classList.toggle('open');
-            document.querySelector('.sidebar-overlay').classList.toggle('show');
-        }
-        
-        // Keep DOMContentLoaded for initial state / secondary listeners
+        // Initialization Logic
         document.addEventListener('DOMContentLoaded', () => {
             debug('DOM Content Loaded - Dashboard Ready');
             // Global error handler for debugging on live site
             window.onerror = function(msg, url, lineNo, columnNo, error) {
-                debug('JS ERROR: ' + msg + ' (Line: ' + lineNo + ')');
+                debug('JS ERROR: ' + msg + ' (L:' + lineNo + ')');
                 return false;
             };
         });
 
-        // Global Page Switching Function - Hardened
-        function switchPage(pageId) {
-            if (!pageId) return;
-            console.log('switchPage called for:', pageId);
-            debug('Navigating: ' + pageId);
-            
-            try {
-                // Update nav items
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(item => {
-                    if (item.dataset.page === pageId) item.classList.add('active');
-                    else item.classList.remove('active');
-                });
-                
-                // Update pages
-                const pages = document.querySelectorAll('.page');
-                pages.forEach(page => {
-                    if (page.id === pageId) page.classList.add('active');
-                    else page.classList.remove('active');
-                });
-                
-                // Close mobile menu
-                if (window.innerWidth <= 768) {
-                    const sb = document.querySelector('.sidebar');
-                    if (sb) sb.classList.remove('open');
-                    const sbo = document.querySelector('.sidebar-overlay');
-                    if (sbo) sbo.classList.remove('show');
-                }
-                
-                // Load data
-                if (pageId === 'dashboard') loadDashboard();
-                else if (pageId === 'issues') loadIssues();
-                else if (pageId === 'users') loadUsers();
-                else if (pageId === 'announcements') loadAnnouncements();
-                else if (pageId === 'bursary') loadBursaries();
-                else if (pageId === 'lostids') loadLostIds();
-                else if (pageId === 'feedback') loadFeedback();
-                else if (pageId === 'chat') { if (typeof initChat === 'function') initChat(); if (typeof clearChatBadge === 'function') clearChatBadge(); }
-            } catch (e) {
-                console.error('Error in switchPage:', e);
-                debug('CRASH in switchPage: ' + e.message);
-            }
-        }
-        window.switchPage = switchPage; // Force global
+        // Other utility functions continue...
         
         // Download image for opening in native app
         function downloadImage(dataUrl, filename = 'chat_image.png') {
