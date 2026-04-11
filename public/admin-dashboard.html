@@ -761,128 +761,6 @@
             window.location.href = '/login.html';
         }
 
-        // ============ DATA LOADERS (RESTORED) ============
-        
-        async function loadUserInfo() {
-            try {
-                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (user.username) {
-                    currentUser = user;
-                    const nameEl = document.getElementById('userName');
-                    const roleEl = document.getElementById('userRole');
-                    if (nameEl) nameEl.textContent = user.fullName || user.username;
-                    if (roleEl) roleEl.textContent = user.role || 'Admin';
-                    
-                    // Hide sensitive sections if not MCA
-                    if (user.role !== 'MCA' && user.role !== 'ADMIN') {
-                        const bursaryItems = document.querySelectorAll('[data-page="bursary"]');
-                        bursaryItems.forEach(item => item.style.display = 'none');
-                    }
-                    debug('User info loaded: ' + user.username);
-                }
-            } catch (e) {
-                console.error('Error in loadUserInfo:', e);
-            }
-        }
-
-        async function loadDashboard() {
-            try {
-                debug('Loading dashboard stats...');
-                // Aggregated stats from multiple endpoints or direct stats endpoint
-                const iss = await api('/api/admin/issues');
-                const usrs = await api('/api/admin/app-users');
-                const burs = await api('/api/admin/bursaries');
-                const feed = await api('/api/admin/feedback');
-                
-                // Demo Data Fallback Logic
-                const issues = (iss && Array.isArray(iss) && iss.length > 0) ? iss : generateDemoData().issues;
-                const users = (usrs && Array.isArray(usrs) && usrs.length > 0) ? usrs : generateDemoData().users;
-                const bursaries = (burs && Array.isArray(burs) && burs.length > 0) ? burs : generateDemoData().bursaries;
-                const feedback = (feed && Array.isArray(feed) && feed.length > 0) ? feed : generateDemoData().feedback;
-
-                allIssues = issues;
-                allUsers = users;
-                allBursaries = bursaries;
-
-                // Update Stats
-                document.getElementById('statTotalIssues').textContent = issues.length;
-                document.getElementById('statTotalCitizens').textContent = users.length;
-                document.getElementById('statBursaryApps').textContent = bursaries.length;
-                document.getElementById('statPendingFeedback').textContent = feedback.filter(f => f.status === 'Pending').length;
-
-                // Refresh Charts
-                initCharts(issues, users, bursaries);
-                
-                // Render Recent Items
-                renderRecentIssues(issues.slice(0, 5));
-                renderRecentBursaries(bursaries.slice(0, 5));
-                
-                debug('Dashboard data synchronized');
-            } catch (e) {
-                console.error('Error in loadDashboard:', e);
-                debug('ERROR: Dashboard failed to load');
-            }
-        }
-
-        async function loadIssues() {
-            try {
-                debug('Loading issues list...');
-                const data = await api('/api/admin/issues');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allIssues.length > 0 ? allIssues : generateDemoData().issues);
-                allIssues = dataToUse;
-                renderIssues(dataToUse);
-            } catch (e) {
-                debug('Issue load failed, using cache');
-                renderIssues(allIssues);
-            }
-        }
-
-        async function loadBursaries() {
-            try {
-                debug('Loading bursaries list...');
-                const data = await api('/api/admin/bursaries');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
-                allBursaries = dataToUse;
-                
-                const pending = dataToUse.filter(b => b.status === 'pending').length;
-                const approved = dataToUse.filter(b => b.status === 'approved').length;
-                const rejected = dataToUse.filter(b => b.status === 'rejected').length;
-                const bsEl = document.getElementById('bursaryStats');
-                if (bsEl) {
-                    bsEl.innerHTML = `
-                        <div class="stat-card"><div class="stat-value">${dataToUse.length}</div><div class="stat-label">Total</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:#f59e0b;">${pending}</div><div class="stat-label">Pending</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:#10b981;">${approved}</div><div class="stat-label">Approved</div></div>
-                        <div class="stat-card"><div class="stat-value" style="color:#ef4444;">${rejected}</div><div class="stat-label">Rejected</div></div>
-                    `;
-                }
-                renderBursaries(dataToUse);
-            } catch (e) {
-                debug('Bursary load failed');
-            }
-        }
-
-        async function loadAnnouncements() {
-            try {
-                debug('Loading announcements...');
-                const anns = await api('/api/admin/announcements');
-                const dataToUse = (anns && Array.isArray(anns) && anns.length > 0) ? anns : generateDemoData().announcements;
-                renderAnnouncements(dataToUse);
-            } catch (e) {
-                debug('Announcement load failed');
-            }
-        }
-
-        async function loadLostIds() {
-            try {
-                debug('Loading lost IDs...');
-                const res = await api('/api/admin/lost-ids');
-                const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : generateDemoData().lostIds;
-                renderLostIds(dataToUse);
-            } catch (e) {
-                debug('Lost IDs load failed');
-            }
-        }
 
         // API helper
         async function api(endpoint, options = {}) {
@@ -911,138 +789,153 @@
             }
         }
 
-        // Load user info
+        // ============ CORE DATA LOADERS ============
+        
         function loadUserInfo() {
-            if (currentUser) {
-                document.getElementById('userName').textContent = currentUser.full_name || currentUser.username || 'Admin';
-                document.getElementById('userRole').textContent = currentUser.role || 'MCA';
-                document.getElementById('userAvatar').textContent = (currentUser.full_name || currentUser.username || 'A').slice(0,2).toUpperCase();
-                document.getElementById('settingsUsername').value = currentUser.username || '';
-                document.getElementById('settingsFullName').value = currentUser.full_name || '';
-                document.getElementById('settingsRole').value = currentUser.role || '';
-                debug('User loaded: ' + currentUser.username);
+            try {
+                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                if (user.username) {
+                    currentUser = user;
+                    document.getElementById('userName').textContent = user.fullName || user.username;
+                    document.getElementById('userRole').textContent = user.role || 'Admin';
+                    document.getElementById('userAvatar').textContent = (user.fullName || user.username || 'A').slice(0,1).toUpperCase();
+                    
+                    // Populate settings inputs
+                    const sName = document.getElementById('settingsFullName');
+                    const sUser = document.getElementById('settingsUsername');
+                    const sRole = document.getElementById('settingsRole');
+                    if (sName) sName.value = user.fullName || '';
+                    if (sUser) sUser.value = user.username || '';
+                    if (sRole) sRole.value = user.role || '';
+                    
+                    debug('User profile loaded: ' + user.username);
+                }
+            } catch (e) {
+                console.error('Error in loadUserInfo:', e);
             }
         }
 
-        // Load Dashboard
         async function loadDashboard() {
-            debug('Loading dashboard data...');
-            
-            // Show loading states for recent lists
-            document.getElementById('recentIssuesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
-            document.getElementById('recentBursariesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
-
-            debug('Dashboard data fetch check started');
-            
-            // Fetch stats or use demo if needed
-            const stats = await api('/api/admin/stats');
-            
-            // Parallel fetch remains for speed, but we handle results independently
-            let [issues, announcements, users, bursaries, feedback] = await Promise.all([
-                api('/api/admin/issues'),
-                api('/api/admin/announcements'),
-                api('/api/admin/app-users'),
-                api('/api/admin/bursaries'),
-                api('/api/admin/feedback')
-            ]);
-            
-            // Independent Fallbacks
-            const demo = generateDemoData();
-            
-            if (!issues || issues.length === 0) {
-                issues = demo.issues;
-                allIssues = demo.issues;
-                isDemoMode = true;
-                debug('Demo Issues loaded for dash');
-            } else {
-                allIssues = issues;
-            }
-
-            if (!users || users.length === 0) {
-                users = demo.users;
-                allUsers = demo.users;
-                isDemoMode = true;
-            } else {
-                allUsers = users;
-            }
-
-            if (!bursaries || bursaries.length === 0) {
-                bursaries = demo.bursaries;
-                allBursaries = demo.bursaries;
-                isDemoMode = true;
-            } else {
-                allBursaries = bursaries;
-            }
-
-            if (!feedback || feedback.length === 0) {
-                feedback = demo.feedback;
-                allFeedback = demo.feedback;
-            } else {
-                allFeedback = feedback;
-            }
-            
-            if (!announcements || announcements.length === 0) {
-                announcements = demo.announcements;
-            }
-            
-            allLostIds = demo.lostIds; // Always set demo for lost IDs as default
-
-            if (isDemoMode) {
-                showToast('🚀 Running in Demo Mode (Live DB empty/offline)', 'info');
-            }
-
-
-            if (issues && Array.isArray(issues)) {
-                allIssues = issues;
-                debug('Issues loaded: ' + issues.length);
-                document.getElementById('statTotalIssues').textContent = issues.length;
+            try {
+                debug('Loading dashboard overview...');
                 
-                if (!chartsInitialized) {
-                    updateCharts(issues);
-                }
-                renderRecentIssues(issues.slice(0, 5));
-                updateLocationChart(issues);
-            }
+                // Show spinners
+                document.getElementById('recentIssuesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
+                document.getElementById('recentBursariesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
-            if (users && Array.isArray(users)) {
+                // Fetch data in parallel
+                let [iss, usrs, burs, feed] = await Promise.all([
+                    api('/api/admin/issues'),
+                    api('/api/admin/app-users'),
+                    api('/api/admin/bursaries'),
+                    api('/api/admin/feedback')
+                ]);
+
+                // Fallback to Demo Data
+                const demo = generateDemoData();
+                const issues = (iss && Array.isArray(iss) && iss.length > 0) ? iss : demo.issues;
+                const users = (usrs && Array.isArray(usrs) && usrs.length > 0) ? usrs : demo.users;
+                const bursaries = (burs && Array.isArray(burs) && burs.length > 0) ? burs : demo.bursaries;
+                const feedback = (feed && Array.isArray(feed) && feed.length > 0) ? feed : demo.feedback;
+
+                allIssues = issues;
                 allUsers = users;
-                document.getElementById('statTotalUsers').textContent = users.length;
-                updateUserGrowthChart(users);
-            }
-
-            if (bursaries && Array.isArray(bursaries)) {
                 allBursaries = bursaries;
-                document.getElementById('statTotalBursaries').textContent = bursaries.length;
-                updateBursaryStatusChart(bursaries);
-                updateBursaryFinancialChart(bursaries);
-                renderRecentBursaries(bursaries.slice(0, 5));
-            }
-
-            if (feedback && Array.isArray(feedback)) {
                 allFeedback = feedback;
-                const pendingFeedback = feedback.filter(f => !f.status || f.status === 'new' || f.status === 'Pending').length;
-                document.getElementById('statTotalFeedback').textContent = pendingFeedback;
+
+                // Update Stats - Using correct HTML IDs
+                document.getElementById('statTotalIssues').textContent = issues.length;
+                document.getElementById('statTotalUsers').textContent = users.length;
+                document.getElementById('statTotalBursaries').textContent = bursaries.length;
+                document.getElementById('statTotalFeedback').textContent = feedback.filter(f => !f.status || f.status === 'Pending' || f.status === 'new').length;
+
+                // Sync App Health Indicator
+                const health = document.getElementById('appHealth');
+                if (iss && burs && usrs) {
+                    health.innerHTML = '<div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></div><span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>';
+                } else {
+                    health.innerHTML = '<div style="width:8px;height:8px;background:var(--warning);border-radius:50%;box-shadow:0 0 8px var(--warning);"></div><span style="font-size:12px;font-weight:600;color:var(--warning);">Running (Demo Mode)</span>';
+                    showToast('🚀 Running in Demo Mode (Database Offline)', 'info');
+                }
+
+                // Initialize/Update Charts
+                updateCharts(issues);
+                updateUserGrowthChart(users);
+                updateBursaryStatusChart(bursaries);
+                updateLocationChart(issues);
+                updateBursaryFinancialChart(bursaries);
+
+                // Render Recent Items
+                renderRecentIssues(issues.slice(0, 5));
+                renderRecentBursaries(bursaries.slice(0, 5));
+                
+                document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+                debug('Dashboard consolidated successfully');
+            } catch (e) {
+                console.error('CRASH in loadDashboard:', e);
+                debug('ERROR: Dashboard failed to initialize');
             }
-            
-            if (announcements && Array.isArray(announcements)) {
-                // Announcements count removed from main stats but kept for logic
-            }
-            
-            chartsInitialized = true;
-            
-            // Check App Health
-            const appHealthEl = document.getElementById('appHealth');
-            if (issues && bursaries && users) {
-                appHealthEl.style.background = 'rgba(16,185,129,0.1)';
-                appHealthEl.style.borderColor = 'rgba(16,185,129,0.2)';
-                appHealthEl.innerHTML = '<div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></div><span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>';
-            } else {
-                 appHealthEl.style.background = 'rgba(239,68,68,0.1)';
-                 appHealthEl.style.borderColor = 'rgba(239,68,68,0.2)';
-                 appHealthEl.innerHTML = '<div style="width:8px;height:8px;background:var(--error);border-radius:50%;"></div><span style="font-size:12px;font-weight:600;color:var(--error);">Issues Detected</span>';
-            }
-            
-            document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        }
+
+        // Section Loaders
+        async function loadIssues() {
+            try {
+                debug('Refreshing issues list...');
+                const data = await api('/api/admin/issues');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allIssues.length > 0 ? allIssues : generateDemoData().issues);
+                allIssues = dataToUse;
+                renderIssues(dataToUse);
+            } catch (e) { debug('Issue load error'); }
+        }
+
+        async function loadUsers() {
+            try {
+                debug('Refreshing user list...');
+                const data = await api('/api/admin/app-users');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allUsers.length > 0 ? allUsers : generateDemoData().users);
+                allUsers = dataToUse;
+                const stat = document.getElementById('statTotalUsers');
+                if (stat) stat.textContent = dataToUse.length;
+                renderUsers(dataToUse);
+            } catch (e) { debug('User load error'); }
+        }
+
+        async function loadBursaries() {
+            try {
+                debug('Refreshing bursaries...');
+                const data = await api('/api/admin/bursaries');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
+                allBursaries = dataToUse;
+                renderBursaries(dataToUse);
+            } catch (e) { debug('Bursary load error'); }
+        }
+
+        async function loadAnnouncements() {
+            try {
+                debug('Refreshing announcements...');
+                const data = await api('/api/admin/announcements');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().announcements;
+                renderAnnouncements(dataToUse);
+            } catch (e) { debug('Announcement load error'); }
+        }
+
+        async function loadFeedback() {
+            try {
+                debug('Refreshing feedback...');
+                const data = await api('/api/admin/feedback');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().feedback;
+                allFeedback = dataToUse;
+                renderFeedback(dataToUse);
+            } catch (e) { debug('Feedback load error'); }
+        }
+
+        async function loadLostIds() {
+            try {
+                debug('Refreshing lost IDs...');
+                const data = await api('/api/admin/lost-ids');
+                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().lostIds;
+                renderLostIds(dataToUse);
+            } catch (e) { debug('Lost IDs load error'); }
         }
 
         // Update Charts
