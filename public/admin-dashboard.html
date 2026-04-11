@@ -42,22 +42,13 @@
                         if (page.id === pageId) page.classList.add('active');
                         else page.classList.remove('active');
                     });
-                } else {
-                    // Fallback: search by ID directly
-                    const allPages = ['dashboard', 'issues', 'users', 'announcements', 'bursary', 'lostids', 'feedback', 'chat', 'settings'];
-                    allPages.forEach(id => {
-                        const el = document.getElementById(id);
-                        if (el) el.classList.remove('active');
-                    });
-                    const target = document.getElementById(pageId);
-                    if (target) target.classList.add('active');
                 }
                 
                 // Close mobile menu
-                const sb = document.querySelector('.sidebar');
-                if (sb) sb.classList.remove('open');
-                const sbo = document.querySelector('.sidebar-overlay');
-                if (sbo) sbo.classList.remove('show');
+                if (typeof toggleMobileMenu === 'function' && window.innerWidth <= 768) {
+                    const sb = document.querySelector('.sidebar');
+                    if (sb && sb.classList.contains('open')) toggleMobileMenu();
+                }
                 
                 // Trigger loaders if they exist
                 if (pageId === 'dashboard' && typeof loadDashboard === 'function') loadDashboard();
@@ -74,6 +65,30 @@
             }
         }
         window.switchPage = switchPage;
+
+        // UTILITIES - RESTORED
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+        window.escapeHtml = escapeHtml;
+
+        function safeImageUrl(url) {
+            if (!url) return '';
+            if (url.startsWith('javascript:') || url.startsWith('data:text')) return '';
+            return url;
+        }
+        window.safeImageUrl = safeImageUrl;
+
+        function toggleMobileMenu() {
+            const sb = document.querySelector('.sidebar');
+            const sbo = document.querySelector('.sidebar-overlay');
+            if (sb) sb.classList.toggle('open');
+            if (sbo) sbo.classList.toggle('show');
+        }
+        window.toggleMobileMenu = toggleMobileMenu;
     </script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
