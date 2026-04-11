@@ -282,7 +282,10 @@
                 <div class="charts-row-2">
                     <div class="chart-card">
                         <div class="chart-header"><span class="chart-title">Issues by Category</span></div>
-                        <div class="chart-container" style="height:180px;"><canvas id="categoryChart"></canvas></div>
+                        <div class="donut-container">
+                            <div class="donut-chart"><canvas id="categoryChart"></canvas></div>
+                            <div class="donut-legend" id="categoryLegend"></div>
+                        </div>
                     </div>
                     <div class="chart-card">
                         <div class="chart-header"><span class="chart-title">Bursary Status Distribution</span></div>
@@ -808,14 +811,49 @@
                 });
             }
 
-            // Category chart
+            // Category chart (Doughnut)
             const categoryCtx = document.getElementById('categoryChart');
             if (categoryCtx && Object.keys(categories).length > 0) {
+                const colors = [
+                    '#FF8C00', // Primary Orange
+                    '#3b82f6', // Info Blue
+                    '#10b981', // Success Green
+                    '#f59e0b', // Warning Amber
+                    '#ef4444', // Error Red
+                    '#A855F7', // Purple
+                    '#EC4899', // Pink
+                    '#06B6D4'  // Cyan
+                ];
+                
+                const labels = Object.keys(categories);
+                const data = Object.values(categories);
+                
                 new Chart(categoryCtx, {
-                    type: 'bar',
-                    data: { labels: Object.keys(categories), datasets: [{ data: Object.values(categories), backgroundColor: '#FF8C00', borderRadius: 6, barThickness: 20 }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.5)' } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.5)' } } } }
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors.slice(0, labels.length),
+                            borderWidth: 0,
+                            cutout: '70%',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } }
+                    }
                 });
+                
+                // Render custom legend
+                document.getElementById('categoryLegend').innerHTML = labels.map((label, i) => `
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:${colors[i % colors.length]};"></span>
+                        <span style="font-size:11px;">${label}: ${data[i]}</span>
+                    </div>
+                `).join('');
             }
         }
 
