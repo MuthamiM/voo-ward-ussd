@@ -581,6 +581,15 @@
         </div>
     </div>
 
+    <!-- Generic Modal for Details -->
+    <div class="modal-overlay" id="genericModal">
+        <div class="modal" style="max-width: 700px;">
+            <div class="modal-header"><span class="modal-title" id="genericModalTitle">Details</span><button class="modal-close" onclick="closeModal('genericModal')">&times;</button></div>
+            <div class="modal-body" id="genericModalBody"></div>
+            <div class="modal-footer"><button class="btn btn-primary" onclick="closeModal('genericModal')">Close</button></div>
+        </div>
+    </div>
+
     <div id="debugInfo" class="debug-info" style="display:none;"></div>
     
     <script src="/logo-data.js"></script>
@@ -701,6 +710,12 @@
         // Modals
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
+
+        function showModal(title, content) {
+            document.getElementById('genericModalTitle').textContent = title;
+            document.getElementById('genericModalBody').innerHTML = content;
+            openModal('genericModal');
+        }
 
         // Logout
         function logout() {
@@ -2117,7 +2132,7 @@
                 console.log('[Socket] Data refresh triggered:', type);
                 switch(type) {
                     case 'issues':
-                        loadDashData();
+                        loadDashboard();
                         showToast('📊 Issues updated', 'info');
                         break;
                     case 'bursaries':
@@ -2137,7 +2152,7 @@
                         showToast('🆔 Lost IDs updated', 'info');
                         break;
                     default:
-                        loadDashData();
+                        loadDashboard();
                 }
             });
             
