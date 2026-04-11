@@ -192,12 +192,72 @@
         
         /* Blink animation for recording */
         @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+
+        /* Floating WhatsApp FAB */
+        .whatsapp-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: #25D366;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+        }
+        .whatsapp-fab:hover { transform: scale(1.1) rotate(10deg); box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4); }
+        .whatsapp-tooltip {
+            position: absolute;
+            right: 75px;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            border: 1px solid var(--border);
+        }
+        .whatsapp-fab:hover .whatsapp-tooltip { opacity: 1; }
+        
+        .whatsapp-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .whatsapp-btn:hover { background: #128C7E; transform: scale(1.1); }
     </style>
 </head>
 <body>
     <div class="app-container">
         <!-- Mobile menu button -->
         <button class="mobile-menu-btn" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
+
+        <!-- WhatsApp Floating button -->
+        <a href="https://wa.me/254712742991" target="_blank" class="whatsapp-fab">
+            <i class="fab fa-whatsapp"></i>
+            <span class="whatsapp-tooltip">Chat with MCA Support</span>
+        </a>
         <div class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
         
         <aside class="sidebar">
@@ -281,6 +341,18 @@
                             <div style="font-size: 12px; color: var(--primary);">+12% vs last month</div>
                         </div>
                         <div class="chart-container" style="height: 200px;"><canvas id="userGrowthChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Advanced Analytics Row -->
+                <div class="charts-row-2" style="margin-top: 20px;">
+                    <div class="chart-card">
+                        <div class="chart-header"><span class="chart-title">Issues by Location (Geographic)</span></div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="locationChart"></canvas></div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header"><span class="chart-title">Bursary Financial Summary (KES)</span></div>
+                        <div class="chart-container" style="height: 180px;"><canvas id="bursaryFinancialChart"></canvas></div>
                     </div>
                 </div>
 
@@ -703,6 +775,7 @@
                     updateCharts(issues);
                 }
                 renderRecentIssues(issues.slice(0, 5));
+                updateLocationChart(issues);
             }
 
             if (users && Array.isArray(users)) {
@@ -715,6 +788,7 @@
                 allBursaries = bursaries;
                 document.getElementById('statTotalBursaries').textContent = bursaries.length;
                 updateBursaryStatusChart(bursaries);
+                updateBursaryFinancialChart(bursaries);
                 renderRecentBursaries(bursaries.slice(0, 5));
             }
 
@@ -852,13 +926,19 @@
                 if (status === 'resolved') badgeClass = 'badge-resolved';
                 if (status === 'in progress' || status === 'in_progress') badgeClass = 'badge-progress';
                 
+                const phone = i.phone_number || i.phone || '';
+                const waLink = phone ? `https://wa.me/${phone.replace(/\+/g, '').replace(/\s+/g, '')}?text=${encodeURIComponent('Hi, I am contacting you regarding your issue report ' + (i.ticket || ''))}` : '#';
+
                 return `
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid ${status === 'resolved' ? 'var(--success)' : (status.includes('progress') ? 'var(--info)' : 'var(--warning)')};">
-                    <div style="overflow:hidden;margin-right:8px;">
+                    <div style="overflow:hidden;margin-right:8px; flex: 1;">
                         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(i.category)}</div>
-                        <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(i.ticket)} • ${new Date(i.created_at).toLocaleDateString()}</div>
+                        <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(i.ticket || '')} • ${new Date(i.created_at).toLocaleDateString()}</div>
                     </div>
-                    <span class="badge ${badgeClass}">${i.status || 'Pending'}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        ${phone ? `<a href="${waLink}" target="_blank" class="whatsapp-btn" title="Chat with reporter"><i class="fab fa-whatsapp"></i></a>` : ''}
+                        <span class="badge ${badgeClass}">${i.status || 'Pending'}</span>
+                    </div>
                 </div>
             `}).join('');
         }
@@ -876,40 +956,132 @@
                 if (status === 'under review' || status === 'under_review') badgeClass = 'badge-progress';
                 if (status === 'rejected') badgeClass = 'badge-rejected';
                 
+                const phone = b.phone || b.phone_number || '';
+                const waLink = phone ? `https://wa.me/${phone.replace(/\+/g, '').replace(/\s+/g, '')}?text=${encodeURIComponent('Hi, I am contacting you regarding your bursary application ' + (b.full_name || ''))}` : '#';
+
                 return `
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;border-left:3px solid ${status === 'approved' ? 'var(--success)' : (status === 'rejected' ? 'var(--error)' : 'var(--warning)')};">
-                    <div style="overflow:hidden;margin-right:8px;">
+                    <div style="overflow:hidden;margin-right:8px; flex: 1;">
                         <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(b.full_name || b.applicant_name || 'Anonymous')}</div>
                         <div style="font-size:11px;color:var(--text-muted);">KES ${Number(b.amount_requested || 0).toLocaleString()} • ${new Date(b.created_at).toLocaleDateString()}</div>
                     </div>
-                    <span class="badge ${badgeClass}">${status.toUpperCase()}</span>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        ${phone ? `<a href="${waLink}" target="_blank" class="whatsapp-btn" title="Chat with applicant"><i class="fab fa-whatsapp"></i></a>` : ''}
+                        <span class="badge ${badgeClass}">${status.toUpperCase()}</span>
+                    </div>
                 </div>
             `}).join('');
         }
 
+        function updateLocationChart(issues) {
+            const locations = {};
+            issues.forEach(i => {
+                const loc = i.location || i.village || 'Central';
+                locations[loc] = (locations[loc] || 0) + 1;
+            });
+
+            const ctx = document.getElementById('locationChart');
+            if (ctx && Object.keys(locations).length > 0) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(locations),
+                        datasets: [{
+                            data: Object.values(locations),
+                            backgroundColor: '#A855F7', // Purple shade
+                            borderRadius: 6,
+                            barThickness: 15
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.5)', stepSize: 1 } },
+                            y: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateBursaryFinancialChart(bursaries) {
+            let totalRequested = 0;
+            let totalApproved = 0;
+            
+            bursaries.forEach(b => {
+                totalRequested += Number(b.amount_requested || 0);
+                totalApproved += Number(b.amount_approved || b.approved_amount || 0);
+            });
+
+            const ctx = document.getElementById('bursaryFinancialChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Requested', 'Approved'],
+                        datasets: [{
+                            data: [totalRequested, totalApproved],
+                            backgroundColor: ['rgba(255, 140, 0, 0.6)', 'rgba(16, 185, 129, 0.6)'],
+                            borderColor: ['#FF8C00', '#10b981'],
+                            borderWidth: 1,
+                            borderRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: 'rgba(255,255,255,0.5)', callback: v => 'K' + (v/1000) + 'k' } }
+                        }
+                    }
+                });
+            }
+        }
+
         function generateDemoData() {
-            const issues = [
-                { id: 1, ticket: 'ISS-001', category: 'Infrastructure', status: 'Pending', created_at: new Date(Date.now() - 86400000).toISOString() },
-                { id: 2, ticket: 'ISS-002', category: 'Water', status: 'In Progress', created_at: new Date(Date.now() - 172800000).toISOString() },
-                { id: 3, ticket: 'ISS-003', category: 'Energy', status: 'Resolved', created_at: new Date(Date.now() - 43200000).toISOString() },
-                { id: 4, ticket: 'ISS-004', category: 'Roads', status: 'Pending', created_at: new Date(Date.now() - 129600000).toISOString() },
-                { id: 5, ticket: 'ISS-005', category: 'Health', status: 'Resolved', created_at: new Date().toISOString() }
-            ];
+            const villages = ['Central', 'Milimani', 'Mtaa 1', 'Island', 'Nairobi North', 'South Ward'];
+            const categories = ['Infrastructure', 'Water', 'Energy', 'Roads', 'Health', 'Education', 'Security'];
+            
+            const issues = [];
+            for (let i = 1; i <= 8; i++) {
+                issues.push({ 
+                    id: i, 
+                    ticket: `ISS-${String(100+i)}`, 
+                    category: categories[Math.floor(Math.random() * categories.length)], 
+                    status: i % 3 === 0 ? 'Resolved' : (i % 2 === 0 ? 'In Progress' : 'Pending'),
+                    location: villages[Math.floor(Math.random() * villages.length)],
+                    phone: `07${Math.floor(10000000 + Math.random() * 90000000)}`,
+                    created_at: new Date(Date.now() - Math.random() * 5 * 86400000).toISOString() 
+                });
+            }
             
             const users = [];
-            for (let i = 0; i < 45; i++) {
+            for (let i = 0; i < 120; i++) {
                 users.push({ id: i, created_at: new Date(Date.now() - Math.random() * 30 * 86400000).toISOString() });
             }
             
-            const bursaries = [
-                { id: 1, full_name: 'John Kamau', amount_requested: 50000, status: 'approved', created_at: new Date(Date.now() - 86400000).toISOString() },
-                { id: 2, full_name: 'Mary Atieno', amount_requested: 30000, status: 'pending', created_at: new Date(Date.now() - 172800000).toISOString() },
-                { id: 3, full_name: 'David Ochieng', amount_requested: 25000, status: 'pending', created_at: new Date(Date.now() - 43200000).toISOString() },
-                { id: 4, full_name: 'Sarah Wambui', amount_requested: 45000, status: 'rejected', created_at: new Date(Date.now() - 259200000).toISOString() },
-                { id: 5, full_name: 'Peter Evans', amount_requested: 60000, status: 'approved', created_at: new Date().toISOString() }
-            ];
+            const bursaries = [];
+            const names = ['John Kamau', 'Mary Atieno', 'David Ochieng', 'Sarah Wambui', 'Peter Evans', 'Alice Njeri', 'Brian Mutua'];
+            for (let i = 1; i <= names.length; i++) {
+                const requested = 20000 + Math.floor(Math.random() * 50000);
+                const status = i % 3 === 0 ? 'approved' : (i % 4 === 0 ? 'rejected' : 'pending');
+                bursaries.push({ 
+                    id: i, 
+                    full_name: names[i-1], 
+                    amount_requested: requested, 
+                    amount_approved: status === 'approved' ? requested * 0.8 : 0,
+                    status: status, 
+                    phone: `07${Math.floor(10000000 + Math.random() * 90000000)}`,
+                    created_at: new Date(Date.now() - Math.random() * 7 * 86400000).toISOString() 
+                });
+            }
             
-            const feedback = [{ id: 1, status: 'Pending' }, { id: 2, status: 'Pending' }];
+            const feedback = [{ id: 1, status: 'Pending' }, { id: 2, status: 'Pending' }, { id: 3, status: 'Pending' }, { id: 4, status: 'Resolved' }];
             
             return { issues, users, bursaries, feedback };
         }
