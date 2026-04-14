@@ -12,11 +12,6 @@
         // CORE NAVIGATION & DEBUG - DEFINE EARLY AND GLOBALLY
         function debug(msg) {
             console.log('[Dashboard]', msg);
-            const d = document.getElementById('debugInfo');
-            if (d) {
-                d.innerHTML = msg + '<br>' + d.innerHTML.substring(0, 1000);
-                d.scrollTop = 0;
-            }
         }
         window.debug = debug;
 
@@ -672,9 +667,7 @@
         </div>
     </div>
 
-    <div id="debugInfo" class="debug-info" style="display:block; background:rgba(0,0,0,0.9); border:1px solid var(--primary); bottom:20px; left:20px; right:auto; width:300px; height:150px; overflow-y:auto;">
-        --- DASHBOARD DEBUG LOG ---<br>
-    </div>
+
     
     <script src="/logo-data.js"></script>
 
@@ -791,24 +784,43 @@
 
         // ============ CORE DATA LOADERS ============
         
-        function loadUserInfo() {
+
+
+        // ============ CORE DATA LOADERS ============
+        
+        async function loadUserInfo() {
             try {
-                const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                if (user.username) {
-                    currentUser = user;
-                    document.getElementById('userName').textContent = user.fullName || user.username;
-                    document.getElementById('userRole').textContent = user.role || 'Admin';
-                    document.getElementById('userAvatar').textContent = (user.fullName || user.username || 'A').slice(0,1).toUpperCase();
+                debug('Loading user profile from API...');
+                const profile = await api('/api/admin/me');
+                
+                if (profile && profile.username) {
+                    currentUser = profile;
+                    // Update localStorage so other components stay in sync
+                    localStorage.setItem('currentUser', JSON.stringify(profile));
+                    
+                    document.getElementById('userName').textContent = profile.fullName || profile.username;
+                    document.getElementById('userRole').textContent = profile.role || 'Admin';
+                    document.getElementById('userAvatar').textContent = (profile.fullName || profile.username || 'A').slice(0,1).toUpperCase();
                     
                     // Populate settings inputs
                     const sName = document.getElementById('settingsFullName');
                     const sUser = document.getElementById('settingsUsername');
                     const sRole = document.getElementById('settingsRole');
-                    if (sName) sName.value = user.fullName || '';
-                    if (sUser) sUser.value = user.username || '';
-                    if (sRole) sRole.value = user.role || '';
+                    if (sName) sName.value = profile.fullName || '';
+                    if (sUser) sUser.value = profile.username || '';
+                    if (sRole) sRole.value = profile.role || '';
                     
-                    debug('User profile loaded: ' + user.username);
+                    debug('User profile synchronized: ' + profile.username);
+                } else {
+                    // Fallback to localStorage if API fails but we have cached data
+                    const cachedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    if (cachedUser.username) {
+                        currentUser = cachedUser;
+                        document.getElementById('userName').textContent = cachedUser.fullName || cachedUser.username;
+                        document.getElementById('userRole').textContent = cachedUser.role || 'Admin';
+                        document.getElementById('userAvatar').textContent = (cachedUser.fullName || cachedUser.username || 'A').slice(0,1).toUpperCase();
+                        debug('Using cached user profile (API unavailable)');
+                    }
                 }
             } catch (e) {
                 console.error('Error in loadUserInfo:', e);
@@ -2629,35 +2641,39 @@
         }
 
         // Initialize
-        debug('Initializing dashboard...');
-        
-        // Check auth - Use 'authToken' which is set by login page
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            window.location.href = '/login.html';
-        } else {
-            loadUserInfo();
-            loadDashboard();
+        (async function init() {
+            debug('Initializing dashboard components...');
             
-            // Setup mobile toggle
-            const mobileBtn = document.getElementById('mobileMenuBtn');
-            if (mobileBtn) {
-                mobileBtn.addEventListener('click', function() {
-                    document.querySelector('.sidebar').classList.toggle('active');
-                });
+            // Check auth - Use 'authToken' which is set by login page
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
             }
             
-            // Handle URL Params (Auto-Nav & Prefill)
-            setTimeout(() => {
+            try {
+                // Ensure user info is loaded first as other loaders may depend on currentUser
+                await loadUserInfo();
+                await loadDashboard();
+                
+                // Setup mobile toggle
+                const mobileBtn = document.getElementById('mobileMenuBtn');
+                if (mobileBtn) {
+                    mobileBtn.addEventListener('click', function() {
+                        document.querySelector('.sidebar').classList.toggle('active');
+                    });
+                }
+                
+                // Handle URL Params (Auto-Nav & Prefill)
                 const urlParams = new URLSearchParams(window.location.search);
                 const tab = urlParams.get('tab');
                 const msg = urlParams.get('msg');
-                const prefill = urlParams.get('prefill'); // Alias
+                const prefill = urlParams.get('prefill'); 
                 
                 if (tab) {
                     const navItem = document.querySelector(`.nav-item[data-page="${tab}"]`);
                     if (navItem) {
-                        console.log('Auto-switching to tab:', tab);
+                        debug('Auto-switching to tab: ' + tab);
                         navItem.click();
                         
                         // Handle Chat Prefill
@@ -2670,20 +2686,18 @@
                         }
                     }
                 }
-            }, 500); // Slight delay to ensure listeners are bound
-            
-            // Register SW for Push
-            if ('serviceWorker' in navigator && 'PushManager' in window) {
-                navigator.serviceWorker.register('/sw.js')
-                .then(function(reg) {
+                
+                // Register SW for Push
+                if ('serviceWorker' in navigator && 'PushManager' in window) {
+                    const reg = await navigator.serviceWorker.register('/sw.js');
                     console.log('Service Worker Registered');
                     initPushSubscription(reg);
-                })
-                .catch(function(error) {
-                    console.error('Service Worker Error', error);
-                });
+                }
+            } catch (err) {
+                console.error('Initialization error:', err);
+                debug('CRITICAL: Dashboard initialization failed');
             }
-        }
+        })();
 
         // Push Notifications Helpers
         const VAPID_PUBLIC_KEY = 'BP7y19LgF44ujdMW01ByyX8pZ6sCFbvZvIDtmjsoCWyVBZIdMQlTb4e5oDroRQayBVvH4yyoLbBHKa_kyl4uKUs';
