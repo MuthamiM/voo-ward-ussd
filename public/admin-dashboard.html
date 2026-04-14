@@ -321,9 +321,7 @@
             </nav>
             <!-- Sidebar Footer -->
             <div style="margin-top:auto;text-align:center;">
-                <a href="https://github.com/MusaMuthami1/voo-ward-ussd" target="_blank" title="View Source on GitHub" style="display:inline-block;transition:transform 0.2s;">
-                    <img src="/images/custom_github_logo.png" alt="GitHub" style="width:160px;height:auto;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);">
-                </a>
+
                 <div class="logout-btn" onclick="logout()" style="margin-top:10px;">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </div>
@@ -791,36 +789,40 @@
         async function loadUserInfo() {
             try {
                 debug('Loading user profile from API...');
-                const profile = await api('/api/admin/me');
+                // Set a timeout or handle failure gracefully so we don't block the whole UI
+                const profile = await Promise.race([
+                    api('/api/admin/me'),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+                ]).catch(err => {
+                    debug('Profile API failed or timed out: ' + err.message);
+                    return null;
+                });
                 
-                if (profile && profile.username) {
-                    currentUser = profile;
-                    // Update localStorage so other components stay in sync
-                    localStorage.setItem('currentUser', JSON.stringify(profile));
+                let userToSet = profile;
+                if (!userToSet || !userToSet.username) {
+                    // Fallback to localStorage if API fails but we have cached data
+                    const cached = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                    if (cached.username) {
+                        userToSet = cached;
+                        debug('Using cached user profile');
+                    }
+                }
+
+                if (userToSet && userToSet.username) {
+                    currentUser = userToSet;
+                    localStorage.setItem('currentUser', JSON.stringify(userToSet));
                     
-                    document.getElementById('userName').textContent = profile.fullName || profile.username;
-                    document.getElementById('userRole').textContent = profile.role || 'Admin';
-                    document.getElementById('userAvatar').textContent = (profile.fullName || profile.username || 'A').slice(0,1).toUpperCase();
+                    document.getElementById('userName').textContent = userToSet.fullName || userToSet.username;
+                    document.getElementById('userRole').textContent = userToSet.role || 'Admin';
+                    document.getElementById('userAvatar').textContent = (userToSet.fullName || userToSet.username || 'A').slice(0,1).toUpperCase();
                     
                     // Populate settings inputs
                     const sName = document.getElementById('settingsFullName');
                     const sUser = document.getElementById('settingsUsername');
                     const sRole = document.getElementById('settingsRole');
-                    if (sName) sName.value = profile.fullName || '';
-                    if (sUser) sUser.value = profile.username || '';
-                    if (sRole) sRole.value = profile.role || '';
-                    
-                    debug('User profile synchronized: ' + profile.username);
-                } else {
-                    // Fallback to localStorage if API fails but we have cached data
-                    const cachedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-                    if (cachedUser.username) {
-                        currentUser = cachedUser;
-                        document.getElementById('userName').textContent = cachedUser.fullName || cachedUser.username;
-                        document.getElementById('userRole').textContent = cachedUser.role || 'Admin';
-                        document.getElementById('userAvatar').textContent = (cachedUser.fullName || cachedUser.username || 'A').slice(0,1).toUpperCase();
-                        debug('Using cached user profile (API unavailable)');
-                    }
+                    if (sName) sName.value = userToSet.fullName || '';
+                    if (sUser) sUser.value = userToSet.username || '';
+                    if (sRole) sRole.value = userToSet.role || '';
                 }
             } catch (e) {
                 console.error('Error in loadUserInfo:', e);
@@ -835,57 +837,67 @@
                 document.getElementById('recentIssuesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
                 document.getElementById('recentBursariesList').innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i></div>';
 
-                // Fetch data in parallel
+                // Fetch data with individual error handling so one failure doesn't block the rest
+                const fetchSafe = async (url) => {
+                    try {
+                        const data = await api(url);
+                        return Array.isArray(data) ? data : (data && data.success && Array.isArray(data.data) ? data.data : null);
+                    } catch (e) { return null; }
+                };
+
                 let [iss, usrs, burs, feed] = await Promise.all([
-                    api('/api/admin/issues'),
-                    api('/api/admin/app-users'),
-                    api('/api/admin/bursaries'),
-                    api('/api/admin/feedback')
+                    fetchSafe('/api/admin/issues'),
+                    fetchSafe('/api/admin/app-users'),
+                    fetchSafe('/api/admin/bursaries'),
+                    fetchSafe('/api/admin/feedback')
                 ]);
 
-                // Fallback to Demo Data
+                // Fallback to Demo Data for sections that fail
                 const demo = generateDemoData();
-                const issues = (iss && Array.isArray(iss) && iss.length > 0) ? iss : demo.issues;
-                const users = (usrs && Array.isArray(usrs) && usrs.length > 0) ? usrs : demo.users;
-                const bursaries = (burs && Array.isArray(burs) && burs.length > 0) ? burs : demo.bursaries;
-                const feedback = (feed && Array.isArray(feed) && feed.length > 0) ? feed : demo.feedback;
+                const issues = (iss && iss.length > 0) ? iss : demo.issues;
+                const users = (usrs && usrs.length > 0) ? usrs : demo.users;
+                const bursaries = (burs && burs.length > 0) ? burs : demo.bursaries;
+                const feedback = (feed && feed.length > 0) ? feed : demo.feedback;
 
                 allIssues = issues;
                 allUsers = users;
                 allBursaries = bursaries;
                 allFeedback = feedback;
 
-                // Update Stats - Using correct HTML IDs
+                // Update Stats
                 document.getElementById('statTotalIssues').textContent = issues.length;
                 document.getElementById('statTotalUsers').textContent = users.length;
                 document.getElementById('statTotalBursaries').textContent = bursaries.length;
-                document.getElementById('statTotalFeedback').textContent = feedback.filter(f => !f.status || f.status === 'Pending' || f.status === 'new').length;
+                document.getElementById('statTotalFeedback').textContent = feedback.length;
 
                 // Sync App Health Indicator
                 const health = document.getElementById('appHealth');
                 if (iss && burs && usrs) {
                     health.innerHTML = '<div style="width:8px;height:8px;background:var(--success);border-radius:50%;box-shadow:0 0 8px var(--success);"></div><span style="font-size:12px;font-weight:600;color:var(--success);">App Healthy</span>';
                 } else {
-                    health.innerHTML = '<div style="width:8px;height:8px;background:var(--warning);border-radius:50%;box-shadow:0 0 8px var(--warning);"></div><span style="font-size:12px;font-weight:600;color:var(--warning);">Running (Demo Mode)</span>';
-                    showToast('🚀 Running in Demo Mode (Database Offline)', 'info');
+                    health.innerHTML = '<div style="width:8px;height:8px;background:var(--warning);border-radius:50%;box-shadow:0 0 8px var(--warning);"></div><span style="font-size:12px;font-weight:600;color:var(--warning);">Running (Limited/Demo)</span>';
                 }
 
                 // Initialize/Update Charts
-                updateCharts(issues);
-                updateUserGrowthChart(users);
-                updateBursaryStatusChart(bursaries);
-                updateLocationChart(issues);
-                updateBursaryFinancialChart(bursaries);
+                try {
+                    updateCharts(issues);
+                    updateUserGrowthChart(users);
+                    updateBursaryStatusChart(bursaries);
+                    updateLocationChart(issues);
+                    updateBursaryFinancialChart(bursaries);
+                } catch (e) { console.warn('Chart update error', e); }
 
                 // Render Recent Items
                 renderRecentIssues(issues.slice(0, 5));
                 renderRecentBursaries(bursaries.slice(0, 5));
                 
                 document.getElementById('lastUpdate').textContent = 'Updated: ' + new Date().toLocaleTimeString();
-                debug('Dashboard consolidated successfully');
+                debug('Dashboard synchronized');
             } catch (e) {
                 console.error('CRASH in loadDashboard:', e);
-                debug('ERROR: Dashboard failed to initialize');
+                // Clear spinners even on crash
+                document.getElementById('recentIssuesList').innerHTML = '<p class="text-muted">Failed to load dashboard data.</p>';
+                document.getElementById('recentBursariesList').innerHTML = '<p class="text-muted">Failed to load dashboard data.</p>';
             }
         }
 
