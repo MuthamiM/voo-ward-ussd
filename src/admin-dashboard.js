@@ -3276,32 +3276,20 @@ app.patch("/api/admin/bursaries/:id", requireAuth, requireMCA, async (req, res) 
 app.post("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
     const { title, body } = req.body;
+    const supabaseService = require('./services/supabaseService');
 
-    const database = await connectDB();
-    if (!database) {
-      // MOCK SUCCESS for Demo Mode
-       console.log('🚀 [MOCK MODE] Mock announcement created');
-       return res.status(201).json({
-         success: true,
-         message: "Announcement published (Demo Mode)",
-         id: "mock-" + Date.now(),
-         announcement: { title, body, created_at: new Date() }
-       });
+    const result = await supabaseService.createAnnouncement({ title, body, content: body });
+
+    if (result.success) {
+      res.status(201).json({
+        success: true,
+        message: "Announcement published",
+        id: result.result?.[0]?.id,
+        announcement: result.result?.[0] || { title, body }
+      });
+    } else {
+      res.status(500).json({ error: result.error });
     }
-
-    const announcement = {
-      title,
-      body,
-      created_at: new Date()
-    };
-
-    const result = await database.collection("announcements").insertOne(announcement);
-
-    res.status(201).json({
-      success: true,
-      id: result.insertedId,
-      announcement
-    });
   } catch (err) {
     console.error("Error creating announcement:", err);
     res.status(500).json({ error: err.message });
@@ -3309,25 +3297,14 @@ app.post("/api/admin/announcements", requireAuth, async (req, res) => {
 });
 
 // Delete announcement
-app.delete("/api/admin/announcements/:id", async (req, res) => {
+app.delete("/api/admin/announcements/:id", requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+    const supabaseService = require('./services/supabaseService');
 
-    const database = await connectDB();
-    if (!database) {
-      return res.status(503).json({ error: "Database not connected" });
-    }
+    const result = await supabaseService.request('DELETE', `/rest/v1/announcements?id=eq.${id}`);
 
-    const { ObjectId } = require("mongodb");
-    const result = await database.collection("announcements").deleteOne({
-      _id: new ObjectId(id)
-    });
-
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ error: "Announcement not found" });
-    }
-
-    res.json({ success: true, message: "Announcement deleted" });
+    res.json({ success: true, message: "Announcement deleted", result });
   } catch (err) {
     console.error("Error deleting announcement:", err);
     res.status(500).json({ error: err.message });
