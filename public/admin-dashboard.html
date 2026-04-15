@@ -1981,9 +1981,7 @@ const dataToUse = (burses && Array.isArray(burses)) ? burses : [];
         }
 
         // ============ LOST IDs ============
-        let allLostIds = [];
-        
-        async function loadLostIds() {
+async function loadLostIds() {
             debug('Loading lost IDs...');
             const res = await api('/api/admin/lost-ids');
             
@@ -2070,8 +2068,6 @@ const dataToUse = (burses && Array.isArray(burses)) ? burses : [];
         }
 
         // ============ FEEDBACK ============
-        let allFeedback = [];
-
         async function loadFeedback() {
             debug('Loading feedback...');
             const res = await api('/api/admin/feedback');
