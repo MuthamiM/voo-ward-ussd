@@ -1593,7 +1593,7 @@ const dataToUse = (users && Array.isArray(users)) ? users : [];
             let html = '';
             anns.forEach(a => {
                 const date = a.created_at ? new Date(a.created_at).toLocaleDateString() : '--';
-                const safeId = escapeHtml(a._id);
+                const safeId = escapeHtml(a.id || a._id);
                 html += `<div class="announcement-card">
                     <div class="announcement-content">
                         <div class="announcement-title">${escapeHtml(a.title) || 'Announcement'}</div>
