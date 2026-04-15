@@ -853,11 +853,10 @@
                 ]);
 
                 // Fallback to Demo Data for sections that fail
-                const demo = generateDemoData();
-                const issues = (iss && iss.length > 0) ? iss : demo.issues;
-                const users = (usrs && usrs.length > 0) ? usrs : demo.users;
-                const bursaries = (burs && burs.length > 0) ? burs : demo.bursaries;
-                const feedback = (feed && feed.length > 0) ? feed : demo.feedback;
+                const issues = Array.isArray(iss) ? iss : [];
+                const users = Array.isArray(usrs) ? usrs : [];
+                const bursaries = Array.isArray(burs) ? burs : [];
+                const feedback = Array.isArray(feed) ? feed : [];
 
                 allIssues = issues;
                 allUsers = users;
@@ -906,7 +905,7 @@
             try {
                 debug('Refreshing issues list...');
                 const data = await api('/api/admin/issues');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allIssues.length > 0 ? allIssues : generateDemoData().issues);
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 allIssues = dataToUse;
                 renderIssues(dataToUse);
             } catch (e) { debug('Issue load error'); }
@@ -916,7 +915,7 @@
             try {
                 debug('Refreshing user list...');
                 const data = await api('/api/admin/app-users');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allUsers.length > 0 ? allUsers : generateDemoData().users);
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 allUsers = dataToUse;
                 const stat = document.getElementById('statTotalUsers');
                 if (stat) stat.textContent = dataToUse.length;
@@ -928,7 +927,7 @@
             try {
                 debug('Refreshing bursaries...');
                 const data = await api('/api/admin/bursaries');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 allBursaries = dataToUse;
                 renderBursaries(dataToUse);
             } catch (e) { debug('Bursary load error'); }
@@ -938,7 +937,7 @@
             try {
                 debug('Refreshing announcements...');
                 const data = await api('/api/admin/announcements');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().announcements;
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 renderAnnouncements(dataToUse);
             } catch (e) { debug('Announcement load error'); }
         }
@@ -947,7 +946,7 @@
             try {
                 debug('Refreshing feedback...');
                 const data = await api('/api/admin/feedback');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().feedback;
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 allFeedback = dataToUse;
                 renderFeedback(dataToUse);
             } catch (e) { debug('Feedback load error'); }
@@ -957,7 +956,7 @@
             try {
                 debug('Refreshing lost IDs...');
                 const data = await api('/api/admin/lost-ids');
-                const dataToUse = (data && Array.isArray(data) && data.length > 0) ? data : generateDemoData().lostIds;
+                const dataToUse = (data && Array.isArray(data)) ? data : [];
                 renderLostIds(dataToUse);
             } catch (e) { debug('Lost IDs load error'); }
         }
@@ -1286,8 +1285,7 @@
             const issues = await api('/api/admin/issues');
             
             // INDEPENDENT FALLBACK
-            const dataToUse = (issues && Array.isArray(issues) && issues.length > 0) ? issues : 
-                             (allIssues.length > 0 ? allIssues : generateDemoData().issues);
+const dataToUse = (issues && Array.isArray(issues)) ? issues : [];
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allIssues = dataToUse;
@@ -1484,8 +1482,7 @@
             debug('Loading users...');
             const users = await api('/api/admin/app-users');
             
-            const dataToUse = (users && Array.isArray(users) && users.length > 0) ? users : 
-                             (allUsers.length > 0 ? allUsers : generateDemoData().users);
+const dataToUse = (users && Array.isArray(users)) ? users : [];
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allUsers = dataToUse;
@@ -1588,7 +1585,7 @@
         async function loadAnnouncements() {
             debug('Loading announcements...');
             const anns = await api('/api/admin/announcements');
-            const dataToUse = (anns && Array.isArray(anns) && anns.length > 0) ? anns : generateDemoData().announcements;
+            const dataToUse = (anns && Array.isArray(anns)) ? anns : [];
             renderAnnouncements(dataToUse);
         }
 
@@ -1651,8 +1648,7 @@
             debug('Loading bursaries...');
             const burses = await api('/api/admin/bursaries');
             
-            const dataToUse = (burses && Array.isArray(burses) && burses.length > 0) ? burses : 
-                             (allBursaries.length > 0 ? allBursaries : generateDemoData().bursaries);
+const dataToUse = (burses && Array.isArray(burses)) ? burses : [];
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allBursaries = dataToUse;
@@ -1991,7 +1987,7 @@
             debug('Loading lost IDs...');
             const res = await api('/api/admin/lost-ids');
             
-            const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : allLostIds;
+            const dataToUse = Array.isArray(res) ? res : allLostIds;
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allLostIds = dataToUse;
@@ -2080,7 +2076,7 @@
             debug('Loading feedback...');
             const res = await api('/api/admin/feedback');
             
-            const dataToUse = (res && Array.isArray(res) && res.length > 0) ? res : allFeedback;
+            const dataToUse = Array.isArray(res) ? res : allFeedback;
             
             if (dataToUse && Array.isArray(dataToUse) && dataToUse.length > 0) {
                 allFeedback = dataToUse;

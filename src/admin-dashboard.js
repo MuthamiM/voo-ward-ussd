@@ -2591,8 +2591,8 @@ app.get("/api/admin/constituents", requireAuth, requireMCA, async (req, res) => 
 // Get all announcements (PA and MCA can access)
 app.get("/api/admin/announcements", requireAuth, async (req, res) => {
   try {
-    const dataService = require('./services/postgresDataService');
-    const announcements = await dataService.query('SELECT * FROM announcements ORDER BY created_at DESC');
+    const supabaseService = require('./services/supabaseService');
+    const announcements = await supabaseService.request('GET', '/rest/v1/announcements?select=*&order=created_at.desc&limit=100');
     res.json(announcements || []);
   } catch (err) {
     console.error("Error fetching announcements:", err);
