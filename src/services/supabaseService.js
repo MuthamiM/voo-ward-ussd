@@ -1063,6 +1063,20 @@ class SupabaseService {
             return { success: false, error: 'Response failed' };
         }
     }
+
+    /**
+     * Delete ALL chat messages
+     */
+    async deleteAllChatMessages() {
+        try {
+            // using not.is.null on id usually hits every row.
+            const result = await this.request('DELETE', `/rest/v1/admin_chat_messages?id=not.is.null`);
+            return { success: true, result };
+        } catch (e) {
+            console.error('[Supabase] deleteAllChatMessages error:', e);
+            return { success: false, error: e.message };
+        }
+    }
 }
 
 // Export singleton instance
