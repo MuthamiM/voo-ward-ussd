@@ -746,19 +746,8 @@ app.get("/api/admin/me", requireAuth, async (req, res) => {
   }
 });
 
-// Dashboard Stats - PostgreSQL with Supabase fallback
 app.get("/api/admin/stats", requireAuth, async (req, res) => {
   try {
-    // Try PostgreSQL first
-    if (process.env.DATABASE_URL) {
-      const dataService = require('./services/postgresDataService');
-      const stats = await dataService.getStats();
-      if (stats && stats.counts && (stats.counts.issues > 0 || stats.counts.users > 0)) {
-        return res.json(stats);
-      }
-    }
-
-    // Fallback to Supabase
     const supabaseService = require('./services/supabaseService');
     const [issues, users, bursaries] = await Promise.all([
       supabaseService.getAllIssues(),
@@ -2387,27 +2376,11 @@ app.post('/api/admin/reject-registration/:id', requireAuth, async (req, res) => 
 // ADMIN API ROUTES
 // ============================================
 
-// Get all reported issues (PA and MCA can access) - NOW FROM PostgreSQL
 app.get("/api/admin/issues", requireAuth, async (req, res) => {
   try {
-    let issues = [];
-
-    // Try PostgreSQL first
-    if (process.env.DATABASE_URL) {
-      try {
-        const dataService = require('./services/postgresDataService');
-        issues = await dataService.getIssues({ limit: 100 });
-      } catch (pgErr) {
-        console.warn('[Issues] PostgreSQL failed, trying Supabase:', pgErr.message);
-      }
-    }
-
-    // Fallback to Supabase
-    if (issues.length === 0) {
-      const supabaseService = require('./services/supabaseService');
-      issues = await supabaseService.getAllIssues();
-      console.log('[Issues] Fetched from Supabase:', issues.length, 'items');
-    }
+    const supabaseService = require('./services/supabaseService');
+    const issues = await supabaseService.getAllIssues();
+    console.log('[Issues] Fetched from Supabase:', issues.length, 'items');
 
     // Map to consistent format for dashboard
     const formattedIssues = issues.map(issue => {
@@ -2438,27 +2411,12 @@ app.get("/api/admin/issues", requireAuth, async (req, res) => {
   }
 });
 
-// Get all App Users (Citizens) from PostgreSQL (Admin access)
+// Get all App Users (Citizens) from Supabase (Admin access)
 app.get("/api/admin/app-users", requireAuth, async (req, res) => {
   try {
-    let users = [];
-
-    // Try PostgreSQL first
-    if (process.env.DATABASE_URL) {
-      try {
-        const dataService = require('./services/postgresDataService');
-        users = await dataService.getUsers({ limit: 100 });
-      } catch (pgErr) {
-        console.warn('[Users] PostgreSQL failed, trying Supabase:', pgErr.message);
-      }
-    }
-
-    // Fallback to Supabase
-    if (users.length === 0) {
-      const supabaseService = require('./services/supabaseService');
-      users = await supabaseService.getAllUsers();
-      console.log('[Users] Fetched from Supabase:', users.length, 'items');
-    }
+    const supabaseService = require('./services/supabaseService');
+    const users = await supabaseService.getAllUsers();
+    console.log('[Users] Fetched from Supabase:', users.length, 'items');
 
     // Map to consistent format
     const formattedUsers = users.map(u => ({
@@ -2480,27 +2438,12 @@ app.get("/api/admin/app-users", requireAuth, async (req, res) => {
   }
 });
 
-// Get all bursary applications (MCA only) - NOW FROM PostgreSQL
+// Get all bursary applications (MCA only) - Supabase Only
 app.get("/api/admin/bursaries", requireAuth, requireMCA, async (req, res) => {
   try {
-    let bursaries = [];
-
-    // Try PostgreSQL first
-    if (process.env.DATABASE_URL) {
-      try {
-        const dataService = require('./services/postgresDataService');
-        bursaries = await dataService.getBursaries({ limit: 100 });
-      } catch (pgErr) {
-        console.warn('[Bursaries] PostgreSQL failed, trying Supabase:', pgErr.message);
-      }
-    }
-
-    // Fallback to Supabase
-    if (bursaries.length === 0) {
-      const supabaseService = require('./services/supabaseService');
-      bursaries = await supabaseService.getAllBursaries();
-      console.log('[Bursaries] Fetched from Supabase:', bursaries.length, 'items');
-    }
+    const supabaseService = require('./services/supabaseService');
+    const bursaries = await supabaseService.getAllBursaries();
+    console.log('[Bursaries] Fetched from Supabase:', bursaries.length, 'items');
 
     // Map to consistent format for dashboard
     const formattedBursaries = bursaries.map(b => ({
