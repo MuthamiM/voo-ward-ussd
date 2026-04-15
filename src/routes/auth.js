@@ -1,14 +1,15 @@
 /**
  * Auth Routes (Google + Backend OTP)
- * Uses PostgreSQL for all auth operations
+ * Uses Supabase for all auth operations
  */
 const express = require('express');
 const router = express.Router();
 
-// PostgreSQL only - no Supabase
-const otpService = require('../services/postgresOtpService');
-const userService = require('../services/postgresUserService');
-console.log('[AUTH] Using PostgreSQL for all auth operations');
+// Supabase for all auth operations
+const supabaseService = require('../services/supabaseService');
+const otpService = supabaseService;  // supabaseService has saveOTP, verifyOTP, saveEmailOTP, verifyEmailOTP
+const userService = supabaseService; // supabaseService has loginUser, registerUser, etc.
+console.log('[AUTH] Using Supabase for all auth operations');
 
 // Generate 6-digit OTP
 function generateOTP() {
