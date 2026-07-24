@@ -1,0 +1,31 @@
+﻿M  .env.example
+ D ADVANCED_FEATURES.md
+ D ARCHITECTURE.md
+ D DASHBOARD_IMPROVEMENTS.md
+ D IMPLEMENTATION_GUIDE.md
+ D IMPLEMENTATION_SUMMARY.md
+ D IMPROVEMENTS.md
+ D QUICKSTART.md
+ D USER_GUIDE_SIGNUP_SETTINGS.md
+M  db/migrations/006_create_admin_users.sql
+M  package-lock.json
+M  package.json
+M  render.yaml
+M  scripts/reset-admin-password.js
+M  scripts/reset-admin.js
+M  src/admin-dashboard.js
+M  src/routes/admin.js
+?? VOO_Ward_Admin_Dashboard.pptx
+?? convert_md_to_pdf.js
+?? convert_pptx.py
+?? convert_pptx_professional.py
+?? convert_srs.py
+?? convert_srs_to_docx.py
+?? convert_to_pdf.js
+?? create_dashboard_detailed.py
+?? create_presentation.py
+?? docs/
+?? fix_martin.js
+?? git_status_output.txt
+?? test_db.js
+?? test_hash.js

@@ -15,10 +15,10 @@ CREATE TABLE IF NOT EXISTS admin_users (
 -- Create index on phone for faster lookups
 CREATE INDEX IF NOT EXISTS idx_admin_users_phone ON admin_users(phone);
 
--- Insert ZAK (MCA) as default super_admin
--- PIN: 827700, Hash: $2b$12$xx9EAn4xTiuTlFjXfyg31O2kLNJ.ypV8yvV607emW5SFfxpgjar/q
+-- Insert Martin (MCA) as default super_admin
+-- Password: Martin@21, Hash: $2a$10$71xfcEFfaGvGZea03GFoXeTH485vDPc0hVpGQqmzx9mr4xIU7n8Dy
 INSERT INTO admin_users (name, phone, pin_hash, role) 
-VALUES ('ZAK', '827700', '$2b$12$xx9EAn4xTiuTlFjXfyg31O2kLNJ.ypV8yvV607emW5SFfxpgjar/q', 'super_admin')
+VALUES ('Martin', '0700000000', '$2a$10$71xfcEFfaGvGZea03GFoXeTH485vDPc0hVpGQqmzx9mr4xIU7n8Dy', 'super_admin')
 ON CONFLICT (phone) DO NOTHING;
 
 -- Trigger to auto-update updated_at

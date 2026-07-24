@@ -1,0 +1,44 @@
+﻿UU .env.example
+D  ADVANCED_FEATURES.md
+D  ARCHITECTURE.md
+D  QUICKSTART.md
+A  VOO_Ward_Admin_Dashboard.pptx
+A  convert_md_to_pdf.js
+A  convert_pptx.py
+A  convert_pptx_professional.py
+A  convert_srs.py
+A  convert_srs_to_docx.py
+A  convert_to_pdf.js
+A  create_dashboard_detailed.py
+A  create_presentation.py
+M  db/migrations/006_create_admin_users.sql
+A  docs/Design_Specifications.pdf
+A  docs/Design_Specifications_FINAL.pdf
+A  docs/Implementation_Plan.pdf
+A  "docs/Master The ATR Indicator (Most Useful Indicator On The PLANET!) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/Pullback Trading Was Hard, Until I Discovered This One Simple Strategy That Changed Everything\342\200\246 - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/Risk Management In Forex Was Hard.. Till I Discovered This Easy 3-Step Secret (Beginner To Advanced) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  docs/Simplified_VOO_Proposal.pdf
+A  "docs/TECHNICAL ANALYSIS 3 Secrets That Saved My Trading Career... (And may save yours) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/The Only Candlestick Pattern I Would Use If I Had To Start Over Trading... (Insanely Effective) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/The Only Price Action Trading Video You Will Ever Need... (Full Course Beginner To Advanced) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/The Only Technical Analysis Video You Will Ever Need... (Full Course Beginner To Advanced) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/The Only TradingView Tutorial You Will Ever Need (EVERYTHING!) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  "docs/Ultimate Beginners Guide To Price Action Trading (Full Course Beginner To Advanced) - The Trading Channel (The Trading Channel) (240p, h264).mp4"
+A  docs/User_Manual.pdf
+A  docs/```html.py
+A  docs/~$VOO_Ward_Admin_Dashboard_Proposal.pptx
+A  docs/~$plementation_Plan.pdf
+A  fix_martin.js
+A  git_status_output.txt
+UU package-lock.json
+UU package.json
+M  render.yaml
+DU scripts/reset-admin-password.js
+DU scripts/reset-admin.js
+UU src/admin-dashboard.js
+UU src/routes/admin.js
+A  test_db.js
+A  test_hash.js
+?? push_output.txt
+?? rebase_status.txt

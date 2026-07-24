@@ -94,8 +94,15 @@ secrets/
 .secrets
 credentials.json
 
-# Large binary files (APKs)
+# Large binary files (APKs, Videos)
 *.apk
+*.mp4
+
+# Temp output files
+push_output*.txt
+git_status_output.txt
+rebase_status.txt
+status_now.txt
 
 # Sensitive cleanup
 response*.txt
